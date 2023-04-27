@@ -66,7 +66,7 @@ if __name__ == '__main__':
                         lines[str(glyph[1])] = lines[str(glyph[1])] + 1
                 words = 0
                 for l in lines.keys():
-                    parts.append({"line":int(l), "txt":" ".join(aya_text.split()[words:(words+lines[l])]), "offset":20, "stretch": .23})
+                    parts.append({"l":int(l), "t":" ".join(aya_text.split()[words:(words+lines[l])]), "o":20, "s": .23})
                     words = words + lines[l]
                 ## TODO: Find a way to calculate the stretching factor for each line
                 aya_obj = {"page":page, "parts":parts}
