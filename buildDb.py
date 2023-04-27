@@ -69,7 +69,7 @@ if __name__ == '__main__':
                     parts.append({"l":int(l), "t":" ".join(aya_text.split()[words:(words+lines[l])]), "o":20, "s": .23})
                     words = words + lines[l]
                 ## TODO: Find a way to calculate the stretching factor for each line
-                aya_obj = {"page":page, "parts":parts}
+                aya_obj = {"p":page, "r":parts}
                 suras[sura-1]["ayas"].append(aya_obj)
     f.close()
     j = json.loads(json_header)
