@@ -43,16 +43,33 @@ if __name__ == '__main__':
             tokens = line.strip().split('|')
             if len(tokens) == 3:
                 sura, aya, aya_text = tokens
+                aya_text = aya_text
                 sura = int(sura)
                 aya = int(aya)
                 if len(suras)<sura:
                     suras.append({"name":"سورة ..", "ayas":[]}) #Add a Sura
                 #Add an Aya
-                data = get_aya_data(sura, aya)
-                page = data[0][0]
+                if aya>1:
+                    prev_aya_data = ayah_data
+                else:
+                    prev_aya_data = ""
+                ayah_data = get_aya_data(sura, aya)
+                ayah_data = list(filter(lambda a: a[3]-a[2] > 30, ayah_data))
+                page = ayah_data[0][0]
                 ## TODO: Find a way to break ayas into parts.
+                lines = {}
+                parts = []
+                for glyph in ayah_data:
+                    if str(glyph[1]) not in lines:
+                        lines.update({str(glyph[1]):1})
+                    else:
+                        lines[str(glyph[1])] = lines[str(glyph[1])] + 1
+                words = 0
+                for l in lines.keys():
+                    parts.append({"line":int(l), "txt":" ".join(aya_text.split()[words:(words+lines[l])]), "offset":20, "stretch": .23})
+                    words = words + lines[l]
                 ## TODO: Find a way to calculate the stretching factor for each line
-                aya_obj = {"page":page, "parts":[{"line":1, "txt":"abc", "offset":20, "stretch": .23}, {"line":"1", "txt":"abc", "offset":"20", "stretch": ".23"}]}
+                aya_obj = {"page":page, "parts":parts}
                 suras[sura-1]["ayas"].append(aya_obj)
     f.close()
     j = json.loads(json_header)
