@@ -1,6 +1,7 @@
 import sqlite3
 import requests, os, tqdm
 import json
+from bs4 import BeautifulSoup
 
 TMP = "temp"
 DB = "AyahInfo_1024.db"
@@ -41,6 +42,16 @@ def get_surah_name(sura_id):
     ]
     return "سورة " + sura_name[sura_id]
 
+def getHtmlSoup():
+    return BeautifulSoup(open("test.html", "r").read(), 'html.parser')
+
+def updateSoup(soup, text, skip):
+    span_element = soup.find('span', {'class': 'text'})
+    span_element.string = text
+    span_element['style'] = 'margin-right: {}px;'.format(skip)
+    with open('test.html', 'w') as file:
+        file.write(str(soup))
+
 if __name__ == '__main__':
     try:
         os.mkdir(TMP)
@@ -56,6 +67,9 @@ if __name__ == '__main__':
         text = req.content
         open(os.path.join(TMP,TXT), "wb").write(text)
         print("Downloaded Quran Text file.")
+        #
+        # Finally Load the Html Template
+        soup = getHtmlSoup()
     except OSError as error:
         print("Skipping download ..")
     json_header = '{"title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",\
@@ -99,6 +113,7 @@ if __name__ == '__main__':
                         parts.append({"l":int(l), "t":" ".join(aya_text.split()[skip_words:(skip_words+lines[l])]), "o":20, "s": .23})
                         skip_words = skip_words + lines[l]
                     ## TODO: Find a way to calculate the stretching factor for each line
+                    ## updateSoup(soup, "HelloZZ", 122)
                     aya_obj = {"p":page, "r":parts}
                     suras[sura-1]["ayas"].append(aya_obj)
         f.close()
