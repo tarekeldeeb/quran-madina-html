@@ -2,10 +2,13 @@ import sqlite3
 import requests, os, tqdm
 import json
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 TMP = "temp"
 DB = "AyahInfo_1024.db"
 TXT = "Uthmani.txt"
+TEST_HTML = "test.html"
 
 def query(query):
     conn = sqlite3.connect(os.path.join(TMP,DB))
@@ -43,17 +46,22 @@ def get_surah_name(sura_id):
     return "سورة " + sura_name[sura_id]
 
 def getHtmlSoup():
-    return BeautifulSoup(open("test.html", "r").read(), 'html.parser')
+    return BeautifulSoup(open(TEST_HTML, 'r').read(), 'html.parser')
 
 def updateSoup(soup, text, skip):
     span_element = soup.find('span', {'class': 'text'})
     span_element.string = text
     span_element['style'] = 'margin-right: {}px;'.format(skip)
-    with open('test.html', 'w') as file:
+    with open(TEST_HTML, 'w') as file:
         file.write(str(soup))
 
-if __name__ == '__main__':
+def getWidth(wd):
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    wd.get("file://" + os.path.join(dir_path,TEST_HTML))
+    width = wd.execute_script("return document.getElementById('test').getBoundingClientRect().width")
+    return width
 
+if __name__ == '__main__':
     try:
         os.mkdir(TMP)
         # Start with downloading the Glyph DB
@@ -69,14 +77,20 @@ if __name__ == '__main__':
         text = req.content
         open(os.path.join(TMP,TXT), "wb").write(text)
         print("Downloaded Quran Text file.")
-        #
-        # Finally Load the Html Template
-        soup = getHtmlSoup()
     except OSError as error:
         print("Skipping download ..")
+    #
+    # Finally Load the Html Template and Driver   
+    soup = getHtmlSoup()
+    chrome_options = Options()
+    chrome_options.add_experimental_option("detach", True)
+    wd = webdriver.Chrome(options=chrome_options)
+    # Lets start building the json output ..
     json_header = '{"title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",\
         "published": 1985,\
-        "font": "https://fonts.googleapis.com/css?family=Amiri Quran"}'
+        "font": "https://fonts.googleapis.com/css?family=Amiri Quran",\
+        "font-size": 24,\
+        "line-width": 400}'
     suras = []
     print("Processing ..")
     with tqdm.tqdm(total=os.path.getsize(os.path.join(TMP,TXT))) as pbar:
@@ -86,7 +100,6 @@ if __name__ == '__main__':
                 tokens = aya_line.strip().split('|')
                 if len(tokens) == 3:
                     sura, aya, aya_text = tokens
-                    aya_text = aya_text
                     sura = int(sura)
                     aya = int(aya)
                     #Add a Sura
@@ -112,10 +125,16 @@ if __name__ == '__main__':
                     else:
                         skip_words = 0 
                     for l in lines.keys():
-                        parts.append({"l":int(l), "t":" ".join(aya_text.split()[skip_words:(skip_words+lines[l])]), "o":20, "s": .23})
+                        aya_text_part = " ".join(aya_text.split()[skip_words:(skip_words+lines[l])])
+                        # TODO: if last part in aya, append aya number to text 
+                        updateSoup(soup, aya_text_part, 0)
+                        aya_part_width = getWidth(wd)
+                        # sum_line_widths
+                        # TODO: if last part in line, calculate the stretching factor
+                        #                             then apply to all line parts
+                        # TODO: Afterwards, calculate the offsets
+                        parts.append({"l":int(l), "t":aya_text_part, "o":0, "s": 1.0})
                         skip_words = skip_words + lines[l]
-                    ## TODO: Find a way to calculate the stretching factor for each line
-                    ## updateSoup(soup, "HelloZZ", 122)
                     aya_obj = {"p":page, "r":parts}
                     suras[sura-1]["ayas"].append(aya_obj)
         f.close()
