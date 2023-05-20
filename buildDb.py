@@ -53,6 +53,7 @@ def updateSoup(soup, text, skip):
         file.write(str(soup))
 
 if __name__ == '__main__':
+
     try:
         os.mkdir(TMP)
         # Start with downloading the Glyph DB
@@ -62,7 +63,8 @@ if __name__ == '__main__':
         print("Downloaded Quran DataBase")
         #
         # Then download the text from Tanzil.net
-        txt_url = "https://tanzil.net/pub/download/index.php?marks=true&sajdah=true&rub=true&tatweel=true&quranType=uthmani&outType=txt-2&agree=true"
+        txt_url = "https://tanzil.net/pub/download/index.php?marks=true&sajdah=true&rub=true&tatweel=true"\
+                    "&quranType=uthmani&outType=txt-2&agree=true"
         req = requests.get(txt_url, allow_redirects=True)
         text = req.content
         open(os.path.join(TMP,TXT), "wb").write(text)
