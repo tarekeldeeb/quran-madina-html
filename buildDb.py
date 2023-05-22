@@ -46,13 +46,15 @@ def get_surah_name(sura_id):
     return "سورة " + sura_name[sura_id]
 
 def getHtmlSoup():
-    return BeautifulSoup(open(TEST_HTML, 'r').read(), 'html.parser')
+    return BeautifulSoup(open(TEST_HTML, 'r', encoding='utf-8').read(), 'html.parser')
 
 def updateSoup(soup, text, skip):
     span_element = soup.find('span', {'class': 'text'})
+    if span_element == None:
+        raise Exception("Exception parsing \"{}\", cannot find span of class text.".format(TEST_HTML))
     span_element.string = text
     span_element['style'] = 'margin-right: {}px;'.format(skip)
-    with open(TEST_HTML, 'w') as file:
+    with open(TEST_HTML, 'w', encoding='utf-8') as file:
         file.write(str(soup))
 
 def getWidth(wd):
@@ -83,6 +85,7 @@ if __name__ == '__main__':
     # Finally Load the Html Template and Driver   
     soup = getHtmlSoup()
     chrome_options = Options()
+    chrome_options.add_experimental_option("excludeSwitches", ['enable-automation']);
     chrome_options.add_experimental_option("detach", True)
     wd = webdriver.Chrome(options=chrome_options)
     # Lets start building the json output ..
@@ -92,6 +95,7 @@ if __name__ == '__main__':
         "font-size": 24,\
         "line-width": 400}'
     suras = []
+    page = 0
     print("Processing ..")
     with tqdm.tqdm(total=os.path.getsize(os.path.join(TMP,TXT))) as pbar:
         with open(os.path.join(TMP,TXT), encoding="utf8") as f:
@@ -112,7 +116,10 @@ if __name__ == '__main__':
                         prev_aya_data = ""
                     ayah_data = get_aya_data(sura, aya)
                     ayah_data = list(filter(lambda a: a[3]-a[2] > 30, ayah_data))
-                    page = ayah_data[0][0]
+                    if page < ayah_data[0][0]: #new page
+                        current_line = 1
+                        current_line_width = 0
+                        page = ayah_data[0][0]
                     lines = {}
                     parts = [] # Break each ayah into parts/lines
                     for glyph in ayah_data:
@@ -126,14 +133,19 @@ if __name__ == '__main__':
                         skip_words = 0 
                     for l in lines.keys():
                         aya_text_part = " ".join(aya_text.split()[skip_words:(skip_words+lines[l])])
-                        # TODO: if last part in aya, append aya number to text 
+                        if l == list(lines.keys())[-1]:
+                            las_part_in_aya = True
+                            aya_text_part = aya_text_part + " \uFD3F{}\uFD3E".format(aya)
+                        else:
+                            las_part_in_aya = False
                         updateSoup(soup, aya_text_part, 0)
                         aya_part_width = getWidth(wd)
+                        #current_line_width = current_line_width + aya_part_width
                         # sum_line_widths
                         # TODO: if last part in line, calculate the stretching factor
                         #                             then apply to all line parts
                         # TODO: Afterwards, calculate the offsets
-                        parts.append({"l":int(l), "t":aya_text_part, "o":0, "s": 1.0})
+                        parts.append({"l":int(l), "t":aya_text_part, "o":aya_part_width, "s": 1.0})
                         skip_words = skip_words + lines[l]
                     aya_obj = {"p":page, "r":parts}
                     suras[sura-1]["ayas"].append(aya_obj)
