@@ -1,9 +1,9 @@
 import sqlite3
 import requests, os, tqdm
 import json
-from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 
 TMP = "temp"
 DB = "AyahInfo_1024.db"
@@ -45,23 +45,16 @@ def get_surah_name(sura_id):
     ]
     return "سورة " + sura_name[sura_id]
 
-def getHtmlSoup():
-    return BeautifulSoup(open(TEST_HTML, 'r', encoding='utf-8').read(), 'html.parser')
-
-def updateSoup(soup, text, skip):
-    span_element = soup.find('span', {'class': 'text'})
-    if span_element == None:
-        raise Exception("Exception parsing \"{}\", cannot find span of class text.".format(TEST_HTML))
-    span_element.string = text
-    span_element['style'] = 'margin-right: {}px;'.format(skip)
-    with open(TEST_HTML, 'w', encoding='utf-8') as file:
-        file.write(str(soup))
+def updateHtmlText(wd, text, skip):
+        wd.execute_script("document.getElementById('test').textContent = '{}'".format(text))
 
 def getWidth(wd):
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    wd.get("file://" + os.path.join(dir_path,TEST_HTML))
-    width = wd.execute_script("return document.getElementById('test').getBoundingClientRect().width")
-    return width
+    return wd.execute_script("return document.getElementById('test').getBoundingClientRect().width")
+
+def updateLineData(page, current_line, current_line_width):
+    # TODO: calculate the stretching factor, then apply to all line parts
+    # TODO: Afterwards, calculate the offsets
+    return
 
 if __name__ == '__main__':
     try:
@@ -83,11 +76,12 @@ if __name__ == '__main__':
         print("Skipping download ..")
     #
     # Finally Load the Html Template and Driver   
-    soup = getHtmlSoup()
     chrome_options = Options()
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation']);
     chrome_options.add_experimental_option("detach", True)
     wd = webdriver.Chrome(options=chrome_options)
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    wd.get("file://" + os.path.join(dir_path,TEST_HTML))
     # Lets start building the json output ..
     json_header = '{"title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",\
         "published": 1985,\
@@ -117,10 +111,10 @@ if __name__ == '__main__':
                     ayah_data = get_aya_data(sura, aya)
                     ayah_data = list(filter(lambda a: a[3]-a[2] > 30, ayah_data))
                     if page < ayah_data[0][0]: #new page
-                        current_line = 1
+                        current_line = 1 if page !=1 else 2
                         current_line_width = 0
                         page = ayah_data[0][0]
-                    lines = {}
+                    lines = {} # Key=LineNumber, Value=Number of glyphs
                     parts = [] # Break each ayah into parts/lines
                     for glyph in ayah_data:
                         if str(glyph[1]) not in lines:
@@ -132,19 +126,19 @@ if __name__ == '__main__':
                     else:
                         skip_words = 0 
                     for l in lines.keys():
+                        if l != current_line: #new line
+                            updateLineData(sura, aya, current_line, current_line_width)
+                            current_line = l
+                            current_line_width = 0
                         aya_text_part = " ".join(aya_text.split()[skip_words:(skip_words+lines[l])])
                         if l == list(lines.keys())[-1]:
                             las_part_in_aya = True
                             aya_text_part = aya_text_part + " \uFD3F{}\uFD3E".format(aya)
                         else:
                             las_part_in_aya = False
-                        updateSoup(soup, aya_text_part, 0)
+                        updateHtmlText(wd, aya_text_part, 0)
                         aya_part_width = getWidth(wd)
-                        #current_line_width = current_line_width + aya_part_width
-                        # sum_line_widths
-                        # TODO: if last part in line, calculate the stretching factor
-                        #                             then apply to all line parts
-                        # TODO: Afterwards, calculate the offsets
+                        current_line_width = current_line_width + aya_part_width
                         parts.append({"l":int(l), "t":aya_text_part, "o":aya_part_width, "s": 1.0})
                         skip_words = skip_words + lines[l]
                     aya_obj = {"p":page, "r":parts}
