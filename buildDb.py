@@ -9,6 +9,7 @@ TMP = "temp"
 DB = "AyahInfo_1024.db"
 TXT = "Uthmani.txt"
 TEST_HTML = "test.html"
+LINE_WIDTH = 400
 
 def query(query):
     conn = sqlite3.connect(os.path.join(TMP,DB))
@@ -46,15 +47,43 @@ def get_surah_name(sura_id):
     return "سورة " + sura_name[sura_id]
 
 def updateHtmlText(wd, text, skip):
-        wd.execute_script("document.getElementById('test').textContent = '{}'".format(text))
+    wd.execute_script("document.getElementById('test').textContent = '{}'".format(text))
 
 def getWidth(wd):
     return wd.execute_script("return document.getElementById('test').getBoundingClientRect().width")
 
-def updateLineData(page, current_line, current_line_width):
-    # TODO: calculate the stretching factor, then apply to all line parts
-    # TODO: Afterwards, calculate the offsets
-    return
+def updateLineData(suras, sura, aya, current_line, current_line_width):
+    """Calculate the stretching factor (s), then apply to all previous line parts and updates their offsets (o).
+    Finally, the returns (s,o) for the last part to be written later.
+    
+    Args:
+        suras (JSON): with Surah, Aya, Parts objects
+        sura (int): Current Surah number
+        aya (int): Current Ayah number
+        current_line (int): Line Number to update in page
+        current_line_width (float): Sum of widths of all line parts
+    """
+    LOOK_BACK = 5
+    if current_line_width<70:
+        j = json.loads(json_header)
+        j.update({"suras":suras})
+        json_file = open('Madina-Amiri.json', 'w', encoding="utf-8")
+        json.dump(j, json_file, ensure_ascii = False, indent=2)
+        json_file.close()
+        raise Exception("Problem with aya={} of sura={} at line={}".format(aya, sura, current_line))
+    stretch = LINE_WIDTH/current_line_width if page>2 else 1
+    aya_look_back = aya-LOOK_BACK if aya>LOOK_BACK else 1
+    offset = 0
+    if aya > 1:
+        prev_ayas = suras[sura-1]['ayas'][aya_look_back-1:aya-1]
+        for a in prev_ayas:
+            for r in a['r']:
+                if r['l'] == int(current_line):
+                    tmp = r['o']*stretch
+                    r['o'] = offset
+                    offset = offset + tmp
+                    r['s'] = stretch 
+    return stretch, offset, suras
 
 if __name__ == '__main__':
     try:
@@ -83,11 +112,11 @@ if __name__ == '__main__':
     dir_path = os.path.dirname(os.path.realpath(__file__))
     wd.get("file://" + os.path.join(dir_path,TEST_HTML))
     # Lets start building the json output ..
-    json_header = '{"title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",\
+    json_header = '{{"title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",\
         "published": 1985,\
         "font": "https://fonts.googleapis.com/css?family=Amiri Quran",\
         "font-size": 24,\
-        "line-width": 400}'
+        "line-width": {}}}'.format(LINE_WIDTH)
     suras = []
     page = 0
     print("Processing ..")
@@ -111,7 +140,7 @@ if __name__ == '__main__':
                     ayah_data = get_aya_data(sura, aya)
                     ayah_data = list(filter(lambda a: a[3]-a[2] > 30, ayah_data))
                     if page < ayah_data[0][0]: #new page
-                        current_line = 1 if page !=1 else 2
+                        current_line = 1 if page >2 else 2
                         current_line_width = 0
                         page = ayah_data[0][0]
                     lines = {} # Key=LineNumber, Value=Number of glyphs
@@ -126,10 +155,11 @@ if __name__ == '__main__':
                     else:
                         skip_words = 0 
                     for l in lines.keys():
-                        if l != current_line: #new line
-                            updateLineData(sura, aya, current_line, current_line_width)
-                            current_line = l
+                        if l != str(current_line): #new line
+                            stretch, offset, suras = updateLineData(suras, sura, aya, current_line, current_line_width)
                             current_line_width = 0
+
+                        current_line = l
                         aya_text_part = " ".join(aya_text.split()[skip_words:(skip_words+lines[l])])
                         if l == list(lines.keys())[-1]:
                             las_part_in_aya = True
