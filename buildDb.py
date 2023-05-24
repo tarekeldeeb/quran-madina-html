@@ -52,38 +52,50 @@ def updateHtmlText(wd, text, skip):
 def getWidth(wd):
     return wd.execute_script("return document.getElementById('test').getBoundingClientRect().width")
 
-def updateLineData(suras, sura, aya, current_line, current_line_width):
+def updateLineData(suras, parts, sura, aya, current_line, current_line_width):
     """Calculate the stretching factor (s), then apply to all previous line parts and updates their offsets (o).
     Finally, the returns (s,o) for the last part to be written later.
     
     Args:
-        suras (JSON): with Surah, Aya, Parts objects
+        suras (JSON): with complete Ayas
+        parts (list): parts of an Aya
         sura (int): Current Surah number
         aya (int): Current Ayah number
         current_line (int): Line Number to update in page
         current_line_width (float): Sum of widths of all line parts
     """
     LOOK_BACK = 5
-    if current_line_width<70:
-        j = json.loads(json_header)
-        j.update({"suras":suras})
-        json_file = open('Madina-Amiri.json', 'w', encoding="utf-8")
-        json.dump(j, json_file, ensure_ascii = False, indent=2)
-        json_file.close()
-        raise Exception("Problem with aya={} of sura={} at line={}".format(aya, sura, current_line))
-    stretch = LINE_WIDTH/current_line_width if page>2 else 1
+    if current_line_width<20:
+        save_json(suras)
+        raise Exception("Problem with [short] aya={} of sura={} at line={}".format(aya, sura, current_line))
+   
+    stretch = LINE_WIDTH/(current_line_width) if page>2 else 1
     aya_look_back = aya-LOOK_BACK if aya>LOOK_BACK else 1
     offset = 0
     if aya > 1:
-        prev_ayas = suras[sura-1]['ayas'][aya_look_back-1:aya-1]
-        for a in prev_ayas:
+        ayas_same_line = suras[sura-1]['ayas'][aya_look_back-1:aya-1]
+        for a in ayas_same_line:
             for r in a['r']:
                 if r['l'] == int(current_line):
                     tmp = r['o']*stretch
                     r['o'] = offset
                     offset = offset + tmp
-                    r['s'] = stretch 
-    return stretch, offset, suras
+                    r['s'] = stretch
+                    print("  [v] {} --> {}".format(r['t'],r["o"]))
+
+    if len(parts) > 0:
+        parts[-1]["o"] = offset*stretch
+        parts[-1]["s"] = stretch
+        print("  [v] {} --> {}".format(parts[-1]["t"],parts[-1]["o"]))
+
+    return suras, parts
+
+def save_json(suras):
+    j = json.loads(json_header)
+    j.update({"suras":suras})
+    json_file = open('Madina-Amiri.json', 'w', encoding="utf-8")
+    json.dump(j, json_file, ensure_ascii = False, indent=2)
+    json_file.close()
 
 if __name__ == '__main__':
     try:
@@ -132,15 +144,10 @@ if __name__ == '__main__':
                     #Add a Sura
                     if len(suras)<sura:
                         suras.append({"name": get_surah_name(sura-1), "ayas":[]})
-                    #Add an Aya
-                    if aya>1:
-                        prev_aya_data = ayah_data
-                    else:
-                        prev_aya_data = ""
                     ayah_data = get_aya_data(sura, aya)
                     ayah_data = list(filter(lambda a: a[3]-a[2] > 30, ayah_data))
                     if page < ayah_data[0][0]: #new page
-                        current_line = 1 if page >2 else 2
+                        current_line = 1 if page>2 else 3 if page==2 else 2
                         current_line_width = 0
                         page = ayah_data[0][0]
                     lines = {} # Key=LineNumber, Value=Number of glyphs
@@ -151,31 +158,27 @@ if __name__ == '__main__':
                         else:
                             lines[str(glyph[1])] = lines[str(glyph[1])] + 1
                     if aya==1 and sura!=1 and sura!=9:
-                        skip_words = 4 #Skip Basmala from first aya
+                        skip_words = 4 #Skip Basmala from first aya. TODO: Add Basmalla Manually
                     else:
                         skip_words = 0 
                     for l in lines.keys():
                         if l != str(current_line): #new line
-                            stretch, offset, suras = updateLineData(suras, sura, aya, current_line, current_line_width)
+                            #Override (o,s) of line parts
+                            suras, parts = updateLineData(suras, parts, sura, aya, current_line, current_line_width)
                             current_line_width = 0
-
-                        current_line = l
+                        #    eol_flag = True
+                        #else:
+                        #    eol_flag = False
+                        current_line = int(l)
                         aya_text_part = " ".join(aya_text.split()[skip_words:(skip_words+lines[l])])
                         if l == list(lines.keys())[-1]:
-                            las_part_in_aya = True
                             aya_text_part = aya_text_part + " \uFD3F{}\uFD3E".format(aya)
-                        else:
-                            las_part_in_aya = False
                         updateHtmlText(wd, aya_text_part, 0)
                         aya_part_width = getWidth(wd)
                         current_line_width = current_line_width + aya_part_width
-                        parts.append({"l":int(l), "t":aya_text_part, "o":aya_part_width, "s": 1.0})
+                        parts.append({"l":int(l), "t":aya_text_part, "o":aya_part_width, "s": 1.0}) 
+                        print("[i] {} --> {}".format(aya_text_part,aya_part_width))
                         skip_words = skip_words + lines[l]
-                    aya_obj = {"p":page, "r":parts}
-                    suras[sura-1]["ayas"].append(aya_obj)
+                    suras[sura-1]["ayas"].append({"p":page, "r":parts}) # New completed ayah
         f.close()
-    j = json.loads(json_header)
-    j.update({"suras":suras})
-    json_file = open('Madina-Amiri.json', 'w', encoding="utf-8")
-    json.dump(j, json_file, ensure_ascii = False, indent=2)
-    json_file.close()
+    save_json(suras)
