@@ -3,7 +3,6 @@ import requests, os, tqdm
 import json
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
 
 TMP = "temp"
 DB = "AyahInfo_1024.db"
@@ -81,12 +80,12 @@ def updateLineData(suras, parts, sura, aya, current_line, current_line_width):
                     r['o'] = offset
                     offset = offset + tmp
                     r['s'] = stretch
-                    print("  [v] {} --> {}".format(r['t'],r["o"]))
+                    #print("  [v] {} --> {}".format(r['t'],r["o"]))
 
     if len(parts) > 0:
         parts[-1]["o"] = offset*stretch
         parts[-1]["s"] = stretch
-        print("  [v] {} --> {}".format(parts[-1]["t"],parts[-1]["o"]))
+        #print("  [v] {} --> {}".format(parts[-1]["t"],parts[-1]["o"]))
 
     return suras, parts
 
@@ -119,7 +118,6 @@ if __name__ == '__main__':
     # Finally Load the Html Template and Driver   
     chrome_options = Options()
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation']);
-    chrome_options.add_experimental_option("detach", True)
     wd = webdriver.Chrome(options=chrome_options)
     dir_path = os.path.dirname(os.path.realpath(__file__))
     wd.get("file://" + os.path.join(dir_path,TEST_HTML))
@@ -130,7 +128,7 @@ if __name__ == '__main__':
         "font-size": 24,\
         "line-width": {}}}'.format(LINE_WIDTH)
     suras = []
-    page = 0
+    page = aya = current_line_width = current_line = 0
     print("Processing ..")
     with tqdm.tqdm(total=os.path.getsize(os.path.join(TMP,TXT))) as pbar:
         with open(os.path.join(TMP,TXT), encoding="utf8") as f:
@@ -138,6 +136,7 @@ if __name__ == '__main__':
                 pbar.update(len(aya_line.encode('utf-8')))
                 tokens = aya_line.strip().split('|')
                 if len(tokens) == 3:
+                    prev_aya = aya
                     sura, aya, aya_text = tokens
                     sura = int(sura)
                     aya = int(aya)
@@ -147,9 +146,15 @@ if __name__ == '__main__':
                     ayah_data = get_aya_data(sura, aya)
                     ayah_data = list(filter(lambda a: a[3]-a[2] > 30, ayah_data))
                     if page < ayah_data[0][0]: #new page
-                        current_line = 1 if page>2 else 3 if page==2 else 2
+                        prev_line = current_line
+                        prev_line_width = current_line_width
+                        prev_sura = sura-1 if aya==1 else sura
+                        current_line = 1 if page>1 else 3 if page==1 else 2 #first line in page
                         current_line_width = 0
                         page = ayah_data[0][0]
+                        new_page = True if page>0 else False
+                    else:
+                        new_page = False
                     lines = {} # Key=LineNumber, Value=Number of glyphs
                     parts = [] # Break each ayah into parts/lines
                     for glyph in ayah_data:
@@ -164,11 +169,11 @@ if __name__ == '__main__':
                     for l in lines.keys():
                         if l != str(current_line): #new line
                             #Override (o,s) of line parts
-                            suras, parts = updateLineData(suras, parts, sura, aya, current_line, current_line_width)
+                            if new_page:
+                                suras, parts = updateLineData(suras, parts, prev_sura, prev_aya, prev_line, prev_line_width)
+                            else:
+                                suras, parts = updateLineData(suras, parts, sura, aya, current_line, current_line_width)
                             current_line_width = 0
-                        #    eol_flag = True
-                        #else:
-                        #    eol_flag = False
                         current_line = int(l)
                         aya_text_part = " ".join(aya_text.split()[skip_words:(skip_words+lines[l])])
                         if l == list(lines.keys())[-1]:
@@ -177,8 +182,11 @@ if __name__ == '__main__':
                         aya_part_width = getWidth(wd)
                         current_line_width = current_line_width + aya_part_width
                         parts.append({"l":int(l), "t":aya_text_part, "o":aya_part_width, "s": 1.0}) 
-                        print("[i] {} --> {}".format(aya_text_part,aya_part_width))
                         skip_words = skip_words + lines[l]
                     suras[sura-1]["ayas"].append({"p":page, "r":parts}) # New completed ayah
         f.close()
     save_json(suras)
+    print("Closing Chrome ..")
+    wd.close()
+
+
