@@ -7,7 +7,7 @@ from selenium.webdriver.chrome.options import Options
 TMP = "temp"
 DB = "AyahInfo_1024.db"
 TXT = "Uthmani.txt"
-TEST_HTML = "test.html"
+WIDTH_TEST_HTML = "part_width_test.html"
 LINE_WIDTH = 400
 
 def query(query):
@@ -67,26 +67,21 @@ def updateLineData(suras, parts, sura, aya, current_line, current_line_width):
     if current_line_width<20:
         save_json(suras)
         raise Exception("Problem with [short] aya={} of sura={} at line={}".format(aya, sura, current_line))
-   
     stretch = LINE_WIDTH/(current_line_width) if page>2 else 1
     aya_look_back = aya-LOOK_BACK if aya>LOOK_BACK else 1
     offset = 0
     if aya > 1:
-        ayas_same_line = suras[sura-1]['ayas'][aya_look_back-1:aya-1]
-        for a in ayas_same_line:
+        search_ayas = suras[sura-1]['ayas'][aya_look_back-1:aya-1]
+        for a in search_ayas:
             for r in a['r']:
                 if r['l'] == int(current_line):
                     tmp = r['o']*stretch
                     r['o'] = offset
                     offset = offset + tmp
                     r['s'] = stretch
-                    #print("  [v] {} --> {}".format(r['t'],r["o"]))
-
     if len(parts) > 0:
         parts[-1]["o"] = offset*stretch
         parts[-1]["s"] = stretch
-        #print("  [v] {} --> {}".format(parts[-1]["t"],parts[-1]["o"]))
-
     return suras, parts
 
 def save_json(suras):
@@ -120,7 +115,7 @@ if __name__ == '__main__':
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation']);
     wd = webdriver.Chrome(options=chrome_options)
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    wd.get("file://" + os.path.join(dir_path,TEST_HTML))
+    wd.get("file://" + os.path.join(dir_path,WIDTH_TEST_HTML))
     # Lets start building the json output ..
     json_header = '{{"title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",\
         "published": 1985,\
@@ -188,5 +183,3 @@ if __name__ == '__main__':
     save_json(suras)
     print("Closing Chrome ..")
     wd.close()
-
-

@@ -1,2 +1,4 @@
-temp/
-Madina-Amiri.json
+temp
+components
+bower_components
+node_modules
