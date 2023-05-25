@@ -17,7 +17,7 @@
     xhr.send();
   }
   
-  loadJSON('../Madina-Amiri.json',
+  loadJSON('https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/Madina-Amiri.json',
          function(data) { console.log(data); },
          function(xhr) { console.error(xhr); }
   );
