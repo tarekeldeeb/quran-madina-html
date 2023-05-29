@@ -8,6 +8,7 @@ TMP = "temp"
 DB = "AyahInfo_1024.db"
 TXT = "Uthmani.txt"
 WIDTH_TEST_HTML = "part_width_test.html"
+DB_JSON_FILE = 'Madina-Amiri.json'
 LINE_WIDTH = 400
 
 def query(query):
@@ -87,8 +88,9 @@ def updateLineData(suras, parts, sura, aya, current_line, current_line_width):
 def save_json(suras):
     j = json.loads(json_header)
     j.update({"suras":suras})
-    json_file = open('Madina-Amiri.json', 'w', encoding="utf-8")
+    json_file = open(DB_JSON_FILE, 'w', encoding="utf-8")
     json.dump(j, json_file, ensure_ascii = False, indent=2)
+    print("Saved: {}".format(DB_JSON_FILE) )
     json_file.close()
 
 if __name__ == '__main__':
@@ -119,9 +121,10 @@ if __name__ == '__main__':
     # Lets start building the json output ..
     json_header = '{{"title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",\
         "published": 1985,\
-        "font": "https://fonts.googleapis.com/css?family=Amiri Quran",\
-        "font-size": 24,\
-        "line-width": {}}}'.format(LINE_WIDTH)
+        "font_family": "Amiri Quran",\
+        "font_url": "https://fonts.googleapis.com/css?family=Amiri Quran",\
+        "font_size": 24,\
+        "line_width": {}}}'.format(LINE_WIDTH)
     suras = []
     page = aya = current_line_width = current_line = 0
     print("Processing ..")
@@ -180,6 +183,6 @@ if __name__ == '__main__':
                         skip_words = skip_words + lines[l]
                     suras[sura-1]["ayas"].append({"p":page, "r":parts}) # New completed ayah
         f.close()
-    save_json(suras)
     print("Closing Chrome ..")
     wd.close()
+    save_json(suras)
