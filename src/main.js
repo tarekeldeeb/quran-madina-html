@@ -27,6 +27,8 @@
   loadJSON('https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/Madina-Amiri.json',
          function(data) { 
           madina_data = data; 
+          const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(madina_data.font_url)+')');
+          myFont.load().then( () => {document.fonts.add(myFont);});
           xtag.register('quran-madina-html', {
             lifecycle: {
               created: function() {

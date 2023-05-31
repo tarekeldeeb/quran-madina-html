@@ -122,7 +122,7 @@ if __name__ == '__main__':
     json_header = '{{"title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",\
         "published": 1985,\
         "font_family": "Amiri Quran",\
-        "font_url": "https://fonts.googleapis.com/css?family=Amiri Quran",\
+        "font_url": "https://fonts.gstatic.com/s/amiriquran/v7/_Xmo-Hk0rD6DbUL4_vH8Zp5v5i2ssg.woff2",\
         "font_size": 24,\
         "line_width": {}}}'.format(LINE_WIDTH)
     suras = []
