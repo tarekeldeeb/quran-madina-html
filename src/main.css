@@ -3,5 +3,6 @@ x-quran-madina-html {
 }
 quran-madina-html-line {
   text-align: center;
+  padding-bottom: 5px;
   background-color:beige;
 }

@@ -1,3 +1,13 @@
+"""Builds the JSON DB for Quran-Madina-HTML-No-Images project
+    It downloads all dependencies, process the Quran String, OCR data
+    and finally spits out the JSON DB.
+
+    Raises:
+        Exception: Unexpected Quran Content from DB
+
+    Returns:
+        None
+"""
 import sqlite3
 import requests, os, tqdm
 import json
@@ -20,7 +30,8 @@ def query(query):
     return result
 
 def get_aya_data(sura, ayah):
-    result = query("select page_number, line_number, min_x, max_x from glyphs where sura_number={} and ayah_number={}".format(sura, ayah))
+    result = query("select page_number, line_number, min_x, max_x from glyphs\
+                    where sura_number={} and ayah_number={}".format(sura, ayah))
     return list(map(lambda x: list(x), result))
 
 def get_surah_name(sura_id):
@@ -53,7 +64,8 @@ def getWidth(wd):
     return wd.execute_script("return document.getElementById('test').getBoundingClientRect().width")
 
 def updateLineData(suras, parts, sura, aya, current_line, current_line_width):
-    """Calculate the stretching factor (s), then apply to all previous line parts and updates their offsets (o).
+    """Calculate the stretching factor (s), then apply to all previous line 
+    parts and updates their offsets (o).
     Finally, the returns (s,o) for the last part to be written later.
     
     Args:
@@ -67,7 +79,8 @@ def updateLineData(suras, parts, sura, aya, current_line, current_line_width):
     LOOK_BACK = 5
     if current_line_width<20:
         save_json(suras)
-        raise Exception("Problem with [short] aya={} of sura={} at line={}".format(aya, sura, current_line))
+        raise Exception("Problem with [short] aya={} of sura={} at line={}\
+                        ".format(aya, sura, current_line))
     stretch = LINE_WIDTH/(current_line_width) if page>2 else 1
     aya_look_back = aya-LOOK_BACK if aya>LOOK_BACK else 1
     offset = 0
@@ -97,14 +110,15 @@ if __name__ == '__main__':
     try:
         os.mkdir(TMP)
         # Start with downloading the Glyph DB
-        URL = "https://raw.githubusercontent.com/murtraja/quran-android-images-helper/master/static/databases/" + DB.lower()
+        URL = "https://raw.githubusercontent.com/murtraja/quran-android-images-helper\
+            /master/static/databases/" + DB.lower()
         response = requests.get(URL)
         open(os.path.join(TMP,DB), "wb").write(response.content)
         print("Downloaded Quran DataBase")
         #
         # Then download the text from Tanzil.net
-        txt_url = "https://tanzil.net/pub/download/index.php?marks=true&sajdah=true&rub=true&tatweel=true"\
-                    "&quranType=uthmani&outType=txt-2&agree=true"
+        txt_url = "https://tanzil.net/pub/download/index.php?marks=true&sajdah=true\
+                    &rub=true&tatweel=true&quranType=uthmani&outType=txt-2&agree=true"
         req = requests.get(txt_url, allow_redirects=True)
         text = req.content
         open(os.path.join(TMP,TXT), "wb").write(text)
@@ -114,24 +128,26 @@ if __name__ == '__main__':
     #
     # Finally Load the Html Template and Driver   
     chrome_options = Options()
-    chrome_options.add_experimental_option("excludeSwitches", ['enable-automation']);
+    chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
     wd = webdriver.Chrome(options=chrome_options)
     dir_path = os.path.dirname(os.path.realpath(__file__))
     wd.get("file://" + os.path.join(dir_path,WIDTH_TEST_HTML))
     # Lets start building the json output ..
-    json_header = '{{"title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",\
+    json_header = '\
+        {{"title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",\
         "published": 1985,\
         "font_family": "Amiri Quran",\
-        "font_url": "https://fonts.gstatic.com/s/amiriquran/v7/_Xmo-Hk0rD6DbUL4_vH8Zp5v5i2ssg.woff2",\
+        "font_url": "https://fonts.gstatic.com/s/amiriquran/v7/\
+            _Xmo-Hk0rD6DbUL4_vH8Zp5v5i2ssg.woff2",\
         "font_size": 24,\
         "line_width": {}}}'.format(LINE_WIDTH)
     suras = []
     page = aya = current_line_width = current_line = 0
     print("Processing ..")
-    with tqdm.tqdm(total=os.path.getsize(os.path.join(TMP,TXT))) as pbar:
+    with tqdm.tqdm(total=os.path.getsize(os.path.join(TMP,TXT))) as progress_bar:
         with open(os.path.join(TMP,TXT), encoding="utf8") as f:
             for aya_line in f:
-                pbar.update(len(aya_line.encode('utf-8')))
+                progress_bar.update(len(aya_line.encode('utf-8')))
                 tokens = aya_line.strip().split('|')
                 if len(tokens) == 3:
                     prev_aya = aya
@@ -161,16 +177,18 @@ if __name__ == '__main__':
                         else:
                             lines[str(glyph[1])] = lines[str(glyph[1])] + 1
                     if aya==1 and sura!=1 and sura!=9:
-                        skip_words = 4 #Skip Basmala from first aya. TODO: Add Basmalla Manually
+                        skip_words = 4 #Skip Basmala from first aya. TODO: Add Basmala Manually
                     else:
                         skip_words = 0 
                     for l in lines.keys():
                         if l != str(current_line): #new line
                             #Override (o,s) of line parts
                             if new_page:
-                                suras, parts = updateLineData(suras, parts, prev_sura, prev_aya, prev_line, prev_line_width)
+                                suras, parts = updateLineData(suras, parts, prev_sura, prev_aya,
+                                                               prev_line, prev_line_width)
                             else:
-                                suras, parts = updateLineData(suras, parts, sura, aya, current_line, current_line_width)
+                                suras, parts = updateLineData(suras, parts, sura, aya,
+                                                               current_line, current_line_width)
                             current_line_width = 0
                         current_line = int(l)
                         aya_text_part = " ".join(aya_text.split()[skip_words:(skip_words+lines[l])])

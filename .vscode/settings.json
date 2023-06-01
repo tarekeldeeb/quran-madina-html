@@ -4,7 +4,14 @@
     },
     "python.formatting.provider": "none",
     "cSpell.words": [
+        "Amiri",
+        "Ayas",
+        "Basmala",
         "madina",
+        "Tanzil",
+        "tatweel",
+        "Uthmani",
         "xtag"
-    ]
+    ],
+    "editor.rulers": [100]
 }
