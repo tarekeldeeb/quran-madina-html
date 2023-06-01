@@ -61,13 +61,13 @@ def _get_surah_name(sura_id):
     ]
     return "سورة " + sura_name[sura_id]
 
-def _updateHtmlText(wd, text, skip):
+def _update_html_text(wd, text, skip):
     wd.execute_script("document.getElementById('test').textContent = '{}'".format(text))
 
-def _getWidth(wd):
+def _get_width(wd):
     return wd.execute_script("return document.getElementById('test').getBoundingClientRect().width")
 
-def _updateLineData(suras, parts, page, sura, aya, current_line, current_line_width):
+def _update_line_data(suras, parts, page, sura, aya, current_line, current_line_width):
     """Calculate the stretching factor (s), then apply to all previous line
     parts and updates their offsets (o).
     Finally, the returns (s,o) for the last part to be written later.
@@ -82,7 +82,7 @@ def _updateLineData(suras, parts, page, sura, aya, current_line, current_line_wi
     """
     LOOK_BACK = 5
     if current_line_width<20:
-        _save_json(suras)
+        _save_json("", suras)
         raise Exception("Problem with [short] aya={} of sura={} at line={}"\
                         .format(aya, sura, current_line))
     stretch = LINE_WIDTH/(current_line_width) if page>2 else 1
@@ -188,18 +188,18 @@ def run():
                         if l != str(current_line): #new line
                             #Override (o,s) of line parts
                             if new_page:
-                                suras, parts = _updateLineData(suras, parts, page, prev_sura,
+                                suras, parts = _update_line_data(suras, parts, page, prev_sura,
                                                                prev_aya, prev_line, prev_line_width)
                             else:
-                                suras, parts = _updateLineData(suras, parts, page, sura, aya,
+                                suras, parts = _update_line_data(suras, parts, page, sura, aya,
                                                                current_line, current_line_width)
                             current_line_width = 0
                         current_line = int(l)
                         aya_text_part = " ".join(aya_text.split()[skip_words:(skip_words+lines[l])])
                         if l == list(lines.keys())[-1]:
                             aya_text_part = aya_text_part + " \uFD3F{}\uFD3E".format(aya)
-                        _updateHtmlText(wd, aya_text_part, 0)
-                        aya_part_width = _getWidth(wd)
+                        _update_html_text(wd, aya_text_part, 0)
+                        aya_part_width = _get_width(wd)
                         current_line_width = current_line_width + aya_part_width
                         parts.append({"l":int(l), "t":aya_text_part, "o":aya_part_width, "s": 1.0})
                         skip_words = skip_words + lines[l]

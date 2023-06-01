@@ -13,5 +13,8 @@
         "Uthmani",
         "xtag"
     ],
-    "editor.rulers": [100]
+    "editor.rulers": [
+        100
+    ],
+    "python.analysis.typeCheckingMode": "basic"
 }
