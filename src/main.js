@@ -18,10 +18,12 @@
   }
   function parseRange(str){
     return str.split('-')[0]-1; //FIXME: BAD IMPLEMENTATION
-    var _from = 0;
+    /*var _from = 0;
+    var _to = 0;
     if (str.split('-').length == 2) return str.split('-');
     _from = str.split('-')[0];
     return [_from, _from];
+    */
   }
   var madina_data = {"content":"Loading .."};
   loadJSON('https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/Madina-Amiri.json',
