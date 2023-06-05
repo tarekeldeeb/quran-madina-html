@@ -29,7 +29,8 @@ module.exports = function(grunt) {
           jQuery: true,
           console: true,
           module: true,
-          document: true
+          document: true,
+          esnext: true
         }
       }
     },
