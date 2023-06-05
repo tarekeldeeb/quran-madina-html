@@ -29,9 +29,9 @@ module.exports = function(grunt) {
           jQuery: true,
           console: true,
           module: true,
-          document: true,
-          esnext: true
-        }
+          document: true
+        },
+        esnext: true
       }
     },
     watch: {
