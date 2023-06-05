@@ -1,54 +1,55 @@
 module.exports = function(grunt) {
 
-  // Project configuration.
   grunt.initConfig({
-    connect: {
-      demo: {
-        options:{
-          port: 3001,
-          base: '',
-          keepalive: true
-        }
-      }
-    },
-    jshint:{
-      all: ['Gruntfile.js', 'src/**/*.js', 'test/**/*.js']
-    },
-    'smush-components': {
+    pkg: grunt.file.readJSON('package.json'),
+    concat: {
       options: {
-        fileMap: {
-          js: 'demo/x-tag-components.js',
-          css: 'demo/x-tag-components.css'
+        separator: ';'
+      },
+      dist: {
+        src: ['src/**/*.js'],
+        dest: 'dist/<%= pkg.name %>.js'
+      }
+    },
+    uglify: {
+      options: {
+        banner: '/*! <%= pkg.name %> <%= grunt.template.today("dd-mm-yyyy") %> */\n'
+      },
+      dist: {
+        files: {
+          'dist/<%= pkg.name %>.min.js': ['<%= concat.dist.dest %>']
         }
       }
     },
-    bumpup: ['bower.json', 'package.json'],
-    tagrelease: {
-      file: 'package.json',
-      prefix: '',
-      commit: true
+    qunit: {
+      files: ['test/**/*.html']
     },
-    exec: {
-      'update_gh_pages':{
-        cmd: 'git stash && git checkout gh-pages && git rebase master && git push origin gh-pages && git checkout master && git stash pop'
-      },
-      'update_master':{
-        cmd: 'git push origin master --tags'
+    jshint: {
+      files: ['Gruntfile.js', 'src/**/*.js', 'test/**/*.js'],
+      options: {
+        // options here to override JSHint defaults
+        globals: {
+          jQuery: true,
+          console: true,
+          module: true,
+          document: true
+        }
       }
+    },
+    watch: {
+      files: ['<%= jshint.files %>'],
+      tasks: ['jshint', 'qunit']
     }
   });
 
-  grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-jshint');
-  grunt.loadNpmTasks('grunt-contrib-connect');
-  grunt.loadNpmTasks('grunt-bumpup');
-  grunt.loadNpmTasks('grunt-tagrelease');
-  grunt.loadNpmTasks('grunt-smush-components');
-  grunt.loadNpmTasks('grunt-exec');
+  grunt.loadNpmTasks('grunt-contrib-qunit');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-contrib-concat');
 
-  grunt.registerTask('build', ['jshint','smush-components']);
-  grunt.registerTask('bump:patch', ['bumpup:patch', 'tagrelease']);
-  grunt.registerTask('push', ['exec:update_master','exec:update_gh_pages']);
-  grunt.registerTask('bump-push', ['bump:patch','push']);
-  grunt.registerTask('default', 'Executed default task', ['build']);
+  grunt.registerTask('test', ['jshint', 'qunit']);
+
+  grunt.registerTask('default', ['jshint', 'qunit', 'concat', 'uglify']);
+
 };
