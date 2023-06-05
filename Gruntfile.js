@@ -50,5 +50,5 @@ module.exports = function(grunt) {
   grunt.registerTask('bump:patch', ['bumpup:patch', 'tagrelease']);
   grunt.registerTask('push', ['exec:update_master','exec:update_gh_pages']);
   grunt.registerTask('bump-push', ['bump:patch','push']);
-
+  grunt.registerTask('default', 'Executed default task', ['build']);
 };
