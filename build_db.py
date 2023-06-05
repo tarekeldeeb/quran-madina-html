@@ -36,7 +36,7 @@ def _query(query):
 def _get_aya_data(sura, ayah):
     result = _query(f'select page_number, line_number, min_x, max_x from glyphs '
                     f'where sura_number={sura} and ayah_number={ayah}')
-    return list(map(lambda x: list(x), result))
+    return list(map(list, result))
 
 def _get_surah_name(sura_id):
     sura_name = ["الفاتحة", "البقرة", "آل عمران",
@@ -65,7 +65,8 @@ def _update_html_text(web_driver, text):
     web_driver.execute_script(f'document.getElementById(\'test\').textContent = \'{text}\'')
 
 def _get_width(web_driver):
-    return web_driver.execute_script("return document.getElementById('test').getBoundingClientRect().width")
+    return web_driver.execute_script("return document.getElementById('test')"
+                                     ".getBoundingClientRect().width")
 
 def _update_line_data(work_pointer):
     """Calculate the stretching factor (s), then apply to all previous line
@@ -206,7 +207,7 @@ def run():
                         _update_html_text(web_driver, aya_text_part)
                         aya_part_width = _get_width(web_driver)
                         current_line_width = current_line_width + aya_part_width
-                        parts.append({"l":int(line), "t":aya_text_part, 
+                        parts.append({"l":int(line), "t":aya_text_part,
                                       "o":aya_part_width, "s": 1.0})
                         skip_words = skip_words + lines[line]
                     suras[sura-1]["ayas"].append({"p":page, "r":parts}) # New completed ayah
