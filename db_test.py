@@ -8,8 +8,12 @@ from build_db import DB_JSON_FILE
 class Test(unittest.TestCase):
     """Testing the Generated JSON DB including all Quran data
     """
-    with open(DB_JSON_FILE, 'r', encoding="utf-8") as file_db:
-        db = json.load(file_db)
+    try:
+        with open(DB_JSON_FILE, 'r', encoding="utf-8") as file_db:
+            db = json.load(file_db)
+    except FileNotFoundError:
+        print(f'{DB_JSON_FILE} file is not found!')
+        db = {}
     def test_0_db_fields(self):
         """Test all JSON header fields if exist
         """

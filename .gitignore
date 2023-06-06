@@ -2,3 +2,5 @@ temp
 components
 bower_components
 node_modules
+__pycache__
+package-lock.json
