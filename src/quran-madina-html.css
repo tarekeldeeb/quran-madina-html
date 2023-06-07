@@ -2,7 +2,7 @@ x-quran-madina-html {
   display: block; 
 }
 quran-madina-html-line {
-  text-align: center;
-  padding-bottom: 5px;
+  text-align: right;
+  padding: 0 5px 5px 5px;
   background-color:beige;
 }
