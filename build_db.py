@@ -35,7 +35,7 @@ def _query(query):
     return result
 
 def _get_aya_data(sura, ayah):
-    result = _query(f'select page_number, line_number, min_x, max_x, min_y, max_y from glyphs '
+    result = _query(f'select page_number, line_number from glyphs '
                     f'where sura_number={sura} and ayah_number={ayah}')
     return list(map(list, result))
 
@@ -104,9 +104,6 @@ def _update_line_data(work_pointer):
         parts[-1]["s"] = round(stretch, STRETCH_ROUNDING)
     return suras, parts
 
-def _preprocess_text(txt):
-    return txt.replace(" ۖ "," ۖ")
-
 def _get_json_filename():
     return f'{CONF.name}-{CONF.font_family.split()[0]}-{CONF.font_size}px.json'
 
@@ -166,14 +163,13 @@ def run():
                 if len(tokens) == 3:
                     prev_aya = aya
                     sura, aya, aya_text = tokens
-                    #aya_text = _preprocess_text(aya_text)
+                    aya_text = aya_text + f' \uFD3F{aya}\uFD3E'
                     sura = int(sura)
                     aya = int(aya)
                     #Add a Sura
                     if len(suras)<sura:
                         suras.append({"name": _get_surah_name(sura-1), "ayas":[]})
                     ayah_data = _get_aya_data(sura, aya)
-                    #ayah_data = list(filter(lambda a: a[3]-a[2] > 8 or a[5]-a[4] > 23, ayah_data))
                     if page < ayah_data[0][0]: #new page
                         prev_line = current_line
                         prev_line_width = current_line_width
@@ -195,7 +191,7 @@ def run():
                         skip_words = 4 #Skip Basmala from first aya. TODO: Add Basmala Manually
                     else:
                         skip_words = 0
-                    if len(ayah_data)-1 != len(aya_text.split())-skip_words:
+                    if len(ayah_data) != len(aya_text.split())-skip_words:
                         print(f'Mismatch at {sura}-{aya}: Glyphs={len(ayah_data)} for:{aya_text}')
                     for line in lines:
                         if line != str(current_line): #new line
@@ -211,8 +207,6 @@ def run():
                         current_line = int(line)
                         aya_text_part = " ".join(aya_text.split()
                                                  [skip_words:skip_words+lines[line]])
-                        if line == list(lines.keys())[-1]:
-                            aya_text_part = aya_text_part + f' \uFD3F{aya}\uFD3E'
                         _update_html_text(web_driver, aya_text_part)
                         aya_part_width = _get_width(web_driver)
                         current_line_width = current_line_width + aya_part_width
@@ -226,25 +220,23 @@ def run():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Build JSON DB for HTML Quran Rendering.')
-    parser.add_argument("--name",
-                        default="Madina", required=False, help="Mus'haf Short Name")
-    parser.add_argument("--title",
+    parser.add_argument("--name", required=False,
+                        default="Madina", help="Mus'haf Short Name")
+    parser.add_argument("--title", required=False,
                         default="مصحف المدينة الإصدار القديم - "
                         "مجمع الملك فهد لطباعة المصحف الشريف",
-                        required=False, help="Mus'haf Long Name")
-    parser.add_argument("--published", type=int,
-                        default=1985, required=False,
+                        help="Mus'haf Long Name")
+    parser.add_argument("--published", type=int, required=False, default=1985,
                         help="Mus'haf Publish Date")
-    parser.add_argument("--font_family",
-                        default="Amiri Quran", required=False,
+    parser.add_argument("--font_family", required=False, default="Amiri Quran",
                         help="Font Family")
-    parser.add_argument("--font_url",
+    parser.add_argument("--font_url", required=False,
                         default="https://fonts.gstatic.com/s/amiriquran/v7"
-                        "/_Xmo-Hk0rD6DbUL4_vH8Zp5v5i2ssg.woff2", required=False,
+                        "/_Xmo-Hk0rD6DbUL4_vH8Zp5v5i2ssg.woff2",
                         help="Font URL to use")
-    parser.add_argument("--font_size", type=int, default=16, required=False,
+    parser.add_argument("--font_size", type=int, required=False, default=16,
                         help="Font Size to render")
-    parser.add_argument("--line_width", type=int, default=260, required=False,
+    parser.add_argument("--line_width", type=int, required=False, default=260,
                         help="Page width to render")
     CONF = parser.parse_args()
     run()
