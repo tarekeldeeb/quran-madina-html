@@ -196,7 +196,7 @@ def run():
                     else:
                         skip_words = 0
                     if len(ayah_data)-1 != len(aya_text.split())-skip_words:
-                        print(f'Mismatch at {sura}-{aya}: Glyphs={len(ayah_data)} for:{aya_text}')   
+                        print(f'Mismatch at {sura}-{aya}: Glyphs={len(ayah_data)} for:{aya_text}')
                     for line in lines:
                         if line != str(current_line): #new line
                             #Override (o,s) of line parts
@@ -226,12 +226,25 @@ def run():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Build JSON DB for HTML Quran Rendering.')
-    parser.add_argument("--name", default="Madina", required=False, help="Mus'haf Short Name")
-    parser.add_argument("--title", default="مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف", required=False, help="Mus'haf Long Name")
-    parser.add_argument("--published", type=int, default=1985, required=False, help="Mus'haf Publish Date")
-    parser.add_argument("--font_family", default="Amiri Quran", required=False, help="Font Family")
-    parser.add_argument("--font_url", default="https://fonts.gstatic.com/s/amiriquran/v7/_Xmo-Hk0rD6DbUL4_vH8Zp5v5i2ssg.woff2", required=False, help="Font URL to use")
-    parser.add_argument("--font_size", type=int, default=16, required=False, help="Font Size to render")
-    parser.add_argument("--line_width", type=int, default=260, required=False, help="Page width to render")
+    parser.add_argument("--name",
+                        default="Madina", required=False, help="Mus'haf Short Name")
+    parser.add_argument("--title",
+                        default="مصحف المدينة الإصدار القديم - "
+                        "مجمع الملك فهد لطباعة المصحف الشريف",
+                        required=False, help="Mus'haf Long Name")
+    parser.add_argument("--published", type=int,
+                        default=1985, required=False,
+                        help="Mus'haf Publish Date")
+    parser.add_argument("--font_family",
+                        default="Amiri Quran", required=False,
+                        help="Font Family")
+    parser.add_argument("--font_url",
+                        default="https://fonts.gstatic.com/s/amiriquran/v7"
+                        "/_Xmo-Hk0rD6DbUL4_vH8Zp5v5i2ssg.woff2", required=False,
+                        help="Font URL to use")
+    parser.add_argument("--font_size", type=int, default=16, required=False,
+                        help="Font Size to render")
+    parser.add_argument("--line_width", type=int, default=260, required=False,
+                        help="Page width to render")
     CONF = parser.parse_args()
     run()
