@@ -1,8 +1,9 @@
-x-quran-madina-html {
-  display: block; 
+quran-madina-html {
+  padding: 5px 5px 7px 5px;
+  background-color:beige;
 }
 quran-madina-html-line {
   text-align: right;
-  padding: 0 5px 5px 5px;
-  background-color:beige;
+  white-space: nowrap;
+  transform-origin: top right;
 }

@@ -11,19 +11,20 @@
 import os
 import math
 import json
+import argparse
 import sqlite3
 import requests
 import tqdm
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-TMP = "temp"
+# Internal Constants: Do not edit!
+TMP = "tmp_download"
 DB = "AyahInfo_1024.db"
 TXT = "Uthmani.txt"
 WIDTH_TEST_HTML = "part_width_test.html"
-DB_JSON_FILE = 'Madina-Amiri.json'
-LINE_WIDTH = 400
 STRETCH_ROUNDING = 3
+
 
 def _query(query):
     conn = sqlite3.connect(os.path.join(TMP,DB))
@@ -86,7 +87,7 @@ def _update_line_data(work_pointer):
     if current_line_width<20:
         _save_json("", suras)
         raise ValueError(f'Problem with [short] aya={aya} of sura={sura} at line={current_line}')
-    stretch = LINE_WIDTH/(current_line_width) if page>2 else 1
+    stretch = CONF.line_width/(current_line_width) if page>2 else 1
     aya_look_back = aya-look_back if aya>look_back else 1
     offset = 0
     if aya > 1:
@@ -106,12 +107,15 @@ def _update_line_data(work_pointer):
 def _preprocess_text(txt):
     return txt.replace(" ۖ "," ۖ")
 
+def _get_json_filename():
+    return f'{CONF.name}-{CONF.font_family.split()[0]}-{CONF.font_size}px.json'
+
 def _save_json(json_header, suras):
     j = json.loads(json_header)
     j.update({"suras":suras})
-    with open(DB_JSON_FILE, 'w', encoding="utf-8") as json_file:
+    with open(_get_json_filename(), 'w', encoding="utf-8") as json_file:
         json.dump(j, json_file, ensure_ascii = False, indent=2)
-    print(f'Saved: {DB_JSON_FILE}')
+    print(f'Saved: {_get_json_filename()}')
 
 def run():
     """Runs the build_db module
@@ -145,13 +149,12 @@ def run():
     web_driver.get("file://" + os.path.join(dir_path,WIDTH_TEST_HTML))
     # Lets start building the json output ..
     json_header = f'\
-        {{"title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",\
-        "published": 1985,\
-        "font_family": "Amiri Quran",\
-        "font_url":\
-            "https://fonts.gstatic.com/s/amiriquran/v7/_Xmo-Hk0rD6DbUL4_vH8Zp5v5i2ssg.woff2",\
-        "font_size": 24,\
-        "line_width": {LINE_WIDTH}}}'
+        {{"title": "{CONF.title}",\
+        "published": {CONF.published},\
+        "font_family": "{CONF.font_family}",\
+        "font_url": "{CONF.font_url}",\
+        "font_size": {CONF.font_size},\
+        "line_width": {CONF.line_width}}}'
     suras = []
     page = aya = current_line_width = current_line = 0
     print("Processing ..")
@@ -193,7 +196,7 @@ def run():
                     else:
                         skip_words = 0
                     if len(ayah_data)-1 != len(aya_text.split())-skip_words:
-                        print(f'Mismatch at {sura}-{aya}: Glyphs={len(ayah_data)} for:{aya_text}')    
+                        print(f'Mismatch at {sura}-{aya}: Glyphs={len(ayah_data)} for:{aya_text}')   
                     for line in lines:
                         if line != str(current_line): #new line
                             #Override (o,s) of line parts
@@ -222,4 +225,13 @@ def run():
     _save_json(json_header, suras)
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Build JSON DB for HTML Quran Rendering.')
+    parser.add_argument("--name", default="Madina", required=False, help="Mus'haf Short Name")
+    parser.add_argument("--title", default="مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف", required=False, help="Mus'haf Long Name")
+    parser.add_argument("--published", type=int, default=1985, required=False, help="Mus'haf Publish Date")
+    parser.add_argument("--font_family", default="Amiri Quran", required=False, help="Font Family")
+    parser.add_argument("--font_url", default="https://fonts.gstatic.com/s/amiriquran/v7/_Xmo-Hk0rD6DbUL4_vH8Zp5v5i2ssg.woff2", required=False, help="Font URL to use")
+    parser.add_argument("--font_size", type=int, default=16, required=False, help="Font Size to render")
+    parser.add_argument("--line_width", type=int, default=260, required=False, help="Page width to render")
+    CONF = parser.parse_args()
     run()

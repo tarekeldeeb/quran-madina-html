@@ -21,7 +21,7 @@
     return Array(2).fill(str.split('-')[0]-1);
   }
   var madina_data = {"content":"Loading .."};
-  loadJSON('https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/Madina-Amiri.json',
+  loadJSON('https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/Madina-Amiri-16px.json',
          function(data) { 
           madina_data = data; 
           const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(madina_data.font_url)+')');
@@ -56,10 +56,18 @@
                   line = document.createElement("quran-madina-html-line");
                   tag.appendChild(line);
                   line.style.setProperty('font-family', madina_data.font_family, '');
-                  if(multiline) line.style.setProperty('display','block','');
+                  line.style.setProperty('font-size', madina_data.font_size+"px", '');
+                  if(multiline){
+                    tag.style.width = (madina_data.line_width+10)+"px";
+                    line.style.setProperty('display','block','');
+                  } 
                   for(let a = aya_current; a < aya_current+5 && a <=aya_to ; a++) { //Look ahead
                     line_match = madina_data.suras[sura].ayas[a].r.filter(r => r.l == l)
                     if (line_match.length){
+                      if(line.innerHTML.trim() == ""){ // First part in the line
+                        line.style.setProperty('padding-right', line_match[0].o+"px", '');
+                      }
+                      line.style.setProperty("transform","scaleX("+line_match[0].s+")","")
                       line.innerHTML += line_match[0].t;
                       aya_current = a;
                     }
