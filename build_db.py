@@ -91,7 +91,7 @@ def _update_line_data(work_pointer):
     aya_look_back = aya-look_back if aya>look_back else 1
     offset = 0
     if aya > 1:
-        search_ayas = suras[sura-1]['ayas'][aya_look_back-1:aya-1]
+        search_ayas = filter(lambda a: a["p"] == page, suras[sura-1]['ayas'][aya_look_back-1:aya-1])
         for search_aya in search_ayas:
             for search_aya_part in search_aya['r']:
                 if search_aya_part['l'] == int(current_line):
@@ -195,7 +195,7 @@ def run():
                         print(f'Mismatch at {sura}-{aya}: Glyphs={len(ayah_data)} for:{aya_text}')
                     for line in lines:
                         if line != str(current_line): #new line
-                            #Override (o,s) of line parts
+                            #Override (o,s) of previous line parts
                             if new_page:
                                 work_pointer = (suras, parts, page, prev_sura,
                                                 prev_aya, prev_line, prev_line_width)
