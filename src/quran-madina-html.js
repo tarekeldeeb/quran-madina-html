@@ -23,12 +23,12 @@
     return Array(2).fill(str.split('-')[0]-1);
   }
   var madina_data = {"content":"Loading .."};
-  var this_script = document.querySelector('script[data-font]');
+  var this_script = document.querySelector('script[data-name]');
   var doc_name    = this_script.getAttribute('data-name') || "Madina";
   var doc_font    = this_script.getAttribute('data-font') || "Amiri";
   var doc_font_sz = this_script.getAttribute('data-font-size') || 16;
   console.log("Quran> "+doc_name+" with font:"+doc_font+" size:"+doc_font_sz);
-  const name_css = "../src/"+name+".css"
+  const name_css = "../src/"+name+".css";
   if (!document.getElementById(name))
   {
       var head  = document.getElementsByTagName('head')[0];
@@ -85,7 +85,9 @@
                     line_match = madina_data.suras[sura].ayas[a].r.filter(rr => rr.l == ll);
                     if (line_match.length){
                       if(line.innerHTML.trim() == ""){ // First part in the line
-                        line.style.setProperty('padding-right', line_match[0].o+"px", '');
+                        var offset = line_match[0].o;
+                        line.style.setProperty('padding-right', offset+"px", '');
+                        if(offset > 0) line.style.setProperty('transform-origin', "left");
                       }
                       line.style.setProperty("transform","scaleX("+line_match[0].s+")","");
                       line.innerHTML += line_match[0].t;
