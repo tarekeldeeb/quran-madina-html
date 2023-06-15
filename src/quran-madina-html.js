@@ -1,5 +1,7 @@
 (function(){
- function loadJSON(path, success, error){
+  var name = "quran-madina-html";
+  var cdn = 'https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/';
+  function loadJSON(path, success, error){
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
     {
@@ -21,8 +23,25 @@
     return Array(2).fill(str.split('-')[0]-1);
   }
   var madina_data = {"content":"Loading .."};
-  loadJSON('https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/Madina-Amiri-16px.json',
-         function(data) { 
+  var this_script = document.querySelector('script[data-font]');
+  var doc_name    = this_script.getAttribute('data-name') || "Madina";
+  var doc_font    = this_script.getAttribute('data-font') || "Amiri";
+  var doc_font_sz = this_script.getAttribute('data-font-size') || 16;
+  console.log("Quran> "+doc_name+" with font:"+doc_font+" size:"+doc_font_sz);
+  const name_css = "../src/"+name+".css"
+  if (!document.getElementById(name))
+  {
+      var head  = document.getElementsByTagName('head')[0];
+      var link  = document.createElement('link');
+      link.id   = name;
+      link.rel  = 'stylesheet';
+      link.type = 'text/css';
+      link.href = name_css;
+      link.media = 'all';
+      head.appendChild(link);
+  }
+  loadJSON(cdn+doc_name+'-'+doc_font+'-'+doc_font_sz+'px.json',
+        function(data) { 
           madina_data = data; 
           const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(madina_data.font_url)+')');
           myFont.load().then( () => {document.fonts.add(myFont);});
