@@ -1,6 +1,7 @@
 quran-madina-html {
   padding: 5px 5px 7px 5px;
   background-color:beige;
+  border-radius: 5px;
 }
 quran-madina-html-line {
   text-align: right;

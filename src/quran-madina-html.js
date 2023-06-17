@@ -96,6 +96,8 @@
                   line.style.setProperty('font-size', madina_data.font_size+"px", '');
                   if(multiline){
                     tag.style.width = (madina_data.line_width+10)+"px";
+                    let isRightPage = madina_data.suras[sura].ayas[aya_from].p%2==1?"":"-";
+                    tag.style.setProperty('box-shadow', 'inset '+isRightPage+'8px 0 7px -7px #333','');
                     line.style.setProperty('display','block','');
                   } 
                   for(let a = aya_current; a < aya_current+5 && a <=aya_to ; a++) { //Look ahead
