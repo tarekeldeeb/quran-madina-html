@@ -55,14 +55,31 @@
               attributeChanged: function() {}
             }, 
             events: {},
-            accessors: {}, 
+            accessors: {
+              aya:{
+                attribute: {},
+                set: function(value) {
+                  this.xtag.data.aya = value;
+                },
+                get: function(){
+                  return this.getAttribute("aya");
+                }
+              },
+              sura:{
+                attribute: {},
+                set: function(value) {
+                  this.xtag.data.sura = value;
+                },
+                get: function(){
+                  return this.getAttribute("sura");
+                }
+              }              
+            }, 
             methods: {
                render: function(tag){
-                var sura = tag.getAttribute("sura");
-                sura = parseRange(sura)[0]; // Only a single Sura
-                var aya  = tag.getAttribute("aya");
+                var sura = parseRange(this.sura)[0]; // Only a single Sura
                 var multiline = false;
-                [aya_from,aya_to] = parseRange(aya);
+                [aya_from,aya_to] = parseRange(this.aya);
                 var line_from = madina_data.suras[sura].ayas[aya_from].r[0].l;
                 var line_to = madina_data.suras[sura].ayas[aya_to].r.slice(-1)[0].l;
                 
