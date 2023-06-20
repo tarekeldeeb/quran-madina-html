@@ -11,10 +11,12 @@
 import os
 import math
 import json
+import re
 import argparse
 import sqlite3
 import requests
 import tqdm
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
@@ -22,7 +24,8 @@ from selenium.webdriver.chrome.options import Options
 TMP = "tmp_download"
 DB = "AyahInfo_1024.db"
 TXT = "Uthmani.txt"
-WIDTH_TEST_HTML = "part_width_test.html"
+TEST_HTML_TEMPLATE = "part_width_test.html"
+TEST_HTML = "test.html"
 STRETCH_ROUNDING = 3
 
 
@@ -61,6 +64,19 @@ def _get_surah_name(sura_id):
       "الفلق", "الناس"
     ]
     return "سورة " + sura_name[sura_id]
+
+def _make_html(font, font_url, font_sz, line_width):
+    with open(TEST_HTML_TEMPLATE, "r") as template:
+        soup = BeautifulSoup(template.read(), 'html.parser')
+    style_elem = soup.find("style").string
+    style_elem = style_elem.replace("me_quran", font)
+    style_elem = style_elem.replace("Amiri Quran", font)
+    style_elem = re.sub(r"https.*woff", font_url, style_elem)
+    style_elem = style_elem.replace("260", str(line_width))
+    style_elem = style_elem.replace("16", str(font_sz))
+    soup.find("style").string = style_elem
+    with open(TEST_HTML, 'w') as file:
+        file.write(str(soup))
 
 def _update_html_text(web_driver, text):
     web_driver.execute_script(f'document.getElementById(\'test\').textContent = \'{text}\'')
@@ -137,13 +153,14 @@ def run():
         print("Downloaded Quran Text file.")
     except OSError:
         print("Skipping download ..")
+    _make_html(CONF.font_family, CONF.font_url, CONF.font_size, CONF.line_width)
     #
     # Finally Load the Html Template and Driver
     chrome_options = Options()
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
     web_driver = webdriver.Chrome(options=chrome_options)
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    web_driver.get("file://" + os.path.join(dir_path,WIDTH_TEST_HTML))
+    web_driver.get("file://" + os.path.join(dir_path,TEST_HTML))
     # Lets start building the json output ..
     json_header = f'\
         {{"title": "{CONF.title}",\
@@ -216,6 +233,7 @@ def run():
                     suras[sura-1]["ayas"].append({"p":page, "r":parts}) # New completed ayah
     print("Closing Chrome ..")
     web_driver.close()
+    os.remove(TEST_HTML)
     _save_json(json_header, suras)
 
 if __name__ == '__main__':
