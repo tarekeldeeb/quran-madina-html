@@ -26,10 +26,15 @@ $ bower install	// install components
 $ grunt build   // build the dependencies
 
 ```
+## Project Status
+
+In early stages, no releases yet. Check the demo for PoC.
 
 # Demo
 
-Coming Soo ..
+https://tarekeldeeb.github.io/quran-madina-html-no-images/demo/index.html
+
+Don't forget to see the page source!
 
 # Links
 
