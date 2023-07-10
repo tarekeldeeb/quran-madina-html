@@ -22,6 +22,7 @@ from selenium.webdriver.chrome.options import Options
 
 # Internal Constants: Do not edit!
 TMP = "tmp_download"
+OUT = "DBs"
 DB = "AyahInfo_1024.db"
 TXT = "Uthmani.txt"
 TEST_HTML_TEMPLATE = "part_width_test.html"
@@ -121,7 +122,8 @@ def _update_line_data(work_pointer):
     return suras, parts
 
 def _get_json_filename():
-    return f'{CONF.name}-{CONF.font_family.split()[0]}-{CONF.font_size}px.json'
+    json_file = f'{CONF.name}-{CONF.font_family.split()[0]}-{CONF.font_size}px.json'
+    return os.path.join(OUT, json_file)
 
 def _save_json(json_header, suras):
     j = json.loads(json_header)
