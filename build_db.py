@@ -75,7 +75,7 @@ def _get_surah_name(sura_id):
     return "سورة " + sura_name[sura_id]
 
 def _make_html(font, font_url, font_sz, line_width):
-    with open(TEST_HTML_TEMPLATE, "r") as template:
+    with open(TEST_HTML_TEMPLATE, "r", encoding="utf8") as template:
         soup = BeautifulSoup(template.read(), 'html.parser')
     style_elem = soup.find("style").string
     style_elem = style_elem.replace("me_quran", font)
@@ -84,7 +84,7 @@ def _make_html(font, font_url, font_sz, line_width):
     style_elem = style_elem.replace("260", str(line_width))
     style_elem = style_elem.replace("16", str(font_sz))
     soup.find("style").string = style_elem
-    with open(_get_test_filename(font, font_sz), 'w') as file:
+    with open(_get_test_filename(font, font_sz), 'w', encoding="utf8") as file:
         file.write(str(soup))
 
 def _update_html_text(web_driver, text):
@@ -170,7 +170,8 @@ def run(cfg):
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
     web_driver = webdriver.Chrome(options=chrome_options)
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    web_driver.get("file://" + os.path.join(dir_path,_get_test_filename(cfg.font_family, cfg.font_size)))
+    web_driver.get("file://" + os.path.join(dir_path,
+                                            _get_test_filename(cfg.font_family, cfg.font_size)))
     # Lets start building the json output ..
     json_header = f'\
         {{"title": "{cfg.title}",\
@@ -251,7 +252,7 @@ def run(cfg):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Build JSON DB for HTML Quran Rendering.')
-    parser.add_argument("--name", required=False, default=DEFAULTS["name"], 
+    parser.add_argument("--name", required=False, default=DEFAULTS["name"],
                         help="Mus'haf Short Name")
     parser.add_argument("--title", required=False, default=DEFAULTS["title"],
                         help="Mus'haf Long Name")
