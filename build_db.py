@@ -70,7 +70,7 @@ def _make_html(font, font_url, font_sz, line_width):
         soup = BeautifulSoup(template.read(), 'html.parser')
     style_elem = soup.find("style").string
     style_elem = style_elem.replace("me_quran", font)
-    style_elem = style_elem.replace("Amiri Quran", font)
+    style_elem = style_elem.replace("Amiri Quran Colored", font)
     style_elem = re.sub(r"https.*woff", font_url, style_elem)
     style_elem = style_elem.replace("260", str(line_width))
     style_elem = style_elem.replace("16", str(font_sz))
@@ -180,7 +180,7 @@ def run():
                 if len(tokens) == 3:
                     prev_aya = aya
                     sura, aya, aya_text = tokens
-                    aya_text = aya_text + f' \uFD3F{aya}\uFD3E'
+                    aya_text = aya_text + f' \u06DD{aya}'
                     sura = int(sura)
                     aya = int(aya)
                     #Add a Sura
@@ -246,11 +246,10 @@ if __name__ == '__main__':
                         help="Mus'haf Long Name")
     parser.add_argument("--published", type=int, required=False, default=1985,
                         help="Mus'haf Publish Date")
-    parser.add_argument("--font_family", required=False, default="Amiri Quran",
+    parser.add_argument("--font_family", required=False, default="Amiri Quran Colored",
                         help="Font Family")
     parser.add_argument("--font_url", required=False,
-                        default="https://fonts.gstatic.com/s/amiriquran/v7"
-                        "/_Xmo-Hk0rD6DbUL4_vH8Zp5v5i2ssg.woff2",
+                        default="https://fonts.cdnfonts.com/s/93185/AmiriQuranColored-Regular.woff",
                         help="Font URL to use")
     parser.add_argument("--font_size", type=int, required=False, default=16,
                         help="Font Size to render")
