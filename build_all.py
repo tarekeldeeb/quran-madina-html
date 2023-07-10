@@ -20,7 +20,7 @@ uthman16['font_url'] = REPO+"assets/fonts/UthmanTN_v2-0.woff2"
 
 uthman14 = uthman16.copy()
 uthman14['font_size'] = 14
-uthman14['line_wdith'] = 240
+uthman14['line_width'] = 240
 
 cfgs = [ DEFAULTS, amiri24, uthman16, uthman14 ]
 
