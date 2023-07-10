@@ -1,6 +1,6 @@
 (function(){
   var name = "quran-madina-html";
-  var cdn = 'https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/';
+  var cdn = 'https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/DBs/';
   function loadJSON(path, success, error){
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()

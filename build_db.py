@@ -26,9 +26,13 @@ OUT = "DBs"
 DB = "AyahInfo_1024.db"
 TXT = "Uthmani.txt"
 TEST_HTML_TEMPLATE = "part_width_test.html"
-TEST_HTML = "test.html"
 STRETCH_ROUNDING = 3
-
+REPO = 'https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/'
+DEFAULTS = {'name':'Madina', 'published': 1985, 
+           'title':"مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",
+           'font_family':'Amiri Quran Colored',
+           'font_url':REPO+'assets/fonts/AmiriQuranColored.woff2',
+           'font_size':16, 'line_width':260}
 
 def _query(query):
     conn = sqlite3.connect(os.path.join(TMP,DB))
@@ -42,6 +46,10 @@ def _get_aya_data(sura, ayah):
     result = _query(f'select page_number, line_number from glyphs '
                     f'where sura_number={sura} and ayah_number={ayah}')
     return list(map(list, result))
+
+def _get_test_filename(font, size):
+    suffex = f'-{font}-{size}'
+    return "test"+suffex+".html"
 
 def _get_surah_name(sura_id):
     sura_name = ["الفاتحة", "البقرة", "آل عمران",
@@ -76,7 +84,7 @@ def _make_html(font, font_url, font_sz, line_width):
     style_elem = style_elem.replace("260", str(line_width))
     style_elem = style_elem.replace("16", str(font_sz))
     soup.find("style").string = style_elem
-    with open(TEST_HTML, 'w') as file:
+    with open(_get_test_filename(font, font_sz), 'w') as file:
         file.write(str(soup))
 
 def _update_html_text(web_driver, text):
@@ -86,7 +94,7 @@ def _get_width(web_driver):
     return web_driver.execute_script("return document.getElementById('test')"
                                      ".getBoundingClientRect().width")
 
-def _update_line_data(work_pointer):
+def _update_line_data(work_pointer, cfg):
     """Calculate the stretching factor (s), then apply to all previous line
     parts and updates their offsets (o).
     Finally, the returns (s,o) for the last part to be written later.
@@ -102,9 +110,9 @@ def _update_line_data(work_pointer):
     suras, parts, page, sura, aya, current_line, current_line_width = work_pointer
     look_back = 5
     if current_line_width<20:
-        _save_json("", suras)
+        _save_json("", suras, cfg)
         raise ValueError(f'Problem with [short] aya={aya} of sura={sura} at line={current_line}')
-    stretch = CONF.line_width/(current_line_width) if page>2 else 1
+    stretch = cfg.line_width/(current_line_width) if page>2 else 1
     aya_look_back = aya-look_back if aya>look_back else 1
     offset = 0
     if aya > 1:
@@ -121,18 +129,18 @@ def _update_line_data(work_pointer):
         parts[-1]["s"] = round(stretch, STRETCH_ROUNDING)
     return suras, parts
 
-def _get_json_filename():
-    json_file = f'{CONF.name}-{CONF.font_family.split()[0]}-{CONF.font_size}px.json'
+def _get_json_filename(cfg):
+    json_file = f'{cfg.name}-{cfg.font_family.split()[0]}-{cfg.font_size}px.json'
     return os.path.join(OUT, json_file)
 
-def _save_json(json_header, suras):
+def _save_json(json_header, suras, cfg):
     j = json.loads(json_header)
     j.update({"suras":suras})
-    with open(_get_json_filename(), 'w', encoding="utf-8") as json_file:
+    with open(_get_json_filename(cfg), 'w', encoding="utf-8") as json_file:
         json.dump(j, json_file, ensure_ascii = False, indent=2)
-    print(f'Saved: {_get_json_filename()}')
+    print(f'Saved: {_get_json_filename(cfg)}')
 
-def run():
+def run(cfg):
     """Runs the build_db module
     """
     try:
@@ -155,26 +163,26 @@ def run():
         print("Downloaded Quran Text file.")
     except OSError:
         print("Skipping download ..")
-    _make_html(CONF.font_family, CONF.font_url, CONF.font_size, CONF.line_width)
+    _make_html(cfg.font_family, cfg.font_url, cfg.font_size, cfg.line_width)
     #
     # Finally Load the Html Template and Driver
     chrome_options = Options()
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
     web_driver = webdriver.Chrome(options=chrome_options)
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    web_driver.get("file://" + os.path.join(dir_path,TEST_HTML))
+    web_driver.get("file://" + os.path.join(dir_path,_get_test_filename(cfg.font_family, cfg.font_size)))
     # Lets start building the json output ..
     json_header = f'\
-        {{"title": "{CONF.title}",\
-        "published": {CONF.published},\
-        "font_family": "{CONF.font_family}",\
-        "font_url": "{CONF.font_url}",\
-        "font_size": {CONF.font_size},\
-        "line_width": {CONF.line_width}}}'
+        {{"title": "{cfg.title}",\
+        "published": {cfg.published},\
+        "font_family": "{cfg.font_family}",\
+        "font_url": "{cfg.font_url}",\
+        "font_size": {cfg.font_size},\
+        "line_width": {cfg.line_width}}}'
     suras = []
     page = aya = current_line_width = current_line = 0
     print("Processing ..")
-    with tqdm.tqdm(total=os.path.getsize(os.path.join(TMP,TXT))) as progress_bar:
+    with tqdm.tqdm(total=os.path.getsize(os.path.join(TMP,TXT)), leave=False) as progress_bar:
         with open(os.path.join(TMP,TXT), encoding="utf8") as file_txt:
             for aya_line in file_txt:
                 progress_bar.update(len(aya_line.encode('utf-8')))
@@ -182,7 +190,10 @@ def run():
                 if len(tokens) == 3:
                     prev_aya = aya
                     sura, aya, aya_text = tokens
-                    aya_text = aya_text + f' \u06DD{aya}'
+                    if "Amiri" in cfg.font_family:
+                        aya_text = aya_text + f' \u06DD{aya}'
+                    else:
+                        aya_text = aya_text.replace("ٱ", "ا") + f' \uFD3F{aya}\uFD3E'
                     sura = int(sura)
                     aya = int(aya)
                     #Add a Sura
@@ -221,7 +232,7 @@ def run():
                             else:
                                 work_pointer = (suras, parts, page, sura, aya,
                                                 current_line, current_line_width)
-                            suras, parts = _update_line_data(work_pointer)
+                            suras, parts = _update_line_data(work_pointer, cfg)
                             current_line_width = 0
                         current_line = int(line)
                         aya_text_part = " ".join(aya_text.split()
@@ -235,27 +246,23 @@ def run():
                     suras[sura-1]["ayas"].append({"p":page, "r":parts}) # New completed ayah
     print("Closing Chrome ..")
     web_driver.close()
-    os.remove(TEST_HTML)
-    _save_json(json_header, suras)
+    os.remove(_get_test_filename(cfg.font_family, cfg.font_size))
+    _save_json(json_header, suras, cfg)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Build JSON DB for HTML Quran Rendering.')
-    parser.add_argument("--name", required=False,
-                        default="Madina", help="Mus'haf Short Name")
-    parser.add_argument("--title", required=False,
-                        default="مصحف المدينة الإصدار القديم - "
-                        "مجمع الملك فهد لطباعة المصحف الشريف",
+    parser.add_argument("--name", required=False, default=DEFAULTS["name"], 
+                        help="Mus'haf Short Name")
+    parser.add_argument("--title", required=False, default=DEFAULTS["title"],
                         help="Mus'haf Long Name")
-    parser.add_argument("--published", type=int, required=False, default=1985,
+    parser.add_argument("--published", type=int, required=False, default=DEFAULTS["published"],
                         help="Mus'haf Publish Date")
-    parser.add_argument("--font_family", required=False, default="Amiri Quran Colored",
+    parser.add_argument("--font_family", required=False, default=DEFAULTS["font_family"],
                         help="Font Family")
-    parser.add_argument("--font_url", required=False,
-                        default="https://fonts.cdnfonts.com/s/93185/AmiriQuranColored-Regular.woff",
+    parser.add_argument("--font_url", required=False, default=DEFAULTS["font_url"],
                         help="Font URL to use")
-    parser.add_argument("--font_size", type=int, required=False, default=16,
+    parser.add_argument("--font_size", type=int, required=False, default=DEFAULTS["font_size"],
                         help="Font Size to render")
-    parser.add_argument("--line_width", type=int, required=False, default=260,
+    parser.add_argument("--line_width", type=int, required=False, default=DEFAULTS["line_width"],
                         help="Page width to render")
-    CONF = parser.parse_args()
-    run()
+    run(parser.parse_args())
