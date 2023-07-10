@@ -87,13 +87,19 @@
                   multiline = true;
                   tag.style = "display:block;";
                 }
+                if(multiline){
+                  tag.style.setProperty('font-family', madina_data.font_family, '');
+                  tag.style.setProperty('font-size', madina_data.font_size+"px", '');                  
+                }
                 var aya_current = aya_from;
                 for(let l = line_from; l <= line_to; l++) {
                   const ll = l; //Const for inner loops to refer
                   line = document.createElement("quran-madina-html-line");
                   tag.appendChild(line);
-                  line.style.setProperty('font-family', madina_data.font_family, '');
-                  line.style.setProperty('font-size', madina_data.font_size+"px", '');
+                  if(!multiline){
+                    line.style.setProperty('font-family', madina_data.font_family, '');
+                    line.style.setProperty('font-size', madina_data.font_size+"px", '');
+                  }
                   if(multiline){
                     tag.style.width = (madina_data.line_width+10)+"px";
                     let isRightPage = madina_data.suras[sura].ayas[aya_from].p%2==1?"":"-";
