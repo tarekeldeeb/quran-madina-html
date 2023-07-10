@@ -28,7 +28,7 @@ TXT = "Uthmani.txt"
 TEST_HTML_TEMPLATE = "part_width_test.html"
 STRETCH_ROUNDING = 3
 REPO = 'https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/'
-DEFAULTS = {'name':'Madina', 'published': 1985, 
+DEFAULTS = {'name':'Madina', 'published': 1985,
            'title':"مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",
            'font_family':'Amiri Quran Colored',
            'font_url':REPO+'assets/fonts/AmiriQuranColored.woff2',
@@ -77,13 +77,13 @@ def _get_surah_name(sura_id):
 def _make_html(font, font_url, font_sz, line_width):
     with open(TEST_HTML_TEMPLATE, "r", encoding="utf8") as template:
         soup = BeautifulSoup(template.read(), 'html.parser')
-    style_elem = soup.find("style").string
-    style_elem = style_elem.replace("me_quran", font)
+    style_elem = soup.find("style").string # type: ignore
+    style_elem = style_elem.replace("me_quran", font) # type: ignore
     style_elem = style_elem.replace("Amiri Quran Colored", font)
     style_elem = re.sub(r"https.*woff", font_url, style_elem)
     style_elem = style_elem.replace("260", str(line_width))
     style_elem = style_elem.replace("16", str(font_sz))
-    soup.find("style").string = style_elem
+    soup.find("style").string = style_elem # type: ignore
     with open(_get_test_filename(font, font_sz), 'w', encoding="utf8") as file:
         file.write(str(soup))
 
