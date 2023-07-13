@@ -2,7 +2,7 @@
   "title": "مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",
   "published": 1985,
   "font_family": "Amiri Quran Colored",
-  "font_url": "https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/assets/fonts/AmiriQuranColored.woff2",
+  "font_url": "https://www.unpkg.com/quran-madina-html/assets/fonts/AmiriQuranColored.woff2",
   "font_size": 16,
   "line_width": 260,
   "suras": [
