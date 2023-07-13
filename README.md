@@ -1,7 +1,7 @@
 # Quran Madina Html (no-images)
-[![pylint](https://github.com/tarekeldeeb/quran-madina-html-no-images/actions/workflows/pylint.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html-no-images/actions/workflows/pylint.yml)
-[![db_test](https://github.com/tarekeldeeb/quran-madina-html-no-images/actions/workflows/db_test.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html-no-images/actions/workflows/db_test.yml)
-[![npm-grunt](https://github.com/tarekeldeeb/quran-madina-html-no-images/actions/workflows/npm-grunt.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html-no-images/actions/workflows/npm-grunt.yml)
+[![pylint](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/pylint.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/pylint.yml)
+[![db_test](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/db_test.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/db_test.yml)
+[![npm-grunt](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/npm-grunt.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/npm-grunt.yml)
 
 A Madina Quran HTML Renderer without images
 
@@ -41,7 +41,7 @@ $ grunt // build the dist with dependencies
 
 # Demo
 
-https://tarekeldeeb.github.io/quran-madina-html-no-images/demo/index.html
+https://tarekeldeeb.github.io/quran-madina-html/demo/index.html
 
 Don't forget to see the page source!
 
