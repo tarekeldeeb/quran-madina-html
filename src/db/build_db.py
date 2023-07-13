@@ -229,8 +229,8 @@ def run(cfg):
                         if line != str(current_line): #new line
                             #Override (o,s) of previous line parts
                             if new_page:
-                                work_pointer = (suras, parts, page, prev_sura,
-                                                prev_aya, prev_line, prev_line_width)
+                                work_pointer = (suras, parts, page, prev_sura, # type: ignore
+                                                prev_aya, prev_line, prev_line_width) # type: ignore
                             else:
                                 work_pointer = (suras, parts, page, sura, aya,
                                                 current_line, current_line_width)
