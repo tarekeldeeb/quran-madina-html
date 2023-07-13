@@ -9,11 +9,16 @@ class Test(unittest.TestCase):
     """Testing the Generated JSON DB including all Quran data
     """
     db = []
-    for f in glob.glob('./*px.json'):
+    for f in glob.glob('assets/db/*px.json'):
         with open(f, 'r', encoding="utf-8") as file_handler:
             db.append({"name":f,"data":json.load(file_handler)})
 
-    def test_0_db_fields(self):
+    def test_0_db_exists(self):
+        """Check if DB exists
+        """
+        self.assertGreater(len(self.db), 0)
+
+    def test_1_db_fields(self):
         """Test all JSON header fields if exist
         """
         for field in ['title','published','font_family','font_url',
@@ -22,7 +27,7 @@ class Test(unittest.TestCase):
             for data in self.db:
                 self.assertIsNotNone(data["data"][field])  # null will fail the test
 
-    def test_1_sura_count(self):
+    def test_2_sura_count(self):
         """Test Sura Count
         """
         for data in self.db:

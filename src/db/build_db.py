@@ -25,9 +25,10 @@ TMP = "tmp_download"
 DB_OUT = "assets/db"
 DB = "AyahInfo_1024.db"
 TXT = "Uthmani.txt"
-TEST_HTML_TEMPLATE = "part_width_test.html"
+TEST_HTML_TEMPLATE = "src/template/part_width_test.html"
 STRETCH_ROUNDING = 3
-REPO = 'https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/'
+CDN = 'https://www.unpkg.com/quran-madina-html/'
+REPO = CDN #'https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/'
 DEFAULTS = {'name':'Madina', 'published': 1985,
            'title':"مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",
            'font_family':'Amiri Quran Colored',
@@ -49,7 +50,7 @@ def _get_aya_data(sura, ayah):
 
 def _get_test_filename(font, size):
     suffix = f'-{font}-{size}'
-    return "test"+suffix+".html"
+    return os.path.join(BASE_DIR,"src/db/test"+suffix+".html")
 
 def _get_surah_name(sura_id):
     sura_name = ["الفاتحة", "البقرة", "آل عمران",
@@ -143,6 +144,8 @@ def _save_json(json_header, suras, cfg):
 def run(cfg):
     """Runs the build_db module
     """
+    global BASE_DIR
+    BASE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../..")
     try:
         os.mkdir(TMP)
         # Start with downloading the Glyph DB
@@ -169,9 +172,7 @@ def run(cfg):
     chrome_options = Options()
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
     web_driver = webdriver.Chrome(options=chrome_options)
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    web_driver.get("file://" + os.path.join(dir_path,
-                                            _get_test_filename(cfg.font_family, cfg.font_size)))
+    web_driver.get("file://" + _get_test_filename(cfg.font_family, cfg.font_size))
     # Lets start building the json output ..
     json_header = f'\
         {{"title": "{cfg.title}",\

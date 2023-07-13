@@ -17,7 +17,8 @@
   },
   "scripts": {
     "build": "grunt",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build-db": "python src/db/build_all.py",
+    "test": "python -m pytest"
   },
   "repository": {
     "type": "git",
