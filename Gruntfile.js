@@ -7,7 +7,9 @@ module.exports = function(grunt) {
         separator: ';'
       },
       dist: {
-        src: ['src/**/*.js'],
+        src: ['src/<%= pkg.name %>.js',
+              'bower_components/x-tag-core/dist/x-tag-core.min.js'
+            ],
         dest: 'dist/<%= pkg.name %>.js'
       }
     },
@@ -17,7 +19,7 @@ module.exports = function(grunt) {
       },
       dist: {
         files: {
-          'dist/<%= pkg.name %>-<%= pkg.version %>.min.js': ['<%= concat.dist.dest %>']
+          'dist/<%= pkg.name %>.min.js': ['<%= concat.dist.dest %>']
         }
       }
     },
