@@ -11,7 +11,9 @@ Afterwards, the JS library uses those Json objects to render Madina-based Quran 
 The main purpose of this library is:
 * Render Quran text that's visually similar to Madina Printed Pages
 * Efficient Loading of Quran Visual Text (Not image-based, but pure Html)
-* Easy to use: just a simple HTML tag! 
+* Easy to use: just a simple HTML tag!
+
+<img src="https://github.com/tarekeldeeb/quran-madina-html/assets/90985/dc3972c3-71a6-4f48-8d45-2df28ddc409f" width="750px">
 
 # Getting Started
 In your Html header, add this script:
