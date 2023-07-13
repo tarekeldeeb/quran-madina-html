@@ -11,24 +11,33 @@ Afterwards, the JS library uses those Json objects to render Madina-based Quran 
 The main purpose of this library is:
 * Render Quran text that's visually similar to Madina Printed Pages
 * Efficient Loading of Quran Visual Text (Not image-based, but pure Html)
-* Easy to use: just a simple HTML tag! Example
+* Easy to use: just a simple HTML tag! 
+
+# Getting Started
+In your Html header, add this script:
+```html
+  <script type="text/javascript" src="https://unpkg.com/quran-madina-html" data-name="Madina" data-font="Uthman"></script>
+```
+* Supported ``data-font`` parameters are: Amiri (default), Uthman, Hafs
+* Other options include: ``data-font-size`` which defaults to 16 (px)
+
+Then in your body, just add the tag.
 ```html
 <quran-madina-html sura="2" aya="8-10"></quran-madina-html>
 ```
-
+ If the selected aya(s) fit on a single line, the default is to generate an inline ``<span>`` element, otherwise a ``<div>`` is generated.
+  
 # Dev Setup
 
-```
-Fork this repo, rename it, then clone it.
+The project is published on npm ``npm install quran-madina-html``, with sources, assets and distributables.
+Alternatively, you can fork this repo, then clone it.
 
+```
 $ npm install	// install bower tasks
 $ bower install	// install components
-$ grunt build   // build the dependencies
+$ grunt // build the dist with dependencies
 
 ```
-## Project Status
-
-In early stages, no releases yet. Check the demo for PoC.
 
 # Demo
 
