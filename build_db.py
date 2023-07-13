@@ -22,7 +22,7 @@ from selenium.webdriver.chrome.options import Options
 
 # Internal Constants: Do not edit!
 TMP = "tmp_download"
-OUT = "DBs"
+DB_OUT = "assets/db"
 DB = "AyahInfo_1024.db"
 TXT = "Uthmani.txt"
 TEST_HTML_TEMPLATE = "part_width_test.html"
@@ -48,8 +48,8 @@ def _get_aya_data(sura, ayah):
     return list(map(list, result))
 
 def _get_test_filename(font, size):
-    suffex = f'-{font}-{size}'
-    return "test"+suffex+".html"
+    suffix = f'-{font}-{size}'
+    return "test"+suffix+".html"
 
 def _get_surah_name(sura_id):
     sura_name = ["الفاتحة", "البقرة", "آل عمران",
@@ -131,7 +131,7 @@ def _update_line_data(work_pointer, cfg):
 
 def _get_json_filename(cfg):
     json_file = f'{cfg.name}-{cfg.font_family.split()[0]}-{cfg.font_size}px.json'
-    return os.path.join(OUT, json_file)
+    return os.path.join(DB_OUT, json_file)
 
 def _save_json(json_header, suras, cfg):
     j = json.loads(json_header)

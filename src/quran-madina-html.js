@@ -1,6 +1,6 @@
 (function(){
   var name = "quran-madina-html";
-  var cdn = 'https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/DBs/';
+  var cdn = 'https://www.unpkg.com/quran-madina-html/';
   function loadJSON(path, success, error){
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
@@ -28,7 +28,7 @@
   var doc_font    = this_script.getAttribute('data-font') || "Amiri";
   var doc_font_sz = this_script.getAttribute('data-font-size') || 16;
   console.log("Quran> "+doc_name+" with font:"+doc_font+" size:"+doc_font_sz);
-  const name_css = "../src/"+name+".css";
+  const name_css = cdn+"dist/"+name+".min.css";
   if (!document.getElementById(name))
   {
       var head  = document.getElementsByTagName('head')[0];
@@ -40,7 +40,7 @@
       link.media = 'all';
       head.appendChild(link);
   }
-  loadJSON(cdn+doc_name+'-'+doc_font+'-'+doc_font_sz+'px.json',
+  loadJSON(cdn+"assets/db/"+doc_name+'-'+doc_font+'-'+doc_font_sz+'px.json',
         function(data) { 
           madina_data = data; 
           const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(madina_data.font_url)+')');
