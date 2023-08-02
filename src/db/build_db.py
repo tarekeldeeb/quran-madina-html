@@ -91,6 +91,12 @@ def _make_html(font, font_url, font_sz, line_width):
 def _update_html_text(web_driver, text):
     web_driver.execute_script(f'document.getElementById(\'test\').textContent = \'{text}\'')
 
+def _ensure_page_has_loaded(web_driver):
+    page_state = ""
+    while page_state != 'complete':
+        page_state = web_driver.execute_script('return document.readyState;')
+
+
 def _get_width(web_driver):
     return web_driver.execute_script("return document.getElementById('test')"
                                      ".getBoundingClientRect().width")
@@ -173,6 +179,7 @@ def run(cfg):
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
     web_driver = webdriver.Chrome(options=chrome_options)
     web_driver.get("file://" + _get_test_filename(cfg.font_family, cfg.font_size))
+    _ensure_page_has_loaded(web_driver)
     # Lets start building the json output ..
     json_header = f'\
         {{"title": "{cfg.title}",\
