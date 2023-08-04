@@ -116,9 +116,12 @@ def _update_line_data(work_pointer, cfg):
     """
     suras, parts, page, sura, aya, current_line, current_line_width = work_pointer
     look_back = 5
-    if current_line_width<20:
-        _save_json("", suras, cfg)
-        raise ValueError(f'Problem with [short] aya={aya} of sura={sura} at line={current_line}')
+    if current_line_width<cfg.line_width/4:
+        if aya == 1: #Skip empty lines at Sura start
+            return suras, parts
+        _save_json(json_header, suras, cfg)
+        raise ValueError(f'Problem with aya={aya} of sura={sura} at line={current_line}'
+                         f'[short: {current_line_width}px]')
     stretch = cfg.line_width/(current_line_width) if page>2 else 1
     aya_look_back = aya-look_back if aya>look_back else 1
     offset = 0
@@ -181,6 +184,7 @@ def run(cfg):
     web_driver.get("file://" + _get_test_filename(cfg.font_family, cfg.font_size))
     _ensure_page_has_loaded(web_driver)
     # Lets start building the json output ..
+    global json_header
     json_header = f'\
         {{"title": "{cfg.title}",\
         "published": {cfg.published},\
@@ -188,7 +192,7 @@ def run(cfg):
         "font_url": "{cfg.font_url}",\
         "font_size": {cfg.font_size},\
         "line_width": {cfg.line_width}}}'
-    suras = []
+    suras = parts = []
     page = aya = current_line_width = current_line = 0
     print("Processing ..")
     with tqdm.tqdm(total=os.path.getsize(os.path.join(TMP,TXT)), leave=False) as progress_bar:
@@ -205,6 +209,9 @@ def run(cfg):
                         aya_text = aya_text.replace("ٱ", "ا") + f' \uFD3F{aya}\uFD3E'
                     sura = int(sura)
                     aya = int(aya)
+                    lines = {} # Key=LineNumber, Value=Number of glyphs
+                    prev_parts = parts
+                    parts = [] # Break each ayah into parts/lines
                     #Add a Sura
                     if len(suras)<sura:
                         suras.append({"name": _get_surah_name(sura-1), "ayas":[]})
@@ -219,8 +226,6 @@ def run(cfg):
                         new_page = page>0
                     else:
                         new_page = False
-                    lines = {} # Key=LineNumber, Value=Number of glyphs
-                    parts = [] # Break each ayah into parts/lines
                     for glyph in ayah_data:
                         if str(glyph[1]) not in lines:
                             lines.update({str(glyph[1]):1})
@@ -232,14 +237,17 @@ def run(cfg):
                         skip_words = 0
                     if len(ayah_data) != len(aya_text.split())-skip_words:
                         print(f'Mismatch at {sura}-{aya}: Glyphs={len(ayah_data)} for:{aya_text}')
+                    if sura == 3:
+                        pass
                     for line in lines:
                         if line != str(current_line): #new line
                             #Override (o,s) of previous line parts
                             if new_page:
-                                work_pointer = (suras, parts, page, prev_sura, # type: ignore
+                                work_pointer = (suras, prev_parts, page-1, prev_sura, # type: ignore
                                                 prev_aya, prev_line, prev_line_width) # type: ignore
-                            else:
-                                work_pointer = (suras, parts, page, sura, aya,
+                                suras, prev_parts = _update_line_data(work_pointer, cfg)
+                                
+                            work_pointer = (suras, parts, page, sura, aya,
                                                 current_line, current_line_width)
                             suras, parts = _update_line_data(work_pointer, cfg)
                             current_line_width = 0
