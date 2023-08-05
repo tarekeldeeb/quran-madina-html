@@ -38,6 +38,9 @@ DEFAULTS = {'name':'Madina', 'published': 1985,
            'font_family':'Amiri Quran Colored',
            'font_url':REPO+'assets/fonts/AmiriQuranColored.woff2',
            'font_size':16, 'line_width':260}
+# Runtime globals
+JSON_HEADER = "{}"
+BASE_DIR = ""
 
 def _query(query):
     conn = sqlite3.connect(os.path.join(TMP,DB))
@@ -128,7 +131,7 @@ def _update_line_data(work_pointer, cfg):
     if current_line_width<cfg.line_width/4:
         if aya == 1: #Skip empty lines at Sura start
             return suras, parts
-        _save_json(json_header, suras, cfg)
+        _save_json(JSON_HEADER, suras, cfg)
         raise ValueError(f'Problem with aya={aya} of sura={sura} at line={current_line}'
                          f'[short: {current_line_width}px]')
     stretch = cfg.line_width/(current_line_width) if page>2 else 1
@@ -152,8 +155,8 @@ def _get_json_filename(cfg):
     json_file = f'{cfg.name}-{cfg.font_family.split()[0]}-{cfg.font_size}px.json'
     return os.path.join(DB_OUT, json_file)
 
-def _save_json(json_header, suras, cfg):
-    j = json.loads(json_header)
+def _save_json(header, suras, cfg):
+    j = json.loads(header)
     j.update({"suras":suras})
     with open(_get_json_filename(cfg), 'w', encoding="utf-8") as json_file:
         json.dump(j, json_file, ensure_ascii = False, indent=2)
@@ -194,8 +197,8 @@ def run(cfg):
     web_driver.get(test_url)
     _ensure_page_has_loaded(web_driver, test_url)
     # Lets start building the json output ..
-    global json_header
-    json_header = f'\
+    global JSON_HEADER
+    JSON_HEADER = f'\
         {{"title": "{cfg.title}",\
         "published": {cfg.published},\
         "font_family": "{cfg.font_family}",\
@@ -256,9 +259,8 @@ def run(cfg):
                                 work_pointer = (suras, prev_parts, page-1, prev_sura, # type: ignore
                                                 prev_aya, prev_line, prev_line_width) # type: ignore
                                 suras, prev_parts = _update_line_data(work_pointer, cfg)
-                                
                             work_pointer = (suras, parts, page, sura, aya,
-                                                current_line, current_line_width)
+                                            current_line, current_line_width)
                             suras, parts = _update_line_data(work_pointer, cfg)
                             current_line_width = 0
                         current_line = int(line)
@@ -275,7 +277,7 @@ def run(cfg):
     print("Closing Chrome ..")
     web_driver.close()
     os.remove(_get_test_filename(cfg.font_family, cfg.font_size))
-    _save_json(json_header, suras, cfg)
+    _save_json(JSON_HEADER, suras, cfg)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Build JSON DB for HTML Quran Rendering.')

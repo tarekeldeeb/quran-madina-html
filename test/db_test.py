@@ -40,29 +40,29 @@ class Test(unittest.TestCase):
         """Test Stretching factors
         """
         for data in self.db:
-            for s in data["data"]['suras']:
-                for a in s['ayas']:
-                    for r in a['r']:
-                        self.assertGreaterEqual(r['s'], 0.8, "Stretch factor is too low")
-                        self.assertLessEqual(r['s'], 1.2, "Stretch factor is too high")
-    
+            for sura in data["data"]['suras']:
+                for aya in sura['ayas']:
+                    for part in aya['r']:
+                        self.assertGreaterEqual(part['s'], 0.8, "Stretch factor is too low")
+                        self.assertLessEqual(part['s'], 1.2, "Stretch factor is too high")
+
     def test_4_page_15_lines(self):
         """Ensure all pages have 15 lines
         """
         for data in self.db:
-            for p in range(3,605):
-                for l in range(1,16):
-                    self.assertTrue(self._line_exists(p, l),
-                                    f'Missing Line: {l} in page: {p}!')
-    
+            for page in range(3,605):
+                for line in range(1,16):
+                    self.assertTrue(self._line_exists(page, line),
+                                    f'Missing Line: {line} in page: {page}!')
+
     def test_5_offset_boundaries(self):
         """Test Offset < Page width
         """
         for data in self.db:
-            for s in data["data"]['suras']:
-                for a in s['ayas']:
-                    for r in a['r']:
-                        self.assertLessEqual(r['o'], data["data"]["line_width"],
+            for sura in data["data"]['suras']:
+                for aya in sura['ayas']:
+                    for part in aya['r']:
+                        self.assertLessEqual(part['o'], data["data"]["line_width"],
                                              "Offset is too high")
 
 if __name__ == '__main__':
