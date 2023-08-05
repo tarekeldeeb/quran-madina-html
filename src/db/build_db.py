@@ -37,10 +37,11 @@ DEFAULTS = {'name':'Madina', 'published': 1985,
            'title':"مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",
            'font_family':'Amiri Quran Colored',
            'font_url':REPO+'assets/fonts/AmiriQuranColored.woff2',
-           'font_size':16, 'line_width':260}
+           'font_size':16, 'line_width':275}
 # Runtime globals
 JSON_HEADER = "{}"
 BASE_DIR = ""
+DBG_LINE_WIDTHS = []
 
 def _query(query):
     conn = sqlite3.connect(os.path.join(TMP,DB))
@@ -113,6 +114,10 @@ def _get_width(aya_text, web_driver):
     return web_driver.execute_script("return document.getElementById('test')"
                                      ".getBoundingClientRect().width")
 
+def _print_dbg_widths():
+    print(f'Unstretched Line widths:: Avg: {sum(DBG_LINE_WIDTHS) / len(DBG_LINE_WIDTHS)}, '
+           f'Max:{max(DBG_LINE_WIDTHS)}, Min:{min(DBG_LINE_WIDTHS)}')
+
 def _update_line_data(work_pointer, cfg):
     """Calculate the stretching factor (s), then apply to all previous line
     parts and updates their offsets (o).
@@ -134,6 +139,7 @@ def _update_line_data(work_pointer, cfg):
         _save_json(JSON_HEADER, suras, cfg)
         raise ValueError(f'Problem with aya={aya} of sura={sura} at line={current_line}'
                          f'[short: {current_line_width}px]')
+    DBG_LINE_WIDTHS.append(current_line_width)
     stretch = cfg.line_width/(current_line_width) if page>2 else 1
     aya_look_back = aya-look_back if aya>look_back else 1
     offset = 0
@@ -165,7 +171,7 @@ def _save_json(header, suras, cfg):
 def run(cfg):
     """Runs the build_db module
     """
-    global BASE_DIR
+    global BASE_DIR # type: ignore
     BASE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../..")
     try:
         os.mkdir(TMP)
@@ -197,7 +203,7 @@ def run(cfg):
     web_driver.get(test_url)
     _ensure_page_has_loaded(web_driver, test_url)
     # Lets start building the json output ..
-    global JSON_HEADER
+    global JSON_HEADER # type: ignore
     JSON_HEADER = f'\
         {{"title": "{cfg.title}",\
         "published": {cfg.published},\
@@ -278,6 +284,7 @@ def run(cfg):
     web_driver.close()
     os.remove(_get_test_filename(cfg.font_family, cfg.font_size))
     _save_json(JSON_HEADER, suras, cfg)
+    _print_dbg_widths()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Build JSON DB for HTML Quran Rendering.')

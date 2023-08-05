@@ -12,7 +12,7 @@ from build_db import run, DEFAULTS, CDN
 
 amiri24 = DEFAULTS.copy()
 amiri24['font_size']=24
-amiri24['line_width']=400
+amiri24['line_width']=410
 
 uthman16 = DEFAULTS.copy()
 uthman16['font_family'] = 'Uthman'

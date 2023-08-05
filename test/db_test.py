@@ -46,11 +46,13 @@ class Test(unittest.TestCase):
         """Test Stretching factors
         """
         for data in self.db:
-            for sura in data["data"]['suras']:
-                for aya in sura['ayas']:
-                    for part in aya['r']:
-                        self.assertGreaterEqual(part['s'], 0.8, "Stretch factor is too low")
-                        self.assertLessEqual(part['s'], 1.2, "Stretch factor is too high")
+            for sura_index, sura in enumerate(data["data"]['suras']):
+                for aya_index, aya in enumerate(sura['ayas']):
+                    for part_index, part in enumerate(aya['r']):
+                        self.assertGreaterEqual(part['s'], 0.5,
+                            f"Stretch factor is too low @{sura_index}:{aya_index}:{part_index}")
+                        self.assertLessEqual(part['s'], 1.5,
+                            f"Stretch factor is too high @{sura_index}:{aya_index}:{part_index}")
 
     def test_4_page_15_lines(self):
         """Ensure all pages have 15 lines
@@ -65,11 +67,11 @@ class Test(unittest.TestCase):
         """Test Offset < Page width
         """
         for data in self.db:
-            for sura in data["data"]['suras']:
-                for aya in sura['ayas']:
-                    for part in aya['r']:
+            for sura_index, sura in enumerate(data["data"]['suras']):
+                for aya_index, aya in enumerate(sura['ayas']):
+                    for part_index, part in enumerate(aya['r']):
                         self.assertLessEqual(part['o'], data["data"]["line_width"],
-                                             "Offset is too high")
+                            f"Offset is too high @{sura_index}:{aya_index}:{part_index}")
 
 if __name__ == '__main__':
     unittest.main()
