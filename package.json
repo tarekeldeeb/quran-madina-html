@@ -1,6 +1,6 @@
 {
   "name": "quran-madina-html",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "devDependencies": {
     "bower": "^1.8.14",
     "grunt": "^1.6.1",
