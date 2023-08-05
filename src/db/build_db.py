@@ -9,6 +9,7 @@
         None
 """
 import os
+import time
 import math
 import json
 import re
@@ -19,6 +20,9 @@ import tqdm
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 # Internal Constants: Do not edit!
 TMP = "tmp_download"
@@ -91,13 +95,18 @@ def _make_html(font, font_url, font_sz, line_width):
 def _update_html_text(web_driver, text):
     web_driver.execute_script(f'document.getElementById(\'test\').textContent = \'{text}\'')
 
-def _ensure_page_has_loaded(web_driver):
-    page_state = ""
-    while page_state != 'complete':
-        page_state = web_driver.execute_script('return document.readyState;')
+def _ensure_page_has_loaded(web_driver, url):
+    time.sleep(5)
+    return
+    try:
+        WebDriverWait(web_driver, 5).until(EC.url_to_be(url))
+    except TimeoutException:
+        print(f'URL ({url}) was not rendered with in allocated time')
+        print(f'Current: {web_driver.current_url}')
 
 
-def _get_width(web_driver):
+def _get_width(aya_text, web_driver):
+    _update_html_text(web_driver, aya_text)
     return web_driver.execute_script("return document.getElementById('test')"
                                      ".getBoundingClientRect().width")
 
@@ -181,8 +190,9 @@ def run(cfg):
     chrome_options = Options()
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
     web_driver = webdriver.Chrome(options=chrome_options)
-    web_driver.get("file://" + _get_test_filename(cfg.font_family, cfg.font_size))
-    _ensure_page_has_loaded(web_driver)
+    test_url = "file://" + _get_test_filename(cfg.font_family, cfg.font_size)
+    web_driver.get(test_url)
+    _ensure_page_has_loaded(web_driver, test_url)
     # Lets start building the json output ..
     global json_header
     json_header = f'\
@@ -254,8 +264,9 @@ def run(cfg):
                         current_line = int(line)
                         aya_text_part = " ".join(aya_text.split()
                                                  [skip_words:skip_words+lines[line]])
-                        _update_html_text(web_driver, aya_text_part)
-                        aya_part_width = _get_width(web_driver)
+                        if current_line_width > 0: #Need an extra space after the prev aya
+                            aya_text_part = " " + aya_text_part
+                        aya_part_width = _get_width(aya_text_part, web_driver)
                         current_line_width = current_line_width + aya_part_width
                         parts.append({"l":int(line), "t":aya_text_part,
                                       "o":aya_part_width, "s": 1.0})

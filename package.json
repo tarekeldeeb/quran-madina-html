@@ -1,6 +1,6 @@
 {
   "name": "quran-madina-html",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "devDependencies": {
     "bower": "^1.8.14",
     "grunt": "^1.6.1",
@@ -13,8 +13,6 @@
   },
   "description": "A Madina Quran HTML Renderer without images.",
   "main": "dist/quran-madina-html.min.js",
-  "dependencies": {
-  },
   "scripts": {
     "build": "grunt",
     "build-db": "python src/db/build_all.py",
