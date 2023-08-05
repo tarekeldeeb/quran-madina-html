@@ -13,8 +13,14 @@ class Test(unittest.TestCase):
         with open(f, 'r', encoding="utf-8") as file_handler:
             db.append({"name":f,"data":json.load(file_handler)})
 
-    def _line_exists(self, page, line):
-        return True
+    def _line_exists(self, suras, page, line):
+        for sura in suras:
+            for aya in sura['ayas']:
+                if aya['p'] == page:
+                    for part in aya['r']:
+                        if part['l'] == line:
+                            return True
+        return False
 
     def test_0_db_exists(self):
         """Check if DB exists
@@ -52,7 +58,7 @@ class Test(unittest.TestCase):
         for data in self.db:
             for page in range(3,605):
                 for line in range(1,16):
-                    self.assertTrue(self._line_exists(page, line),
+                    self.assertTrue(self._line_exists(data["data"]['suras'], page, line),
                                     f'Missing Line: {line} in page: {page}!')
 
     def test_5_offset_boundaries(self):
