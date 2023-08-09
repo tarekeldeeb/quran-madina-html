@@ -18,9 +18,14 @@
     xhr.open("GET", path, true);
     xhr.send();
   }
-  function parseRange(str){
-    if (str.split('-').length == 2) return str.split('-').map(elem => elem -1);
+  function parseSuraRange(str){
+    // Sura count is 0-based, we need to subtract 1
     return Array(2).fill(str.split('-')[0]-1);
+  }
+  function parseAyaRange(str){
+    // Aya count is 0-based, there are 2 extra ayas (Title + Basmala)
+    if (str.split('-').length == 2) return str.split('-').map(elem => elem +1);
+    return Array(2).fill(str.split('-')[0]+1);
   }
   var madina_data = {"content":"Loading .."};
   var this_script = document.querySelector('script[data-name]');
@@ -77,9 +82,9 @@
             }, 
             methods: {
                render: function(tag){
-                var sura = parseRange(this.sura)[0]; // Only a single Sura
+                var sura = parseSuraRange(this.sura)[0]; // Only a single Sura
                 var multiline = false;
-                [aya_from,aya_to] = parseRange(this.aya);
+                [aya_from,aya_to] = parseAyaRange(this.aya);
                 var line_from = madina_data.suras[sura].ayas[aya_from].r[0].l;
                 var line_to = madina_data.suras[sura].ayas[aya_to].r.slice(-1)[0].l;
                 
@@ -114,7 +119,11 @@
                         line.style.setProperty('padding-right', offset+"px", '');
                         if(offset > 0) line.style.setProperty('transform-origin', "left");
                       }
-                      line.style.setProperty("transform","scaleX("+line_match[0].s+")","");
+                      if(line_match[0].s>=0){
+                        line.style.setProperty("transform","scaleX("+line_match[0].s+")","");                        
+                      } else {
+                        line.style.setProperty("text-align","center","");  
+                      }
                       line.innerHTML += line_match[0].t;
                       aya_current = a;
                     }

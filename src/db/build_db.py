@@ -38,6 +38,8 @@ DEFAULTS = {'name':'Madina', 'published': 1985,
            'font_family':'Amiri Quran Colored',
            'font_url':REPO+'assets/fonts/AmiriQuranColored.woff2',
            'font_size':16, 'line_width':275}
+FIRST_LINE_PAGE1 = 1
+FIRST_LINE_PAGE2 = 1
 # Runtime globals
 JSON_HEADER = "{}"
 BASE_DIR = ""
@@ -60,8 +62,8 @@ def _get_test_filename(font, size):
     suffix = f'-{font}-{size}'
     return os.path.join(BASE_DIR,"src/db/test"+suffix+".html")
 
-def _get_surah_name(sura_id):
-    sura_name = ["الفاتحة", "البقرة", "آل عمران",
+def _get_surah_name(sura_id, decorate = False):
+    __name = ["الفاتحة", "البقرة", "آل عمران",
       "النساء", "المائدة", "الأنعام", "الأعراف", "الأنفال", "التوبة",
       "يونس", "هود", "يوسف", "الرعد", "إبراهيم", "الحجر", "النحل",
       "الإسراء", "الكهف", "مريم", "طه", "الأنبياء", "الحج", "المؤمنون",
@@ -81,7 +83,11 @@ def _get_surah_name(sura_id):
       "الماعون", "الكوثر", "الكافرون", "النصر", "المسد", "الإخلاص",
       "الفلق", "الناس"
     ]
-    return "سورة " + sura_name[sura_id]
+    sura_name = "سورة " + __name[sura_id]
+    if decorate:
+        return "🙮 " + sura_name + " 🙬"
+    else:
+        return sura_name
 
 def _make_html(font, font_url, font_sz, line_width):
     with open(TEST_HTML_TEMPLATE, "r", encoding="utf8") as template:
@@ -100,14 +106,33 @@ def _update_html_text(web_driver, text):
     web_driver.execute_script(f'document.getElementById(\'test\').textContent = \'{text}\'')
 
 def _ensure_page_has_loaded(web_driver, url):
-    time.sleep(5)
-    return
+    time.sleep(5) # Hack!
     try:
         WebDriverWait(web_driver, 5).until(EC.url_to_be(url))
     except TimeoutException:
-        print(f'URL ({url}) was not rendered with in allocated time')
-        print(f'Current: {web_driver.current_url}')
+        pass
+        #print(f'URL ({url}) was not rendered with in allocated time')
+        #print(f'Current: {web_driver.current_url}')
 
+def _get_aya01(sura_id, page, line):
+    title_page = 1 if sura_id == 0 else page+1 if line==15 else page
+    if sura_id == 0:
+        title_line = FIRST_LINE_PAGE1
+    elif sura_id == 1:
+        title_line = FIRST_LINE_PAGE2
+    else:
+        title_line = 1 if  line==15 else line+1
+    bsm_page = title_page+1 if title_line==15 else title_page
+    bsm_line = 1 if title_line==15 else title_line+1
+    aya01 = [{ "p": title_page,
+              "r": [{"l": title_line, "t": _get_surah_name(sura_id, True), "o": 0, "s": -1}]},
+            { "p": bsm_page,
+              "r": [{"l": bsm_line, "t": "﷽", "o": 0, "s": -1}]}]
+    if sura_id == 0:
+        aya01.pop()
+        aya01.append({ "p": title_page,  #Empty aya: Ensures correct numbers
+                       "r": [{"l": title_page, "t": "", "o": 0, "s": -1}]}) 
+    return aya01
 
 def _get_width(aya_text, web_driver):
     _update_html_text(web_driver, aya_text)
@@ -115,7 +140,7 @@ def _get_width(aya_text, web_driver):
                                      ".getBoundingClientRect().width")
 
 def _print_dbg_widths():
-    print(f'Unstretched Line widths:: Avg: {sum(DBG_LINE_WIDTHS) / len(DBG_LINE_WIDTHS)}, '
+    print(f'Non-Stretched Line widths:: Avg: {sum(DBG_LINE_WIDTHS) / len(DBG_LINE_WIDTHS)}, '
            f'Max:{max(DBG_LINE_WIDTHS)}, Min:{min(DBG_LINE_WIDTHS)}')
 
 def _update_line_data(work_pointer, cfg):
@@ -134,7 +159,7 @@ def _update_line_data(work_pointer, cfg):
     suras, parts, page, sura, aya, current_line, current_line_width = work_pointer
     look_back = 5
     if current_line_width<cfg.line_width/4:
-        if aya == 1: #Skip empty lines at Sura start
+        if aya <= 1: #Skip empty lines at Sura start
             return suras, parts
         _save_json(JSON_HEADER, suras, cfg)
         raise ValueError(f'Problem with aya={aya} of sura={sura} at line={current_line}'
@@ -233,13 +258,19 @@ def run(cfg):
                     parts = [] # Break each ayah into parts/lines
                     #Add a Sura
                     if len(suras)<sura:
-                        suras.append({"name": _get_surah_name(sura-1), "ayas":[]})
+                        suras.append({"name": _get_surah_name(sura-1),
+                                      "ayas":_get_aya01(sura-1, page, current_line)})
                     ayah_data = _get_aya_data(sura, aya)
                     if page < ayah_data[0][0]: #new page
                         prev_line = current_line
                         prev_line_width = current_line_width
                         prev_sura = sura-1 if aya==1 else sura
-                        current_line = 1 if page>1 else 3 if page==1 else 2 #first line in page
+                        if page == 0:
+                            current_line = FIRST_LINE_PAGE1
+                        elif page == 1:
+                            current_line = FIRST_LINE_PAGE2
+                        else:
+                            current_line = 1
                         current_line_width = 0
                         page = ayah_data[0][0]
                         new_page = page>0
@@ -256,10 +287,8 @@ def run(cfg):
                         skip_words = 0
                     if len(ayah_data) != len(aya_text.split())-skip_words:
                         print(f'Mismatch at {sura}-{aya}: Glyphs={len(ayah_data)} for:{aya_text}')
-                    if sura == 3:
-                        pass
-                    for line in lines:
-                        if line != str(current_line): #new line
+                    for line_index, line in lines.items():
+                        if line_index != str(current_line): #new line
                             #Override (o,s) of previous line parts
                             if new_page:
                                 work_pointer = (suras, prev_parts, page-1, prev_sura, # type: ignore
@@ -269,16 +298,16 @@ def run(cfg):
                                             current_line, current_line_width)
                             suras, parts = _update_line_data(work_pointer, cfg)
                             current_line_width = 0
-                        current_line = int(line)
+                        current_line = int(line_index)
                         aya_text_part = " ".join(aya_text.split()
-                                                 [skip_words:skip_words+lines[line]])
+                                                 [skip_words:skip_words+line])
                         if current_line_width > 0: #Need an extra space after the prev aya
                             aya_text_part = " " + aya_text_part
                         aya_part_width = _get_width(aya_text_part, web_driver)
                         current_line_width = current_line_width + aya_part_width
-                        parts.append({"l":int(line), "t":aya_text_part,
+                        parts.append({"l":int(line_index), "t":aya_text_part,
                                       "o":aya_part_width, "s": 1.0})
-                        skip_words = skip_words + lines[line]
+                        skip_words = skip_words + line
                     suras[sura-1]["ayas"].append({"p":page, "r":parts}) # New completed ayah
     print("Closing Chrome ..")
     web_driver.close()
