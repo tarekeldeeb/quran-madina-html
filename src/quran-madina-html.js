@@ -24,8 +24,8 @@
   }
   function parseAyaRange(str){
     // Aya count is 0-based, there are 2 extra ayas (Title + Basmala)
-    if (str.split('-').length == 2) return str.split('-').map(elem => elem +1);
-    return Array(2).fill(str.split('-')[0]+1);
+    if (str.split('-').length == 2) return str.split('-').map(elem => parseInt(elem) +1);
+    return Array(2).fill(parseInt(str.split('-')[0])+1);
   }
   var madina_data = {"content":"Loading .."};
   var this_script = document.querySelector('script[data-name]');
@@ -114,15 +114,17 @@
                   for(let a = aya_current; a < aya_current+5 && a <=aya_to ; a++) { //Look ahead
                     line_match = madina_data.suras[sura].ayas[a].r.filter(rr => rr.l == ll);
                     if (line_match.length){
-                      if(line.innerHTML.trim() == ""){ // First part in the line
-                        var offset = line_match[0].o;
-                        line.style.setProperty('padding-right', offset+"px", '');
-                        if(offset > 0) line.style.setProperty('transform-origin', "left");
-                      }
-                      if(line_match[0].s>=0){
-                        line.style.setProperty("transform","scaleX("+line_match[0].s+")","");                        
-                      } else {
-                        line.style.setProperty("text-align","center","");  
+                      if(multiline){
+                        if(line.innerHTML.trim() == ""){ // First part in the line
+                          var offset = line_match[0].o;
+                          line.style.setProperty('padding-right', offset+"px", '');
+                          if(offset > 0) line.style.setProperty('transform-origin', "left");
+                        }
+                        if(line_match[0].s>=0){
+                          line.style.setProperty("transform","scaleX("+line_match[0].s+")","");                        
+                        } else {
+                          line.style.setProperty("text-align","center","");  
+                        }
                       }
                       line.innerHTML += line_match[0].t;
                       aya_current = a;
