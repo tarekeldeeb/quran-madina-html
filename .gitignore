@@ -4,4 +4,5 @@ components
 bower_components
 node_modules
 __pycache__
+.pytest_cache
 dist

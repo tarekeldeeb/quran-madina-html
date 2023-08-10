@@ -25,7 +25,6 @@ uthman14['line_width'] = 240
 configs = [ DEFAULTS, amiri24, uthman16, uthman14 ]
 
 if __name__ == '__main__':
-    #TODO: Fix the nested progress bar
     with Pool(4) as p:
         r = list(tqdm(p.imap(run, list(map(lambda x: Namespace(**x) ,configs))),
                       total=len(configs)))

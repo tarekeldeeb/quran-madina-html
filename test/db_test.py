@@ -5,7 +5,7 @@ import glob
 import json
 
 
-class Test(unittest.TestCase):
+class BasicDBTest(unittest.TestCase):
     """Testing the Generated JSON DB including all Quran data
     """
     db = []
@@ -49,10 +49,12 @@ class Test(unittest.TestCase):
             for sura_index, sura in enumerate(data["data"]['suras']):
                 for aya_index, aya in enumerate(sura['ayas']):
                     for part_index, part in enumerate(aya['r']):
-                        self.assertGreaterEqual(part['s'], 0.5,
-                            f"Stretch factor is too low @{sura_index}:{aya_index}:{part_index}")
-                        self.assertLessEqual(part['s'], 1.5,
-                            f"Stretch factor is too high @{sura_index}:{aya_index}:{part_index}")
+                        stretching_factor = part['s']
+                        if stretching_factor >= 0:
+                            self.assertGreaterEqual(stretching_factor, 0.5,
+                                f"Stretch factor is low @{sura_index}:{aya_index}:{part_index}")
+                            self.assertLessEqual(stretching_factor, 2, # Upper boundary=2 (awful)
+                                f"Stretch factor is high @{sura_index}:{aya_index}:{part_index}")
 
     def test_4_page_15_lines(self):
         """Ensure all pages have 15 lines

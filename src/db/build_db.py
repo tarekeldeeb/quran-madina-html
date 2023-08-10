@@ -130,7 +130,7 @@ def _get_aya01(sura_id, page, line):
               "r": [{"l": bsm_line, "t": "﷽", "o": 0, "s": -1}]}]
     if sura_id == 0:
         aya01.pop()
-        aya01.append({ "p": title_page,  #Empty aya: Ensures correct numbers
+        aya01.insert(0, { "p": title_page,  #Empty aya: Ensures correct numbers
                        "r": [{"l": title_page, "t": "", "o": 0, "s": -1}]}) 
     return aya01
 
@@ -164,21 +164,25 @@ def _update_line_data(work_pointer, cfg):
         _save_json(JSON_HEADER, suras, cfg)
         raise ValueError(f'Problem with aya={aya} of sura={sura} at line={current_line}'
                          f'[short: {current_line_width}px]')
+    line_too_short = current_line_width<cfg.line_width*0.5 or page<=2
     DBG_LINE_WIDTHS.append(current_line_width)
-    stretch = cfg.line_width/(current_line_width) if page>2 else 1
+    if line_too_short:
+        stretch = -1
+    else:
+        stretch = cfg.line_width/(current_line_width) if page>2 else 1
     aya_look_back = aya-look_back if aya>look_back else 1
     offset = 0
     if aya > 1:
-        search_ayas = filter(lambda a: a["p"] == page, suras[sura-1]['ayas'][aya_look_back-1:aya-1])
+        search_ayas = filter(lambda a: a["p"] == page, suras[sura-1]['ayas'][aya_look_back+1:aya+1])
         for search_aya in search_ayas:
             for search_aya_part in search_aya['r']:
                 if search_aya_part['l'] == int(current_line):
-                    tmp = search_aya_part['o']*stretch
+                    tmp = search_aya_part['o']*abs(stretch)
                     search_aya_part['o'] = math.ceil(offset)
                     offset = offset + tmp
                     search_aya_part['s'] = round(stretch, STRETCH_ROUNDING)
     if len(parts) > 0:
-        parts[-1]["o"] = math.ceil(offset*stretch)
+        parts[-1]["o"] = math.ceil(offset)
         parts[-1]["s"] = round(stretch, STRETCH_ROUNDING)
     return suras, parts
 
