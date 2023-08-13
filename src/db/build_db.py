@@ -144,6 +144,7 @@ class Mushaf:
                     self.suras.append(Surah(len(self.suras), sura_lines).process())
                     # TODO: Merge Suras
                     sura_lines = [(aya, aya_text)]
+        self.suras.append(Surah(len(self.suras), sura_lines).process())  #Last Sura
         return self.suras
 
 CONTROL = Control(None, None, None)
