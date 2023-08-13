@@ -45,6 +45,109 @@ JSON_HEADER = "{}"
 BASE_DIR = ""
 DBG_LINE_WIDTHS = []
 
+class Control:
+    def __init__(self, web_driver, progress, config):
+        self.web_driver = web_driver
+        self.cursor = LineCursor(0, 0)
+        self.progress = progress
+        self.cfg = config
+
+class LineCursor:
+    def __init__(self, page, line):
+        self.page = page
+        self.line = line
+
+class QuranLine:
+    def __init__(self, index):
+        self.index = index
+        self.parts = []
+        self.width = 0.0
+
+class Part:
+    def __init__(self, line, text, width):
+        self.line = line
+        self.text = text
+        self.width = width
+        self.offset = None
+        self.stretch = None
+    def to_json(self):
+        return {"l":self.line, "t":self.text,"o":self.offset, "s": self.stretch}
+    
+class Ayah:
+    def __init__(self, sura_index, index, text):
+        self.sura_index = sura_index
+        self.index = index
+        self.page = 0
+        self.parts = []
+        if "Amiri" in CONTROL.cfg.font_family:
+            self.text = text + f' \u06DD{index}'
+        else:
+            self.text = text.replace("ٱ", "ا") + f' \uFD3F{index}\uFD3E'
+    def process(self):
+        ayah_data = _get_aya_data(self.sura_index+1, self.index)
+        self.page = ayah_data[0][0]
+        self.line_start = ayah_data[0][1]
+        self.line_end = ayah_data[-1][1]
+        words_in_lines = {} # Key=LineNumber, Value=Number of glyphs
+        for glyph in ayah_data:
+            if str(glyph[1]) not in words_in_lines:
+                words_in_lines.update({str(glyph[1]):1})
+            else:
+                words_in_lines[str(glyph[1])] = words_in_lines[str(glyph[1])] + 1
+        if self.index==1 and self.sura_index!=1 and self.sura_index!=9:
+            skip_words = 4 #Skip Basmala from first aya.
+        else:
+            skip_words = 0
+        if len(ayah_data) != len(self.text.split())-skip_words:
+            print(f'Mismatch at {self.sura_index}-{self.index}: Glyphs={len(ayah_data)} for:{self.text}')
+        for line_index, line in words_in_lines.items():
+            aya_text_part = " ".join(self.text.split()
+                                        [skip_words:skip_words+line])
+            aya_part_width = _get_width(aya_text_part, CONTROL.web_driver)
+            self.parts.append(Part(int(line_index), aya_text_part, aya_part_width))
+            skip_words = skip_words + line
+        CONTROL.cursor.page = self.page
+        CONTROL.cursor.line = self.line_end
+        self.json = {"p": self.page, "r": list(map(lambda part: part.to_json(), self.parts))}
+        return self.json
+
+class Surah:
+    def __init__(self, index, lines):
+        self.index = index
+        self.lines = lines
+        self.name = _get_surah_name(index)
+        self.ayas = []
+    def process(self):
+        self.ayas = _get_aya01(self.index, CONTROL.cursor.page, CONTROL.cursor.line)
+        for line in self.lines:
+            self.ayas.append(Ayah(self.index, int(line[0]), line[1]).process())
+        self.json = {"name": self.name,
+                     "ayas": self.ayas}
+        return self.json
+
+class Mushaf:
+    def __init__(self, cfg, file_txt):
+        self.cfg = cfg
+        self.file_txt = file_txt
+    def process(self):
+        self.suras = []
+        sura_lines = []
+        self.json_header = _get_json_header(self.cfg)
+        for aya_line in self.file_txt:
+            CONTROL.progress.update(len(aya_line.encode('utf-8')))
+            tokens = aya_line.strip().split('|')
+            if len(tokens) == 3:
+                sura, aya, aya_text = tokens
+                if len(self.suras) == int(sura)-1:
+                    sura_lines.append((aya, aya_text))
+                else:
+                    self.suras.append(Surah(len(self.suras), sura_lines).process())
+                    # TODO: Merge Suras
+                    sura_lines = [(aya, aya_text)]
+        return self.suras
+
+CONTROL = Control(None, None, None)
+
 def _query(query):
     conn = sqlite3.connect(os.path.join(TMP,DB))
     cursor = conn.cursor()
@@ -186,6 +289,15 @@ def _update_line_data(work_pointer, cfg):
         parts[-1]["s"] = round(stretch, STRETCH_ROUNDING)
     return suras, parts
 
+def _get_json_header(cfg):
+    return f'\
+        {{"title": "{cfg.title}",\
+        "published": {cfg.published},\
+        "font_family": "{cfg.font_family}",\
+        "font_url": "{cfg.font_url}",\
+        "font_size": {cfg.font_size},\
+        "line_width": {cfg.line_width}}}'
+
 def _get_json_filename(cfg):
     json_file = f'{cfg.name}-{cfg.font_family.split()[0]}-{cfg.font_size}px.json'
     return os.path.join(DB_OUT, json_file)
@@ -233,86 +345,15 @@ def run(cfg):
     _ensure_page_has_loaded(web_driver, test_url)
     # Lets start building the json output ..
     global JSON_HEADER # type: ignore
-    JSON_HEADER = f'\
-        {{"title": "{cfg.title}",\
-        "published": {cfg.published},\
-        "font_family": "{cfg.font_family}",\
-        "font_url": "{cfg.font_url}",\
-        "font_size": {cfg.font_size},\
-        "line_width": {cfg.line_width}}}'
-    suras = parts = []
-    page = aya = current_line_width = current_line = 0
+    JSON_HEADER = _get_json_header(cfg)
+
+    suras = []
     print("Processing ..")
     with tqdm.tqdm(total=os.path.getsize(os.path.join(TMP,TXT)), leave=False) as progress_bar:
+        global CONTROL # type: ignore
+        CONTROL = Control(web_driver, progress_bar, cfg)
         with open(os.path.join(TMP,TXT), encoding="utf8") as file_txt:
-            for aya_line in file_txt:
-                progress_bar.update(len(aya_line.encode('utf-8')))
-                tokens = aya_line.strip().split('|')
-                if len(tokens) == 3:
-                    prev_aya = aya
-                    sura, aya, aya_text = tokens
-                    if "Amiri" in cfg.font_family:
-                        aya_text = aya_text + f' \u06DD{aya}'
-                    else:
-                        aya_text = aya_text.replace("ٱ", "ا") + f' \uFD3F{aya}\uFD3E'
-                    sura = int(sura)
-                    aya = int(aya)
-                    lines = {} # Key=LineNumber, Value=Number of glyphs
-                    prev_parts = parts
-                    parts = [] # Break each ayah into parts/lines
-                    #Add a Sura
-                    if len(suras)<sura:
-                        suras.append({"name": _get_surah_name(sura-1),
-                                      "ayas":_get_aya01(sura-1, page, current_line)})
-                    ayah_data = _get_aya_data(sura, aya)
-                    if page < ayah_data[0][0]: #new page
-                        prev_line = current_line
-                        prev_line_width = current_line_width
-                        prev_sura = sura-1 if aya==1 else sura
-                        if page == 0:
-                            current_line = FIRST_LINE_PAGE1
-                        elif page == 1:
-                            current_line = FIRST_LINE_PAGE2
-                        else:
-                            current_line = 1
-                        current_line_width = 0
-                        page = ayah_data[0][0]
-                        new_page = page>0
-                    else:
-                        new_page = False
-                    for glyph in ayah_data:
-                        if str(glyph[1]) not in lines:
-                            lines.update({str(glyph[1]):1})
-                        else:
-                            lines[str(glyph[1])] = lines[str(glyph[1])] + 1
-                    if aya==1 and sura!=1 and sura!=9:
-                        skip_words = 4 #Skip Basmala from first aya. TODO: Add Basmala Manually
-                    else:
-                        skip_words = 0
-                    if len(ayah_data) != len(aya_text.split())-skip_words:
-                        print(f'Mismatch at {sura}-{aya}: Glyphs={len(ayah_data)} for:{aya_text}')
-                    for line_index, line in lines.items():
-                        if line_index != str(current_line): #new line
-                            #Override (o,s) of previous line parts
-                            if new_page:
-                                work_pointer = (suras, prev_parts, page-1, prev_sura, # type: ignore
-                                                prev_aya, prev_line, prev_line_width) # type: ignore
-                                suras, prev_parts = _update_line_data(work_pointer, cfg)
-                            work_pointer = (suras, parts, page, sura, aya,
-                                            current_line, current_line_width)
-                            suras, parts = _update_line_data(work_pointer, cfg)
-                            current_line_width = 0
-                        current_line = int(line_index)
-                        aya_text_part = " ".join(aya_text.split()
-                                                 [skip_words:skip_words+line])
-                        if current_line_width > 0: #Need an extra space after the prev aya
-                            aya_text_part = " " + aya_text_part
-                        aya_part_width = _get_width(aya_text_part, web_driver)
-                        current_line_width = current_line_width + aya_part_width
-                        parts.append({"l":int(line_index), "t":aya_text_part,
-                                      "o":aya_part_width, "s": 1.0})
-                        skip_words = skip_words + line
-                    suras[sura-1]["ayas"].append({"p":page, "r":parts}) # New completed ayah
+            suras = Mushaf(CONTROL.cfg, file_txt).process()
     print("Closing Chrome ..")
     web_driver.close()
     os.remove(_get_test_filename(cfg.font_family, cfg.font_size))
