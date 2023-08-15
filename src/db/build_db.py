@@ -42,7 +42,7 @@ class LineCursor:
     def __le__(self, other):
         if self.page<other.page:
             return True
-        elif self.page == other.page:
+        if self.page == other.page:
             return self.line <= other.line
         return False
     def next_line(self):
@@ -101,14 +101,14 @@ class Ayah:
         else:
             self.text = text.replace("ٱ", "ا") + f' \uFD3F{index}\uFD3E'
     @classmethod
-    def from_part_data(cls, text, page, line, offset, stretch):
-        """Create an Aya Object from processed part data"""
+    def create_centered(cls, text, page, line):
+        """Create an Aya Centered Object from 1-line text"""
         instance = cls(0,0,text)
         instance.page = page
         instance.line_start = line
         part = Part(line, text, 100)
-        part.offset = offset
-        part.stretch = stretch
+        part.offset = 0 # type: ignore
+        part.stretch = -1  # type: ignore
         part.text = text
         instance.parts = [part]
         return instance
@@ -186,10 +186,10 @@ class Surah:
         title_line = 1 if  line==15 or self.index<=1 else line+1
         bsm_page = title_page+1 if title_line==15 else title_page
         bsm_line = 1 if title_line==15 else title_line+1
-        aya0 = Ayah.from_part_data(Surah.get_surah_name(self.index, True),
-                                    title_page, title_line, 0, -1)
-        aya1 = Ayah.from_part_data("﷽", bsm_page, bsm_line, 0, -1)
-        aya_empty = Ayah.from_part_data("", title_page, title_line, 0, -1)
+        aya0 = Ayah.create_centered(Surah.get_surah_name(self.index, True),
+                                    title_page, title_line)
+        aya1 = Ayah.create_centered("﷽", bsm_page, bsm_line)
+        aya_empty = Ayah.create_centered("", title_page, title_line)
 
         if self.index == 0:
             return [aya_empty,aya0]
