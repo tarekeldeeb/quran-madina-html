@@ -9,14 +9,16 @@
     "grunt-contrib-cssmin": "^5.0.0",
     "grunt-contrib-jshint": "^3.2.0",
     "grunt-contrib-uglify": "^5.2.2",
-    "grunt-contrib-watch": "^1.1.0"
+    "grunt-contrib-watch": "^1.1.0",
+    "release-it": "^16.1.5"
   },
   "description": "A Madina Quran HTML Renderer without images.",
   "main": "dist/quran-madina-html.min.js",
   "scripts": {
     "build": "grunt",
     "build-db": "python src/db/build_all.py",
-    "test": "python -m pytest"
+    "test": "python -m pytest",
+    "release": "release-it"
   },
   "repository": {
     "type": "git",
@@ -33,5 +35,13 @@
   "bugs": {
     "url": "https://github.com/tarekeldeeb/quran-madina-html-no-images/issues"
   },
-  "homepage": "https://github.com/tarekeldeeb/quran-madina-html-no-images#readme"
+  "homepage": "https://github.com/tarekeldeeb/quran-madina-html-no-images#readme",
+  "release-it": {
+    "github": {
+      "release": true
+    },
+    "hooks": {
+      "after:init": ["grunt"]
+    }
+  }
 }
