@@ -22,7 +22,11 @@ uthman14 = uthman16.copy()
 uthman14['font_size'] = 14
 uthman14['line_width'] = 240
 
-configs = [ DEFAULTS, amiri24, uthman16, uthman14 ]
+hafs16 = DEFAULTS.copy()
+hafs16['font_family'] = 'hafs'
+hafs16['font_url'] = CDN+"assets/fonts/hafs.woff2"
+
+configs = [ DEFAULTS, amiri24, uthman16, uthman14, hafs16 ]
 
 if __name__ == '__main__':
     with Pool(4) as p:

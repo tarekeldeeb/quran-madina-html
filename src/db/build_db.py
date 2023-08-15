@@ -84,6 +84,7 @@ class QuranLine:
         for part in self.parts:
             initial_width = initial_width + part.width
         stretch = line_width/initial_width
+        DbBuilder.dbg_line_widths.append(initial_width)
         for part_index, part in enumerate(self.parts):
             part.stretch = round(stretch, self.STRETCH_ROUNDING) if self.page>2 and stretch<1.5 \
                            else -1
