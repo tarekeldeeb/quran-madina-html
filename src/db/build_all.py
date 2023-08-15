@@ -8,7 +8,7 @@
 from multiprocessing import Pool
 from argparse import Namespace
 from tqdm import tqdm
-from build_db import run, DEFAULTS, CDN
+from build_db import DbBuilder, DEFAULTS, CDN
 
 amiri24 = DEFAULTS.copy()
 amiri24['font_size']=24
@@ -26,5 +26,5 @@ configs = [ DEFAULTS, amiri24, uthman16, uthman14 ]
 
 if __name__ == '__main__':
     with Pool(4) as p:
-        r = list(tqdm(p.imap(run, list(map(lambda x: Namespace(**x) ,configs))),
+        r = list(tqdm(p.imap(DbBuilder.run, list(map(lambda x: Namespace(**x) ,configs))),
                       total=len(configs)))
