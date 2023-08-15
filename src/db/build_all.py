@@ -24,7 +24,7 @@ uthman14['line_width'] = 240
 
 hafs16 = DEFAULTS.copy()
 hafs16['font_family'] = 'Hafs'
-hafs16['font_url'] = CDN+"assets/fonts/hafs.woff2"
+hafs16['font_url'] = CDN+"assets/fonts/Hafs.woff2"
 
 configs = [ DEFAULTS, amiri24, uthman16, uthman14, hafs16 ]
 
