@@ -104,7 +104,9 @@ class Ayah:
         if "Amiri" in DbBuilder.cfg.font_family:
             self.text = text + f' \u06DD{index}'
         else:
-            self.text = text.replace("ٱ", "ا") + f' \uFD3F{index}\uFD3E'
+            self.text = text + f' \uFD3F{index}\uFD3E'
+        if "Uthman" in DbBuilder.cfg.font_family:
+            self.text = self.text.replace("ٱ", "ا")
     @classmethod
     def create_centered(cls, text, page, line):
         """Create an Aya Centered Object from 1-line text"""
