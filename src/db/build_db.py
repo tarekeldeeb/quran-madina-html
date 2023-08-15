@@ -12,6 +12,7 @@ import os
 import time
 import math
 from functools import reduce
+from typing import List
 import json
 import re
 import argparse
@@ -51,30 +52,6 @@ class LineCursor:
             self.page = self.page + 1
         self.line = 1 if self.line == 15 else self.line + 1
 
-class QuranLine:
-    """Temp Class that holds a single line, with multiple aya parts"""
-    STRETCH_ROUNDING = 3
-    def __init__(self, page, parts):
-        self.page = page
-        self.parts = parts
-    def previous_widths(self, parts)-> int:
-        """Offset each aya by sum of widths of previous ayas on the same line"""
-        if len(parts)==0:
-            return 0
-        if len(parts)==1:
-            return math.ceil(parts[0].width)
-        return math.ceil(reduce(lambda a,b: (a.width if hasattr(a,'width') else a)+b.width, parts))
-    def update_parts(self, line_width):
-        """Apply stretch and offset calculations to all line parts"""
-        initial_width = 0
-        for part in self.parts:
-            initial_width = initial_width + part.width
-        stretch = line_width/initial_width
-        for part_index, part in enumerate(self.parts):
-            part.stretch = round(stretch, self.STRETCH_ROUNDING) if self.page>2 else -1
-            part.offset = self.previous_widths(self.parts[0:part_index])
-        return self.parts
-
 class Part:
     """Aya Part, may be a line or less"""
     def __init__(self, line, text, width):
@@ -87,15 +64,42 @@ class Part:
         """Returns a JSON-ready Object"""
         return {"l":self.line, "t":self.text,"o":self.offset, "s": self.stretch}
 
+class QuranLine:
+    """Temp Class that holds a single line, with multiple aya parts"""
+    STRETCH_ROUNDING = 3
+    def __init__(self, page, parts):
+        self.page = page
+        self.parts = parts
+    def previous_widths(self, parts, stretch)-> int:
+        """Offset each aya by sum of widths of previous ayas on the same line"""
+        if len(parts)==0:
+            return 0
+        if len(parts)==1:
+            return math.ceil(parts[0].width * stretch)
+        return math.ceil(reduce(lambda a,b: (a.width*stretch if hasattr(a,'width') else a)
+                                +b.width*stretch, parts))
+    def update_parts(self, line_width: int)->List[Part]:
+        """Apply stretch and offset calculations to all line parts"""
+        initial_width = 0
+        for part in self.parts:
+            initial_width = initial_width + part.width
+        stretch = line_width/initial_width
+        for part_index, part in enumerate(self.parts):
+            part.stretch = round(stretch, self.STRETCH_ROUNDING) if self.page>2 and stretch<1.5 \
+                           else -1
+            part.offset = self.previous_widths(self.parts[0:part_index], stretch)
+        return self.parts
+
 class Ayah:
     """Quran Aya"""
-    def __init__(self, sura_index, index, text):
+    def __init__(self, sura_index, index, text, prev_line_end):
         self.sura_index = sura_index
         self.index = index
         self.page = 0
         self.parts = []
         self.line_start = None
         self.line_end = None
+        self.prev_line_end = prev_line_end
         if "Amiri" in DbBuilder.cfg.font_family:
             self.text = text + f' \u06DD{index}'
         else:
@@ -103,7 +107,7 @@ class Ayah:
     @classmethod
     def create_centered(cls, text, page, line):
         """Create an Aya Centered Object from 1-line text"""
-        instance = cls(0,0,text)
+        instance = cls(0,0,text,0)
         instance.page = page
         instance.line_start = line
         part = Part(line, text, 100)
@@ -137,6 +141,8 @@ class Ayah:
         for line_index, line in words_in_lines.items():
             aya_text_part = " ".join(self.text.split()
                                         [skip_words:skip_words+line])
+            if int(line_index) == self.prev_line_end:
+                aya_text_part = " " + aya_text_part # Add a space after prev aya on the same line
             aya_part_width = DbBuilder.html_helper.get_width(aya_text_part)
             self.parts.append(Part(int(line_index), aya_text_part, aya_part_width))
             skip_words = skip_words + line
@@ -197,8 +203,11 @@ class Surah:
     def process(self):
         """Process the surah to create a json-ready object"""
         self.ayas = self.get_aya01()
+        prev_line_end = 0
         for line in self.lines:
-            self.ayas.append(Ayah(self.index, int(line[0]), line[1]).process())
+            aya = Ayah(self.index, int(line[0]), line[1], prev_line_end).process()
+            self.ayas.append(aya)
+            prev_line_end = aya.line_end
         return self
     def update_json(self):
         """returns the json string of this object"""
@@ -210,14 +219,11 @@ class Surah:
             <    Aya.Part-1      >           => Handle Alone in 1-line
             --------< Aya.Part-2 >           => Handle + Read Next Aya(s)
         """
-        cursor = LineCursor(self.ayas[0].page, self.ayas[0].line_start)
-        aya_index = 0
-        while cursor <= LineCursor(self.ayas[-1].page, self.ayas[-1].line_end):
-            aya = self.ayas[aya_index]
+        for aya_index, aya in enumerate(self.ayas):
             for part_index, part in enumerate(aya.parts):
-                if part.offset is None: # Skip already processed Line
-                    if part_index<len(aya.parts)-1: # Complete Line(s)
-                        part = QuranLine(aya.page, [part]).update_parts(DbBuilder.cfg.line_width)
+                if part.offset is None: # Ignore already processed part
+                    if part_index<len(aya.parts)-1: # Complete Line
+                        part = QuranLine(aya.page, [part]).update_parts(DbBuilder.cfg.line_width)[0]
                     else:
                         line_parts = [part]
                         search_index = aya_index +1
@@ -227,8 +233,6 @@ class Surah:
                             search_index = search_index + 1
                         line_parts = QuranLine(aya.page,line_parts)\
                             .update_parts(DbBuilder.cfg.line_width)
-                cursor.next_line()
-            aya_index = aya_index + 1
         return self.update_json()
 
 class Mushaf:
@@ -283,13 +287,15 @@ class JsonHelper:
 
     def get_json_header(self, cfg):
         """Returns a Json String of the Db header object"""
-        return f'\
-            {{"title": "{cfg.title}",\
-            "published": {cfg.published},\
-            "font_family": "{cfg.font_family}",\
-            "font_url": "{cfg.font_url}",\
-            "font_size": {cfg.font_size},\
-            "line_width": {cfg.line_width}}}'
+        if cfg:
+            return f'\
+                {{"title": "{cfg.title}",\
+                "published": {cfg.published},\
+                "font_family": "{cfg.font_family}",\
+                "font_url": "{cfg.font_url}",\
+                "font_size": {cfg.font_size},\
+                "line_width": {cfg.line_width}}}'
+        return ""
 
     def get_json_filename(self):
         """Get Json filename String according to config"""
@@ -302,7 +308,7 @@ class JsonHelper:
         j = json.loads(self.header)
         j.update({"suras":suras})
         with open(self.get_json_filename(), 'w', encoding="utf-8") as json_file:
-            json.dump(j, json_file, ensure_ascii = False, indent=2)
+            json.dump(j, json_file, ensure_ascii = False, indent=None) # indent=2 for debugging
         print(f'Saved: {self.get_json_filename()}')
 
 class HtmlHelper:
