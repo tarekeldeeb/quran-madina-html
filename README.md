@@ -5,7 +5,7 @@
 
 A Madina Quran HTML Renderer without images
 
-Theres a pre-processing python script to generate Json databases with quran text with special metadata. The preprocessing is based on text from [Tanzil](tanzil.net), and the OCR DB from [Murtaza Raja](https://github.com/murtraja/quran-android-images-helper) helper project.
+Theres a pre-processing python script to generate Json databases with quran text with special metadata. The preprocessing is based on text from [Tanzil](tanzil.net), and the [OCR DB](https://github.com/quran/ayah-detection) downloaded from [Murtaza Raja](https://github.com/murtraja/quran-android-images-helper) helper project.
 Afterwards, the JS library uses those Json objects to render Madina-based Quran pages and lines.
 
 The main purpose of this library is:
@@ -18,9 +18,10 @@ The main purpose of this library is:
 # Getting Started
 In your Html header, add this script:
 ```html
-  <script type="text/javascript" src="https://unpkg.com/quran-madina-html" data-name="Madina" data-font="Uthman"></script>
+  <script type="text/javascript" src="https://unpkg.com/quran-madina-html"></script>
 ```
-* Supported ``data-font`` parameters are: Amiri (default), Uthman, Hafs
+* Supported ``data-name`` parameters are: Madina05 (default), others are under development (Shemerly, Qaloon, Newer Madina)
+* Supported ``data-font`` parameters are: Hafs (default), Uthman, Amiri Quran, Amiri Quran Colored
 * Other options include: ``data-font-size`` which defaults to 16 (px)
 
 Then in your body, just add the tag.
@@ -36,10 +37,10 @@ Alternatively, you can fork this repo, then clone it.
 
 ```
 $ apt install python3-distutils nodejs npm chromium-driver
-$ npm install	// install bower tasks
-$ bower install	// install components
+$ npm install	// install components and scripts
+$ bower install	// install bower libs
 $ npm run build-db // build all json Db files
-$ grunt // build the dist with dependencies
+$ npm run release // build the dist with dependencies
 
 ```
 
