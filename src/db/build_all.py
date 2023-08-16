@@ -10,23 +10,23 @@ from argparse import Namespace
 from tqdm import tqdm
 from build_db import DbBuilder, DEFAULTS, CDN
 
-amiri24 = DEFAULTS.copy()
-amiri24['font_size']=24
-amiri24['line_width']=410
+amiri16 = DEFAULTS.copy()
+amiri16['font_family'] = 'Amiri Quran'
+amiri16['font_url'] = CDN+'assets/fonts/AmiriQuran.woff2'
+
+amiri_color16 = DEFAULTS.copy()
+amiri_color16['font_family'] = 'Amiri Quran Colored'
+amiri_color16['font_url'] = CDN+'assets/fonts/AmiriQuranColored.woff2'
+
+amiri_color24 = amiri_color16.copy()
+amiri_color24['font_size']=24
+amiri_color24['line_width']=410
 
 uthman16 = DEFAULTS.copy()
 uthman16['font_family'] = 'Uthman'
 uthman16['font_url'] = CDN+"assets/fonts/UthmanTN_v2-0.woff2"
 
-uthman14 = uthman16.copy()
-uthman14['font_size'] = 14
-uthman14['line_width'] = 240
-
-hafs16 = DEFAULTS.copy()
-hafs16['font_family'] = 'Hafs'
-hafs16['font_url'] = CDN+"assets/fonts/Hafs.woff2"
-
-configs = [ DEFAULTS, amiri24, uthman16, uthman14, hafs16 ]
+configs = [ DEFAULTS, amiri16, uthman16, amiri_color16, amiri_color24]
 
 if __name__ == '__main__':
     with Pool(4) as p:

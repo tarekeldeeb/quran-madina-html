@@ -29,10 +29,10 @@ from selenium.common.exceptions import TimeoutException
 # Internal Constants: Do not edit!
 CDN = 'https://www.unpkg.com/quran-madina-html/'
 REPO = CDN #'https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-images/main/'
-DEFAULTS = {'name':'Madina', 'published': 1405,
+DEFAULTS = {'name':'Madina05', 'published': 1405,
            'title':"مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",
-           'font_family':'Amiri Quran Colored',
-           'font_url':REPO+'assets/fonts/AmiriQuranColored.woff2',
+           'font_family':'Hafs',
+           'font_url':REPO+'assets/fonts/Hafs.woff2',
            'font_size':16, 'line_width':275}
 
 class LineCursor:
@@ -302,7 +302,7 @@ class JsonHelper:
 
     def get_json_filename(self):
         """Get Json filename String according to config"""
-        json_file = f'{self.cfg.name}-{self.cfg.font_family.split()[0]}' \
+        json_file = f'{self.cfg.name}-{self.cfg.font_family.replace(" ","%")}' \
                     f'-{self.cfg.font_size}px.json'
         return os.path.join(DbReader.DB_OUT, json_file)
 
