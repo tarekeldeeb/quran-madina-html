@@ -1,12 +1,49 @@
 {
-  "name": "x-quran-madina-html",
-  "version": "0.1.2",
+  "name": "quran-madina-html",
+  "version": "0.2.1",
   "devDependencies": {
     "bower": "^1.8.14",
     "grunt": "^1.6.1",
+    "grunt-contrib-clean": "^2.0.1",
     "grunt-contrib-concat": "^2.1.0",
+    "grunt-contrib-cssmin": "^5.0.0",
     "grunt-contrib-jshint": "^3.2.0",
     "grunt-contrib-uglify": "^5.2.2",
-    "grunt-contrib-watch": "^1.1.0"
+    "grunt-contrib-watch": "^1.1.0",
+    "release-it": "^16.1.5"
+  },
+  "description": "A Madina Quran HTML Renderer without images.",
+  "main": "dist/quran-madina-html.min.js",
+  "scripts": {
+    "build": "grunt",
+    "build-db": "python src/db/build_all.py",
+    "test": "python -m pytest",
+    "release": "release-it"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tarekeldeeb/quran-madina-html-no-images.git"
+  },
+  "keywords": [
+    "quran",
+    "html",
+    "x-tag",
+    "madina"
+  ],
+  "author": "Tarek Eldeeb",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tarekeldeeb/quran-madina-html-no-images/issues"
+  },
+  "homepage": "https://github.com/tarekeldeeb/quran-madina-html-no-images#readme",
+  "release-it": {
+    "github": {
+      "release": true
+    },
+    "hooks": {
+      "after:init": [
+        "grunt"
+      ]
+    }
   }
 }

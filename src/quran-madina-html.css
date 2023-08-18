@@ -7,4 +7,5 @@ quran-madina-html-line {
   text-align: right;
   white-space: nowrap;
   transform-origin: top right;
+  transition: background-color 1s ease;
 }

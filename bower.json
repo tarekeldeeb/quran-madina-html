@@ -7,8 +7,8 @@
     "x-tag"
   ],
   "main": [
-    "src/main.js",
-    "src/main.css"
+    "src/quran-madina-html.js",
+    "src/quran-madina-html.css"
   ],
   "dependencies": {
     "x-tag-core": "*"

@@ -5,7 +5,7 @@
 
 A Madina Quran HTML Renderer without images
 
-Theres a pre-processing python script to generate Json databases with quran text with special metadata. The preprocessing is based on text from [Tanzil](tanzil.net), and the OCR DB from [Murtaza Raja](https://github.com/murtraja/quran-android-images-helper) helper project.
+Theres a pre-processing python script to generate Json databases with quran text with special metadata. The preprocessing is based on text from [Tanzil](tanzil.net), and the [OCR DB](https://github.com/quran/ayah-detection) downloaded from [Murtaza Raja](https://github.com/murtraja/quran-android-images-helper) helper project.
 Afterwards, the JS library uses those Json objects to render Madina-based Quran pages and lines.
 
 The main purpose of this library is:
@@ -21,6 +21,8 @@ In your Html header, add this script:
   <script type="text/javascript" src="https://unpkg.com/quran-madina-html" data-name="Madina" data-font="Uthman"></script>
 ```
 * Supported ``data-font`` parameters are: Amiri (default), Uthman, Hafs
+* Supported ``data-name`` parameters are: Madina05 (default), others are under development (Shemerly, Qaloon, Newer Madina)
+* Supported ``data-font`` parameters are: Hafs (default), Uthman, Amiri Quran, Amiri Quran Colored
 * Other options include: ``data-font-size`` which defaults to 16 (px)
 
 Then in your body, just add the tag.
