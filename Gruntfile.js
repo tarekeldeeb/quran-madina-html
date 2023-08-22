@@ -46,6 +46,11 @@ module.exports = function(grunt) {
         esnext: true
       }
     },
+    'json-minify': {
+      build: {
+        files: 'assets/db/*.json'
+      }
+    },
     clean : {
       yourTarget : {
           src : [ "dist"
@@ -64,8 +69,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-contrib-cssmin');
+  grunt.loadNpmTasks('grunt-json-minify');
 
   grunt.registerTask('test', ['jshint']);
-  grunt.registerTask('default', ['jshint', 'clean', 'concat', 'uglify', 'cssmin']);
+  grunt.registerTask('default', ['jshint', 'clean', 'concat', 'uglify', 'cssmin', 'json-minify']);
 
 };
