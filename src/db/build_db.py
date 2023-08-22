@@ -104,7 +104,7 @@ class Ayah:
         if "Amiri" in DbBuilder.cfg.font_family:
             self.text = text + f' \u06DD{index}'
         else:
-            self.text = text + f' \uFD3F{index}\uFD3E'
+            self.text = text + f' \uFD3F{self.get_hindi_numbers(index)}\uFD3E'
         if "Uthman" in DbBuilder.cfg.font_family:
             self.text = self.text.replace("ٱ", "ا")
     @classmethod
@@ -119,6 +119,12 @@ class Ayah:
         part.text = text
         instance.parts = [part]
         return instance
+    def get_hindi_numbers (self, number):
+        """Remap all numeric characters to hindi """
+        table = str.maketrans('0123456789',
+                              '\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669')
+        return str(number).translate(table)
+
     def update_json(self):
         """returns the json string of this object"""
         return {"p": self.page, "r": list(map(lambda part: part.to_json(), self.parts))}
@@ -311,7 +317,7 @@ class JsonHelper:
         j = json.loads(self.header)
         j.update({"suras":suras})
         with open(self.get_json_filename(), 'w', encoding="utf-8") as json_file:
-            json.dump(j, json_file, ensure_ascii = False, indent=None) # indent=2 for debugging
+            json.dump(j, json_file, ensure_ascii = False, indent=2)
         print(f'Saved: {self.get_json_filename()}')
 
 class HtmlHelper:

@@ -114,7 +114,10 @@
                 }
                 if(multiline){
                   tag.style.setProperty('font-family', madina_data.font_family, '');
-                  tag.style.setProperty('font-size', madina_data.font_size+"px", '');                  
+                  tag.style.setProperty('font-size', madina_data.font_size+"px", '');
+                  if(madina_data.font_family === "me_quran"){
+                    tag.style.setProperty('line-height', madina_data.font_size*2+"px", '');
+                  }
                 }
                 var aya_current = aya_from;
                 for(let l = line_from; l <= line_to; l++) {
