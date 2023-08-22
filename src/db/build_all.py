@@ -26,7 +26,11 @@ uthman16 = DEFAULTS.copy()
 uthman16['font_family'] = 'Uthman'
 uthman16['font_url'] = CDN+"assets/fonts/UthmanTN_v2-0.woff2"
 
-configs = [ DEFAULTS, amiri16, uthman16, amiri_color16, amiri_color24]
+me_quran16 = DEFAULTS.copy()
+me_quran16['font_family'] = 'me_quran'
+me_quran16['font_url'] = CDN+"assets/fonts/me_quran-Regular.woff2"
+
+configs = [ DEFAULTS, amiri16, uthman16, amiri_color16, amiri_color24, me_quran16]
 
 if __name__ == '__main__':
     with Pool(4) as p:
