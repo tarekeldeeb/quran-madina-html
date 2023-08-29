@@ -1,6 +1,7 @@
 (function(){
   var name = "quran-madina-html";
-  var cdn = `https://www.unpkg.com/${name}/`; //"../"; //
+  //var cdn = "../";
+  var cdn = `https://www.unpkg.com/${name}/`;
   function loadJSON(path, success, error){
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
@@ -47,13 +48,29 @@
     const zeroPad = (num, places) => String(num).padStart(places, '0');
     return [`${name}-part`, `${name}-${zeroPad(sura,3)}-${zeroPad(aya,3)}`];
   }
+  function getCopyIcon(){
+    let htmlString = '<svg viewBox="0 0 24 24" class="quran-madina-html-icon" width="20px" style="float: left" >'+
+      '<path d="M16.02 20.96H3.78c-.41 0-.75-.34-.75-.75V7.74c0-.41.34-.75.75-.75h7.87c.21 0 '+
+      '.39.08.53.22l4.37 4.37c.14.14.22.32.22.53v8.11c0 .4-.34.74-.75.74ZM4.53 19.47h10.75v-6'+
+      '.61h-3.62c-.41 0-.75-.34-.75-.75V8.48H4.53v10.99Z"></path><path d="m20.74 7.63-4.37-4.'+
+      '37c-.14-.14-.36-.2-.53-.22H8.01c-.41 0-.75.34-.75.75V5.5h1.49v-.97h6.34v3.62c0 .41.34.'+
+      '75.75.75h3.62v8.19h-1.2v1.49h1.95c.41 0 .75-.34.75-.75V8.16c0-.21-.08-.4-.22-.53Z">'+
+      '</path></svg>';
+      var div = document.createElement('div');
+      div.innerHTML = htmlString.trim();
+      return div.firstChild;
+  }
+  function copyToClipboard(){
+    var attribute = this.getAttribute("data-copy-sura");
+    alert(attribute);
+  }
   var madina_data = {"content":"Loading .."};
   var this_script = document.currentScript || document.querySelector(`script[src*="${name}"]`);
   var doc_name    = this_script.getAttribute('data-name') || "Madina05";
   var doc_font    = (this_script.getAttribute('data-font') || "Hafs").replaceAll(" ","%");
   var doc_font_sz = this_script.getAttribute('data-font-size') || 16;
   console.log(`Quran> ${doc_name} with font: ${doc_font} size: ${doc_font_sz}`);
-  const name_css = cdn+"dist/"+name+".min.css";
+  const name_css = cdn+"dist/"+name+".min.css?v=1.1";
   if (!document.getElementById(name))
   {
       var head  = document.getElementsByTagName('head')[0];
@@ -119,6 +136,20 @@
                     tag.style.setProperty('line-height', madina_data.font_size*2+"px", '');
                   }
                 }
+                /**Add Header with Copy button */
+                var tag_header = "";
+                if(multiline){
+                  tag_header = document.createElement("quran-madina-html-header");
+                  tag_header.innerHTML = madina_data.suras[sura].name;
+                  var copy = getCopyIcon();
+                  copy.setAttribute("data-copy-sura", sura); //FIXME
+                  copy.setAttribute("data-copy-aya-from", aya_from); //FIXME
+                  copy.setAttribute("data-copy-aya-to", aya_to); //FIXME
+                  copy.addEventListener("click", copyToClipboard);
+                  tag_header.appendChild(copy);
+                  tag.appendChild(tag_header);
+                }
+                /** Loop on Ayas, lines, parts */
                 var aya_current = aya_from;
                 for(let l = line_from; l <= line_to; l++) {
                   const ll = l; //Const for inner loops to refer

@@ -1,11 +1,21 @@
 quran-madina-html {
-  padding: 5px 5px 7px 5px;
   background-color:beige;
   border-radius: 5px;
+  overflow: hidden;
+  padding-bottom: 5px;
+}
+quran-madina-html-header {
+  background-color: dimgrey;
+  font-size: smaller;
+  display: block;
+  padding: 0 5px;
+  color: beige;
 }
 quran-madina-html-line {
   text-align: right;
   white-space: nowrap;
   transform-origin: top right;
+  margin-right: 5px;
   transition: background-color 1s ease;
 }
+
