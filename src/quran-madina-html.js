@@ -61,8 +61,10 @@
       return div.firstChild;
   }
   function copyToClipboard(){
-    var attribute = this.getAttribute("data-copy-sura");
-    alert(attribute);
+    textWithHeader = this.parentElement.parentElement.innerText.split("\n");
+    text = textWithHeader.slice(1).join(" ") + "\n\n" + textWithHeader[0];
+    navigator.clipboard.writeText(text);
+    alert("\u2398 تم نسخ:\n\n" + text);
   }
   var madina_data = {"content":"Loading .."};
   var this_script = document.currentScript || document.querySelector(`script[src*="${name}"]`);
