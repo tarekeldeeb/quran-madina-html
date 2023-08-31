@@ -30,7 +30,7 @@ quran-madina-html-line {
 }
 svg.quran-madina-html-icon {
   float:left; 
-  padding-top:2px;
+  padding:2px;
 }
 svg.quran-madina-html-icon path {
   fill: var(--qmh-background);

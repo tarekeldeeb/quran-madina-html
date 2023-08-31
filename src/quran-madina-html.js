@@ -61,7 +61,7 @@
       return div.firstChild;
   }
   function getTranslateIcon(){
-    let htmlString = '<svg xmlns="http://www.w3.org/2000/svg" width="1093.333" height="820" viewBox="0 0 820 615" style="height:20px"><path d="M70 '+
+    let htmlString = '<svg class="quran-madina-html-icon" viewBox="0 0 820 615" style="height:20px"><path d="M70 '+
     '1.9C37.6 8.8 12.6 33.4 3.4 67.5c-1.8 6.6-1.9 11.9-1.9 98v91l2.3 8c5.1 17.8 17 36.4 29.9 46.7 10.8 8.6 25.4 15.4 38.1 17.8 '+
     '3.1.6 15.2 1 26.8 1 17.7 0 21.3.2 21.7 1.4.4.9.6 17.1.7 36.1 0 32.4.2 34.9 2 38.5 6.4 12.5 21.4 17.4 33.3 10.8 2.3-1.3 7.5-6.4 '+
     '12.1-11.9l63-74.1c.6-.4 16.3-.8 34.9-.8H300l-.2-18.3-.3-18.2-42.8.1-43.1.5c-.2.2-12.7 15.1-27.9 33.1-15.1 18-27.8 32.4-28.1 '+
@@ -104,6 +104,12 @@
     }
     navigator.clipboard.writeText(text);
     alert("\u2398 تم نسخ:\n\n" + text);
+  }
+  function openTranslate(){
+    let sura_index = this.parentElement.parentElement.getAttribute("sura");
+    let aya_index = this.parentElement.parentElement.getAttribute("aya");
+    URL = `https://quran.com/${sura_index}/${aya_index}`;
+    window.open(URL, '_blank');
   }
   var madina_data = {"content":"Loading .."};
   var this_script = document.currentScript || document.querySelector(`script[src*="${name}"]`);
@@ -184,11 +190,13 @@
                   /* Search: only works within a single sura */
                   sura = 0; aya_from=1; aya_to=0;
                   while(madina_data.suras[sura].ayas[0].p < this.page) sura = sura + 1;
-                  sura = sura -1;
+                  sura = sura -1; 
+                  this.sura = sura+1;
                   while(madina_data.suras[sura].ayas[aya_from].p < this.page) aya_from = aya_from + 1;
                   aya_to = aya_from;
                   while(madina_data.suras[sura].ayas[aya_to].p == this.page) aya_to = aya_to + 1;
                   aya_to = aya_to -1;
+                  this.aya = `${aya_from-1}-${aya_to-1}`;
                   multiline = true;
                 } else{
                   console.error(`${name}> Bad arguments: Not rendering!`);
@@ -214,7 +222,10 @@
                   tag_header.innerHTML = madina_data.suras[sura].name;
                   var copy = getCopyIcon();
                   copy.addEventListener("click", copyToClipboard);
+                  var translation = getTranslateIcon();
+                  translation.addEventListener("click", openTranslate);
                   tag_header.appendChild(copy);
+                  tag_header.appendChild(translation);
                   tag.appendChild(tag_header);
                 }
                 /** Loop on Ayas, lines, parts */
