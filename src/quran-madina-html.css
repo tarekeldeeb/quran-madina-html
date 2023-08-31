@@ -24,6 +24,8 @@ quran-madina-html-line {
   white-space: nowrap;
   transform-origin: top right;
   margin-right: 5px;
+}
+.quran-madina-html-part{
   transition: background-color 0.7s ease;
 }
 svg.quran-madina-html-icon {
