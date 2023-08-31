@@ -60,6 +60,9 @@
       div.innerHTML = htmlString.trim();
       return div.firstChild;
   }
+  function print(str){
+    console.log(`${name}> ${str}`);
+  }
   function copyToClipboard(){
     textWithHeader = this.parentElement.parentElement.innerText.split("\n");
     if(textWithHeader.length > 1){
@@ -68,7 +71,6 @@
       let sura_index = this.parentElement.parentElement.getAttribute("sura");
       text = textWithHeader[0]+ "\n\n" + madina_data.suras[sura_index-1].name;
     }
-
     navigator.clipboard.writeText(text);
     alert("\u2398 تم نسخ:\n\n" + text);
   }
@@ -77,7 +79,7 @@
   var doc_name    = this_script.getAttribute('data-name') || "Madina05";
   var doc_font    = (this_script.getAttribute('data-font') || "Hafs").replaceAll(" ","%");
   var doc_font_sz = this_script.getAttribute('data-font-size') || 16;
-  console.log(`Quran> ${doc_name} with font: ${doc_font} size: ${doc_font_sz}`);
+  print(`${doc_name} with font: ${doc_font} size: ${doc_font_sz}`);
   const name_css = cdn+"dist/"+name+".min.css?v=1.1";
   if (!document.getElementById(name))
   {
@@ -112,7 +114,7 @@
                   this.xtag.data.page = value;
                 },
                 get: function(){
-                  return this.getAttribute("page") || -1;
+                  return this.getAttribute("page");
                 }
               },
               aya:{
@@ -136,20 +138,33 @@
             }, 
             methods: {
                render: function(tag){
-                let sura = 0, multiline = false, aya_from = 0, aya_to = 0, line_from = 0, line_to = 0;
+                var sura;
+                var multiline;
+                var aya_from;
+                var aya_to;
+                var line_from;
+                var line_to;
                 if(this.sura != null && this.aya != null ){
                   sura = parseSuraRange(this.sura)[0]; // Only a single Sura
                   multiline = false;
                   [aya_from,aya_to] = parseAyaRange(this.aya);
-                  line_from = madina_data.suras[sura].ayas[aya_from].r[0].l;
-                  line_to = madina_data.suras[sura].ayas[aya_to].r.slice(-1)[0].l;
+                  if(this.page != null) print("Ignoring page parameter!");
                 } else if(this.page != null){
-
+                  /* Search: only works within a single sura */
+                  sura = 0; aya_from=1; aya_to=0;
+                  while(madina_data.suras[sura].ayas[0].p < this.page) sura = sura + 1;
+                  sura = sura -1;
+                  while(madina_data.suras[sura].ayas[aya_from].p < this.page) aya_from = aya_from + 1;
+                  aya_to = aya_from;
+                  while(madina_data.suras[sura].ayas[aya_to].p == this.page) aya_to = aya_to + 1;
+                  aya_to = aya_to -1;
+                  multiline = true;
                 } else{
-                  console.error("Bad arguments for quran-madina-html: Not renderring!");
+                  console.error(`${name}> Bad arguments: Not rendering!`);
                   return 1;
                 }
-                
+                line_from = madina_data.suras[sura].ayas[aya_from].r[0].l;
+                line_to = madina_data.suras[sura].ayas[aya_to].r.slice(-1)[0].l;
                 if(line_from!=line_to){
                   multiline = true;
                   tag.style = "display:block;";
