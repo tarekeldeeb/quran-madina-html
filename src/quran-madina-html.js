@@ -19,7 +19,7 @@
     xhr.open("GET", path, true);
     xhr.send();
   }
-  function hoverByType(class_name, type="class", color_bg="whitesmoke", color_out="transparent"){
+  function hoverByType(class_name, type="class", color_bg="lightgrey", color_out="transparent"){
     var elms = (type.toLowerCase() === "tag") ? document.getElementsByTagName(class_name)  
                                               : document.getElementsByClassName(class_name);
     Array.from(elms).forEach(function(elm) {
@@ -100,6 +100,15 @@
             }, 
             events: {},
             accessors: {
+              page:{
+                attribute: {},
+                set: function(value) {
+                  this.xtag.data.page = value;
+                },
+                get: function(){
+                  return this.getAttribute("page") || -1;
+                }
+              },
               aya:{
                 attribute: {},
                 set: function(value) {
@@ -121,11 +130,18 @@
             }, 
             methods: {
                render: function(tag){
-                var sura = parseSuraRange(this.sura)[0]; // Only a single Sura
-                var multiline = false;
-                [aya_from,aya_to] = parseAyaRange(this.aya);
-                var line_from = madina_data.suras[sura].ayas[aya_from].r[0].l;
-                var line_to = madina_data.suras[sura].ayas[aya_to].r.slice(-1)[0].l;
+                if(this.sura != null && this.aya != null ){
+                  var sura = parseSuraRange(this.sura)[0]; // Only a single Sura
+                  var multiline = false;
+                  [aya_from,aya_to] = parseAyaRange(this.aya);
+                  var line_from = madina_data.suras[sura].ayas[aya_from].r[0].l;
+                  var line_to = madina_data.suras[sura].ayas[aya_to].r.slice(-1)[0].l;
+                } else if(this.page != null){
+
+                } else{
+                  console.error("Bad arguments for quran-madina-html: Not renderring!");
+                  return 1;
+                }
                 
                 if(line_from!=line_to){
                   multiline = true;
