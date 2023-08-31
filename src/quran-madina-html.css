@@ -1,21 +1,35 @@
 quran-madina-html {
-  background-color:beige;
+  --qmh-background: #F5F5DC; /*#beige; */
+  --qmh-header: #696969; /* #dimgrey; */
+  display: inline-flex;
+  background-color:var(--qmh-background);
   border-radius: 5px;
   overflow: hidden;
-  padding-bottom: 5px;
 }
 quran-madina-html-header {
-  background-color: dimgrey;
+  background-color: var(--qmh-header);
   font-size: smaller;
   display: block;
   padding: 0 5px 0 10px;
-  color: beige;
+  color: var(--qmh-background);
+}
+quran-madina-html-copy {
+  background-color: var(--qmh-header);
+  display: inline-block;
+  padding: 0 5px;
+  margin-right: 3px;
 }
 quran-madina-html-line {
   text-align: right;
   white-space: nowrap;
   transform-origin: top right;
   margin-right: 5px;
-  transition: background-color 1s ease;
+  transition: background-color 0.7s ease;
 }
-
+svg.quran-madina-html-icon {
+  float:left; 
+  padding-top:2px;
+}
+svg.quran-madina-html-icon path {
+  fill: var(--qmh-background);
+}
