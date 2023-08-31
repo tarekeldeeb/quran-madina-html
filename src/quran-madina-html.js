@@ -49,7 +49,7 @@
     return [`${name}-part`, `${name}-${zeroPad(sura,3)}-${zeroPad(aya,3)}`];
   }
   function getCopyIcon(){
-    let htmlString = '<svg viewBox="0 0 24 24" class="quran-madina-html-icon" width="20px" style="float: left" >'+
+    let htmlString = '<svg viewBox="0 0 24 24" class="quran-madina-html-icon" width="20px">'+
       '<path d="M16.02 20.96H3.78c-.41 0-.75-.34-.75-.75V7.74c0-.41.34-.75.75-.75h7.87c.21 0 '+
       '.39.08.53.22l4.37 4.37c.14.14.22.32.22.53v8.11c0 .4-.34.74-.75.74ZM4.53 19.47h10.75v-6'+
       '.61h-3.62c-.41 0-.75-.34-.75-.75V8.48H4.53v10.99Z"></path><path d="m20.74 7.63-4.37-4.'+
@@ -62,7 +62,13 @@
   }
   function copyToClipboard(){
     textWithHeader = this.parentElement.parentElement.innerText.split("\n");
-    text = textWithHeader.slice(1).join(" ") + "\n\n" + textWithHeader[0];
+    if(textWithHeader.length > 1){
+      text = textWithHeader.slice(1).join(" ") + "\n\n" + textWithHeader[0];
+    } else {
+      let sura_index = this.parentElement.parentElement.getAttribute("sura");
+      text = textWithHeader[0]+ "\n\n" + madina_data.suras[sura_index-1].name;
+    }
+
     navigator.clipboard.writeText(text);
     alert("\u2398 تم نسخ:\n\n" + text);
   }
@@ -130,12 +136,13 @@
             }, 
             methods: {
                render: function(tag){
+                let sura = 0, multiline = false, aya_from = 0, aya_to = 0, line_from = 0, line_to = 0;
                 if(this.sura != null && this.aya != null ){
-                  var sura = parseSuraRange(this.sura)[0]; // Only a single Sura
-                  var multiline = false;
+                  sura = parseSuraRange(this.sura)[0]; // Only a single Sura
+                  multiline = false;
                   [aya_from,aya_to] = parseAyaRange(this.aya);
-                  var line_from = madina_data.suras[sura].ayas[aya_from].r[0].l;
-                  var line_to = madina_data.suras[sura].ayas[aya_to].r.slice(-1)[0].l;
+                  line_from = madina_data.suras[sura].ayas[aya_from].r[0].l;
+                  line_to = madina_data.suras[sura].ayas[aya_to].r.slice(-1)[0].l;
                 } else if(this.page != null){
 
                 } else{
@@ -208,6 +215,16 @@
                       aya_current = a;
                     }
                   }
+                }
+                if(!multiline){
+                  tag_header = document.createElement("quran-madina-html-copy");
+                  let copy = getCopyIcon();
+                  copy.setAttribute("data-copy-sura", sura); //FIXME
+                  copy.setAttribute("data-copy-aya-from", aya_from); //FIXME
+                  copy.setAttribute("data-copy-aya-to", aya_to); //FIXME
+                  copy.addEventListener("click", copyToClipboard);
+                  tag_header.appendChild(copy);
+                  tag.appendChild(tag_header);
                 }
               }
             }
