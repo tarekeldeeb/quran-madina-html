@@ -2,6 +2,7 @@ quran-madina-html {
   --qmh-background: #F5F5DC; /*#beige; */
   --qmh-header: #696969; /* #dimgrey; */
   display: inline-flex;
+  direction: rtl;
   background-color:var(--qmh-background);
   border-radius: 5px;
   overflow: hidden;
