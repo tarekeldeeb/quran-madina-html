@@ -1,7 +1,7 @@
 (function(){
   var name = "quran-madina-html";
-  //var cdn = "../";
-  var cdn = `https://www.unpkg.com/${name}/`;
+  var cdn = "../";
+  //var cdn = `https://www.unpkg.com/${name}/`;
   function loadJSON(path, success, error){
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
@@ -106,9 +106,14 @@
     alert("\u2398 تم نسخ:\n\n" + text);
   }
   function openTranslate(){
-    let sura_index = this.parentElement.parentElement.getAttribute("sura");
-    let aya_index = this.parentElement.parentElement.getAttribute("aya");
-    URL = `https://quran.com/${sura_index}/${aya_index}`;
+    if(this.parentElement.parentElement.getAttribute("page") != null){
+      let page_index = this.parentElement.parentElement.getAttribute("page");
+      URL = `https://quran.com/page/${page_index}`;
+    } else {
+      let sura_index = this.parentElement.parentElement.getAttribute("sura");
+      let aya_index = this.parentElement.parentElement.getAttribute("aya");
+      URL = `https://quran.com/${sura_index}/${aya_index}`;
+    }
     window.open(URL, '_blank');
   }
   var madina_data = {"content":"Loading .."};
@@ -175,35 +180,38 @@
             }, 
             methods: {
                render: function(tag){
-                var sura;
+                var sura_from;
+                var sura_to;
                 var multiline;
                 var aya_from;
                 var aya_to;
                 var line_from;
                 var line_to;
                 if(this.sura != null && this.aya != null ){
-                  sura = parseSuraRange(this.sura)[0]; // Only a single Sura
+                  sura_from = parseSuraRange(this.sura)[0]; 
+                  this.sura = sura_from.toString(); // Only a single Sura
+                  sura_to = sura_from;
                   multiline = false;
                   [aya_from,aya_to] = parseAyaRange(this.aya);
                   if(this.page != null) print("Ignoring page parameter!");
                 } else if(this.page != null){
-                  /* Search: only works within a single sura */
-                  sura = 0; aya_from=1; aya_to=0;
-                  while(madina_data.suras[sura].ayas[0].p < this.page) sura = sura + 1;
-                  sura = sura -1; 
-                  this.sura = sura+1;
-                  while(madina_data.suras[sura].ayas[aya_from].p < this.page) aya_from = aya_from + 1;
-                  aya_to = aya_from;
-                  while(madina_data.suras[sura].ayas[aya_to].p == this.page) aya_to = aya_to + 1;
-                  aya_to = aya_to -1;
+                  sura_from = 0; sura_to = 0; aya_from=1; aya_to=0;
+                  while(madina_data.suras[sura_from].ayas.slice(-1)[0].p < this.page) sura_from = sura_from + 1;
+                  sura_to = sura_from;
+                  while(madina_data.suras[sura_to].ayas[0].p <= this.page) sura_to = sura_to + 1;
+                  sura_to = sura_to -1;
+                  this.sura =(sura_from == sura_to)? `${sura_from+1}`:`${sura_from+1}-${sura_to+1}`;
+                  while(madina_data.suras[sura_from].ayas[aya_from].p < this.page) aya_from = aya_from + 1;
+                  aya_to = madina_data.suras[sura_to].ayas.length-1;
+                  while (madina_data.suras[sura_to].ayas[aya_to].p > this.page) aya_to = aya_to - 1;
                   this.aya = `${aya_from-1}-${aya_to-1}`;
                   multiline = true;
                 } else{
                   console.error(`${name}> Bad arguments: Not rendering!`);
                   return 1;
                 }
-                line_from = madina_data.suras[sura].ayas[aya_from].r[0].l;
-                line_to = madina_data.suras[sura].ayas[aya_to].r.slice(-1)[0].l;
+                line_from = madina_data.suras[sura_from].ayas[aya_from].r[0].l;
+                line_to = madina_data.suras[sura_to].ayas[aya_to].r.slice(-1)[0].l;
                 if(line_from!=line_to){
                   multiline = true;
                   tag.style = "display:block;";
@@ -219,7 +227,7 @@
                 var tag_header = "";
                 if(multiline){
                   tag_header = document.createElement("quran-madina-html-header");
-                  tag_header.innerHTML = madina_data.suras[sura].name;
+                  tag_header.innerHTML = madina_data.suras[sura_from].name;
                   var copy = getCopyIcon();
                   copy.addEventListener("click", copyToClipboard);
                   var translation = getTranslateIcon();
@@ -230,6 +238,7 @@
                 }
                 /** Loop on Ayas, lines, parts */
                 var aya_current = aya_from;
+                var sura_current = sura_from;
                 for(let l = line_from; l <= line_to; l++) {
                   const ll = l; //Const for inner loops to refer
                   line = document.createElement("quran-madina-html-line");
@@ -240,12 +249,13 @@
                   }
                   if(multiline){
                     tag.style.width = (madina_data.line_width+10)+"px";
-                    let isRightPage = madina_data.suras[sura].ayas[aya_from].p%2==1?"":"-";
+                    let isRightPage = madina_data.suras[sura_current].ayas[aya_from].p%2==1?"":"-";
                     tag.style.setProperty('box-shadow', 'inset '+isRightPage+'8px 0 7px -7px #333','');
                     line.style.setProperty('display','block','');
                   } 
-                  for(let a = aya_current; a < aya_current+5 && a <=aya_to ; a++) { //Look ahead
-                    line_match = madina_data.suras[sura].ayas[a].r.filter(rr => rr.l == ll);
+                  let look_ahead = (sura_from == sura_to)? aya_to: madina_data.suras[sura_current].ayas.length-1;
+                  for(let a = aya_current; a <= Math.min(aya_current+5, look_ahead) ; a++) {
+                    line_match = madina_data.suras[sura_current].ayas[a].r.filter(rr => rr.l == ll);
                     if (line_match.length){
                       if(multiline){
                         if(line.innerHTML.trim() == ""){ // First part in the line
@@ -260,13 +270,18 @@
                         }
                       }
                       let aya_part = document.createElement("div");
-                      let classes = getAyaClass(sura+1, a-1);
+                      let classes = getAyaClass(sura_current+1, a-1);
                       DOMTokenList.prototype.add.apply(aya_part.classList, classes);
                       aya_part.textContent = line_match[0].t;
                       aya_part.style.cssText = 'display:inline';
                       line.appendChild(aya_part);
                       hoverByType(classes.slice(-1)[0]);
                       aya_current = a;
+                      if(aya_current >= look_ahead && madina_data.suras[sura_current+1].ayas[0].r[0].l == ll+1) { 
+                        //Jump to next Sura
+                        sura_current = sura_current + 1;
+                        aya_current = 0;
+                      }
                     }
                   }
                 }
