@@ -14,6 +14,16 @@ class BasicRenderTest(unittest.TestCase):
     """Testing the Render of all Quran data
     """
     chrome_options = Options()
+    options = [
+        "--headless",
+        "--disable-gpu",
+        "--ignore-certificate-errors",
+        "--disable-extensions",
+        "--no-sandbox",
+        "--disable-dev-shm-usage"
+    ]
+    for option in options:
+        chrome_options.add_argument(option)
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
     web_driver = webdriver.Chrome(options=chrome_options)
     test_file = os.path.join("src", "template", "render_test.html")
@@ -22,12 +32,12 @@ class BasicRenderTest(unittest.TestCase):
     time.sleep(10)
 
     def set_page(self, page):
+        """Sets page argument in the test.html"""
         with open(self.test_file, "r", encoding="utf8") as template:
             soup = BeautifulSoup(template.read(), 'html.parser')
         soup.find("quran-madina-html")["page"] = page #type: ignore
         with open(self.test_file, 'w', encoding="utf8") as file:
             file.write(str(soup))
-
 
     def test_0_lines_exists(self):
         """Check if all 15 lines exist in all pages
