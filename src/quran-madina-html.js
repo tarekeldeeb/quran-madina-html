@@ -1,7 +1,7 @@
-(function(){
+(
+  function(){
   var name = "quran-madina-html";
-  var cdn = "../";
-  //var cdn = `https://www.unpkg.com/${name}/`;
+  var cdn = (/localhost/.test(document.location.hostname))? "../":`https://www.unpkg.com/${name}/`;
   function loadJSON(path, success, error){
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
