@@ -322,7 +322,7 @@ class JsonHelper:
 
 class HtmlHelper:
     """A Collection of Html Helper Functions"""
-    TEST_HTML_TEMPLATE = "src/template/part_width_test.html"
+    TEST_HTML_TEMPLATE = "template/part_width_test.html"
     @staticmethod
     def make_html_test():
         """Edit the html test template according to cfg"""

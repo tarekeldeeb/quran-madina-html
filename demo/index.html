@@ -4,7 +4,19 @@
 <head>
   <meta charset="utf-8" />
   <title>quran-madina-html مشروع</title>
-  <script type="text/javascript" src="https://unpkg.com/quran-madina-html"></script>
+  <!--
+  For production, its just:
+  <script type="text/javascript" src="https://unpkg.com/quran-madina-html"></script> 
+  --> 
+  <script>
+    var script = document.createElement("script");
+    if (/localhost/.test(document.location.hostname)) {
+        script.setAttribute("src", "../dist/quran-madina-html.js");
+    } else {
+        script.setAttribute("src", "https://unpkg.com/quran-madina-html");
+    }
+    document.body.appendChild(script);
+  </script>
 </head>
 
 <body>

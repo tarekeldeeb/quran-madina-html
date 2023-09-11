@@ -26,7 +26,7 @@ class BasicRenderTest(unittest.TestCase):
         chrome_options.add_argument(option)
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
     web_driver = webdriver.Chrome(options=chrome_options)
-    test_file = os.path.join("src", "template", "render_test.html")
+    test_file = os.path.join("template", "render_test.html")
     test_url = "http://localhost:8000/" + test_file
     web_driver.get(test_url)
     time.sleep(10)
