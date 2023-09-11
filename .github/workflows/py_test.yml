@@ -1,4 +1,4 @@
-name: Python Test DB
+name: PyTest
 
 on: [push]
 
@@ -50,7 +50,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ruff pytest requests webdriver-manager selenium
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          grunt
+      - name: Build with grunt
+        run: npm run build
       - name: Test with pytest
-        run: |
-          pytest
+        run: npm run test
