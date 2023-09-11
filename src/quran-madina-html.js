@@ -194,8 +194,9 @@
                   multiline = false;
                   [aya_from,aya_to] = parseAyaRange(this.aya);
                   if(this.page != null) print("Ignoring page parameter!");
+                  this.page = madina_data.suras[sura_from].ayas[aya_from].p;
                 } else if(this.page != null){
-                  sura_from = 0; sura_to = 0; aya_from=1; aya_to=0;
+                  sura_from = 0; sura_to = 0; aya_from=0; aya_to=0;
                   while(madina_data.suras[sura_from].ayas.slice(-1)[0].p < this.page) sura_from = sura_from + 1;
                   sura_to = sura_from;
                   while(madina_data.suras[sura_to].ayas[0].p <= this.page) sura_to = sura_to + 1;
@@ -249,38 +250,42 @@
                   }
                   if(multiline){
                     tag.style.width = (madina_data.line_width+10)+"px";
-                    let isRightPage = madina_data.suras[sura_current].ayas[aya_from].p%2==1?"":"-";
+                    let isRightPage = madina_data.suras[sura_current].ayas[aya_current].p%2==1?"":"-";
                     tag.style.setProperty('box-shadow', 'inset '+isRightPage+'8px 0 7px -7px #333','');
                     line.style.setProperty('display','block','');
                   } 
                   let look_ahead = (sura_from == sura_to)? aya_to: madina_data.suras[sura_current].ayas.length-1;
                   for(let a = aya_current; a <= Math.min(aya_current+5, look_ahead) ; a++) {
-                    line_match = madina_data.suras[sura_current].ayas[a].r.filter(rr => rr.l == ll);
-                    if (line_match.length){
-                      if(multiline){
-                        if(line.innerHTML.trim() == ""){ // First part in the line
-                          var offset = line_match[0].o;
-                          line.style.setProperty('padding-right', offset+"px", '');
-                          if(offset > 0) line.style.setProperty('transform-origin', "left");
+                    if(madina_data.suras[sura_current].ayas[a].p == this.page){
+                      line_match = madina_data.suras[sura_current].ayas[a].r.filter(rr => rr.l == ll);
+                      if (line_match.length){
+                        if(multiline){
+                          if(line.innerHTML.trim() == ""){ // First part in the line
+                            var offset = line_match[0].o;
+                            line.style.setProperty('padding-right', offset+"px", '');
+                            if(offset > 0) line.style.setProperty('transform-origin', "left");
+                          }
+                          if(line_match[0].s>=0){
+                            line.style.setProperty("transform",`scaleX(${line_match[0].s})`,"");                        
+                          } else {
+                            line.style.setProperty("text-align","center","");  
+                          }
                         }
-                        if(line_match[0].s>=0){
-                          line.style.setProperty("transform",`scaleX(${line_match[0].s})`,"");                        
-                        } else {
-                          line.style.setProperty("text-align","center","");  
+                        let aya_part = document.createElement("div");
+                        let classes = getAyaClass(sura_current+1, a-1);
+                        DOMTokenList.prototype.add.apply(aya_part.classList, classes);
+                        aya_part.textContent = line_match[0].t;
+                        aya_part.style.cssText = 'display:inline';
+                        line.appendChild(aya_part);
+                        hoverByType(classes.slice(-1)[0]);
+                        aya_current = a;
+                        if(aya_current >= look_ahead && 
+                          madina_data.suras[sura_current+1].ayas[0].p == this.page && 
+                          madina_data.suras[sura_current+1].ayas[0].r[0].l == ll+1) { 
+                          //Jump to next Sura
+                          sura_current = sura_current + 1;
+                          aya_current = 0;
                         }
-                      }
-                      let aya_part = document.createElement("div");
-                      let classes = getAyaClass(sura_current+1, a-1);
-                      DOMTokenList.prototype.add.apply(aya_part.classList, classes);
-                      aya_part.textContent = line_match[0].t;
-                      aya_part.style.cssText = 'display:inline';
-                      line.appendChild(aya_part);
-                      hoverByType(classes.slice(-1)[0]);
-                      aya_current = a;
-                      if(aya_current >= look_ahead && madina_data.suras[sura_current+1].ayas[0].r[0].l == ll+1) { 
-                        //Jump to next Sura
-                        sura_current = sura_current + 1;
-                        aya_current = 0;
                       }
                     }
                   }
