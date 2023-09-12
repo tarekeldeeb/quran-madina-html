@@ -119,7 +119,7 @@
   var madina_data = {"content":"Loading .."};
   var this_script = document.currentScript || document.querySelector(`script[src*="${name}"]`);
   var doc_name    = this_script.getAttribute('data-name') || "Madina05";
-  var doc_font    = (this_script.getAttribute('data-font') || "Hafs").replaceAll(" ","%");
+  var doc_font    = (this_script.getAttribute('data-font') || "Hafs").replaceAll(" ","_");
   var doc_font_sz = this_script.getAttribute('data-font-size') || 16;
   print(`${doc_name} with font: ${doc_font} size: ${doc_font_sz}`);
   const name_css = cdn+"dist/"+name+".min.css?v=1.1";
@@ -199,7 +199,7 @@
                   sura_from = 0; sura_to = 0; aya_from=0; aya_to=0;
                   while(madina_data.suras[sura_from].ayas.slice(-1)[0].p < this.page) sura_from = sura_from + 1;
                   sura_to = sura_from;
-                  while(madina_data.suras[sura_to].ayas[0].p <= this.page) sura_to = sura_to + 1;
+                  while(sura_to < 114 && madina_data.suras[sura_to].ayas[0].p <= this.page) sura_to = sura_to + 1;
                   sura_to = sura_to -1;
                   this.sura =(sura_from == sura_to)? `${sura_from+1}`:`${sura_from+1}-${sura_to+1}`;
                   while(madina_data.suras[sura_from].ayas[aya_from].p < this.page) aya_from = aya_from + 1;
@@ -280,6 +280,7 @@
                         hoverByType(classes.slice(-1)[0]);
                         aya_current = a;
                         if(aya_current >= look_ahead && 
+                          sura_current < 113 &&
                           madina_data.suras[sura_current+1].ayas[0].p == this.page && 
                           madina_data.suras[sura_current+1].ayas[0].r[0].l == ll+1) { 
                           //Jump to next Sura

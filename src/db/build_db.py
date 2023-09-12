@@ -191,13 +191,17 @@ class Surah:
                 "الفلق", "الناس"]
         sura_name = "سورة " + __name[sura_id]
         if decorate:
-            return "🙮 " + sura_name + " 🙬"
+            decorated = "▓▓▓▒▒▒░░░ "
+            return decorated + sura_name + decorated[::-1]
         return sura_name
     def get_aya01(self):
         """Returns a list of 2 ayas:"""
         page = DbBuilder.cursor.page
         line = DbBuilder.cursor.line
-        title_page = 1 if self.index == 0 else page+1 if line==15 else page
+        title_page = 1 if self.index == 0 else \
+                    2 if self.index == 1 else \
+                    page+1 if line==15 else \
+                    page
         title_line = 1 if  line==15 or self.index<=1 else line+1
         bsm_page = title_page+1 if title_line==15 else title_page
         bsm_line = 1 if title_line==15 else title_line+1
@@ -308,7 +312,7 @@ class JsonHelper:
 
     def get_json_filename(self):
         """Get Json filename String according to config"""
-        json_file = f'{self.cfg.name}-{self.cfg.font_family.replace(" ","%")}' \
+        json_file = f'{self.cfg.name}-{self.cfg.font_family.replace(" ","_")}' \
                     f'-{self.cfg.font_size}px.json'
         return os.path.join(DbReader.DB_OUT, json_file)
 
@@ -435,6 +439,7 @@ class DbBuilder:
         # Finally Load the Html Template and Driver
         chrome_options = Options()
         chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
+        chrome_options.add_argument("--headless")
         DbBuilder.web_driver = webdriver.Chrome(options=chrome_options)
         test_url = "file://" + DbBuilder.get_test_filename()
         DbBuilder.web_driver.get(test_url)
