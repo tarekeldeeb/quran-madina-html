@@ -106,7 +106,7 @@
     alert("\u2398 تم نسخ:\n\n" + text);
   }
   function openTranslate(){
-    if(this.parentElement.parentElement.getAttribute("page") != null){
+    if(this.parentElement.parentElement.getAttribute("page_param") === "true"){
       let page_index = this.parentElement.parentElement.getAttribute("page");
       URL = `https://quran.com/page/${page_index}`;
     } else {
@@ -159,6 +159,15 @@
                   return this.getAttribute("page");
                 }
               },
+              page_param:{
+                attribute: {},
+                set: function(value) {
+                  this.xtag.data.page_param = value;
+                },
+                get: function(){
+                  return this.getAttribute("page_param");
+                }
+              },
               aya:{
                 attribute: {},
                 set: function(value) {
@@ -193,8 +202,9 @@
                   sura_to = sura_from;
                   multiline = false;
                   [aya_from,aya_to] = parseAyaRange(this.aya);
-                  if(this.page != null) print("Ignoring page parameter!");
+                  if(this.page != null)print("Ignoring page parameter!");
                   this.page = madina_data.suras[sura_from].ayas[aya_from].p;
+                  this.page_param = false;
                 } else if(this.page != null){
                   sura_from = 0; sura_to = 0; aya_from=0; aya_to=0;
                   while(madina_data.suras[sura_from].ayas.slice(-1)[0].p < this.page) sura_from = sura_from + 1;
@@ -207,6 +217,7 @@
                   while (madina_data.suras[sura_to].ayas[aya_to].p > this.page) aya_to = aya_to - 1;
                   this.aya = `${aya_from-1}-${aya_to-1}`;
                   multiline = true;
+                  this.page_param = true;
                 } else{
                   console.error(`${name}> Bad arguments: Not rendering!`);
                   return 1;
