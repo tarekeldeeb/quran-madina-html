@@ -189,7 +189,7 @@
                 var line_to;
                 if(this.sura != null && this.aya != null ){
                   sura_from = parseSuraRange(this.sura)[0]; 
-                  this.sura = sura_from.toString(); // Only a single Sura
+                  this.sura = (sura_from+1).toString(); // Only a single Sura
                   sura_to = sura_from;
                   multiline = false;
                   [aya_from,aya_to] = parseAyaRange(this.aya);
