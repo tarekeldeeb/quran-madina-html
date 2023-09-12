@@ -39,8 +39,7 @@ Alternatively, you can fork this repo, then clone it.
 
 ```
 $ apt install python3-distutils nodejs npm chromium-driver
-$ npm install	// install bower tasks
-$ bower install	// install components
+$ npm install	// install components and scripts
 $ npm run build-db // build all json Db files
 $ grunt // build the dist with dependencies
 

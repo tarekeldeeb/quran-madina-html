@@ -4,7 +4,6 @@
   "devDependencies": {
     "bower": "^1.8.14",
     "grunt": "^1.6.1",
-    "http-server": "^14.1.1",
     "grunt-contrib-clean": "^2.0.1",
     "grunt-contrib-concat": "^2.1.0",
     "grunt-contrib-cssmin": "^5.0.0",
@@ -12,6 +11,7 @@
     "grunt-contrib-uglify": "^5.2.2",
     "grunt-contrib-watch": "^1.1.0",
     "grunt-json-minify": "^1.1.0",
+    "http-server": "^14.1.1",
     "release-it": "^16.1.5"
   },
   "description": "A Madina Quran HTML Renderer without images.",
@@ -48,5 +48,8 @@
         "grunt"
       ]
     }
+  },
+  "dependencies": {
+    "x-tag": "^1.5.11"
   }
 }

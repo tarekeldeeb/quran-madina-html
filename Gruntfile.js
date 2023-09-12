@@ -8,7 +8,7 @@ module.exports = function(grunt) {
       },
       dist: {
         src: ['src/<%= pkg.name %>.js',
-         'bower_components/x-tag-core/dist/x-tag-core.min.js'],
+         'node_modules/x-tag/dist/x-tag-core.min.js'],
         dest: 'dist/<%= pkg.name %>.js'
       }
     },
