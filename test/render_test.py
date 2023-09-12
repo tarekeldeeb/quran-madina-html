@@ -6,8 +6,10 @@ import unittest
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 class BasicRenderTest(unittest.TestCase):
     """Testing the Render of all Quran data
@@ -24,9 +26,8 @@ class BasicRenderTest(unittest.TestCase):
     for option in options:
         chrome_options.add_argument(option)
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
-    capabilities = DesiredCapabilities.CHROME
-    capabilities['loggingPrefs'] = { 'browser':'ALL' } # type: ignore
-    web_driver = webdriver.Chrome(options=chrome_options, desired_capabilities=capabilities)
+    chrome_options.set_capability("loggingPrefs", {'performance': 'ALL'})
+    web_driver = webdriver.Chrome(options=chrome_options)
     test_file = os.path.join("template", "render_test.html")
     test_url = "http://localhost:8000/" + test_file
     web_driver.get(test_url)
@@ -46,17 +47,32 @@ class BasicRenderTest(unittest.TestCase):
         soup.find("quran-madina-html")["page"] = page #type: ignore
         with open(self.test_file, 'w', encoding="utf8") as file:
             file.write(str(soup))
-
+        self.web_driver.refresh()
+        try:
+            WebDriverWait(self.web_driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "quran-madina-html-line")) )
+        except TimeoutException:
+            print(f"Timeout Exception at page {page}")
+        
     def test_0_lines_exists(self):
         """Check if all 15 lines exist in all pages
         """
-        for page in range(3, 604):
+        for page in range(3, 605):
             self.set_page(page)
-            self.web_driver.refresh()
             lines = self.web_driver.execute_script('return document.getElementsByTagName'
                                                    '("quran-madina-html-line").length')
             self.assertEqual(lines, 15, f'Page {page} should have 15 lines, found {lines}!'
                                         f'\n::Console::\n{self.dump_log()}')
 
+    def test_1_lines_exists_short_pages(self):
+        """Check if all 15 lines exist in all pages
+        """
+        for page in range(1, 3):
+            self.set_page(page)
+            lines = self.web_driver.execute_script('return document.getElementsByTagName'
+                                                   '("quran-madina-html-line").length')
+            self.assertEqual(lines, 8, f'Page {page} should have 8 lines, found {lines}!'
+                                        f'\n::Console::\n{self.dump_log()}')
+            
 if __name__ == '__main__':
     unittest.main()
