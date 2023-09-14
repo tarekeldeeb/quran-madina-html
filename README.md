@@ -7,7 +7,7 @@
 A Madina Quran HTML Renderer without images
 
 Theres a pre-processing python script to generate Json databases with quran text with special metadata. The preprocessing is based on text from [Tanzil](tanzil.net), and the [OCR DB](https://github.com/quran/ayah-detection) downloaded from [Murtaza Raja](https://github.com/murtraja/quran-android-images-helper) helper project.
-Afterwards, the JS library uses those Json objects to render Madina-based Quran pages and lines.
+Every line has a stretch-x factor pre-computed to ensure the best text fitting. Afterwards, the JS library uses those Json objects to render Madina-based Quran pages and lines.
 
 The main purpose of this library is:
 * Render Quran text that's visually similar to Madina Printed Pages
@@ -32,6 +32,11 @@ Then in your body, just add the tag.
 <quran-madina-html sura="2" aya="8-10"></quran-madina-html>
 ```
  If the selected aya(s) fit on a single line, the default is to generate an inline ``<span>`` element, otherwise a ``<div>`` is generated.
+
+ Another option exists to render a complete quran page:
+ ```html
+<quran-madina-html page="106"></quran-madina-html>
+```
   
 # Dev Setup
 
