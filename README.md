@@ -14,7 +14,9 @@ The main purpose of this library is:
 * Efficient Loading of Quran Visual Text (Not image-based, but pure Html)
 * Easy to use: just a simple HTML tag!
 
-<img src="https://github.com/tarekeldeeb/quran-madina-html/assets/90985/dc3972c3-71a6-4f48-8d45-2df28ddc409f" width="750px">
+| <img src="demo/img/p106-image.JPG" width="200px"> <br />Reference Image | <img src="demo/img/p106-me_quran.JPG" width="200px"> <br /> HTML: Font=me_quran |<img src="demo/img/p106-hafs.JPG" width="200px"> <br />HTML: Font=Hafs |<img src="demo/img/p106-amiri-colored.JPG" width="200px"> <br /> HTML: Font=Amiri Quran Colored |
+| -------------------------------------------------------------------|--------------------------------------------------|-------------------------------------------------------------------|--------------------------------------------------|
+| <img src="demo/img/p106-amiri.JPG" width="200px"> <br />HTML: Font=Amiri Quran |  <img src="demo/img/p106-hafs-part.JPG" width="200px"> <br /> HTML: Range of Ayas |
 
 # Getting Started
 In your Html header, add this script:
