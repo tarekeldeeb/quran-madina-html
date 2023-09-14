@@ -138,7 +138,7 @@
   var madina_data = {"content":"Loading .."};
   var this_script = document.currentScript || document.querySelector(`script[src*="${name}"]`);
   var doc_name    = this_script.getAttribute('data-name') || "Madina05";
-  var doc_font    = (this_script.getAttribute('data-font') || "Hafs").replaceAll(" ","_");
+  var doc_font    = (this_script.getAttribute('data-font') || "me_quran").replaceAll(" ","_");
   var doc_font_sz = this_script.getAttribute('data-font-size') || 16;
   print(`${doc_name} with font: ${doc_font} size: ${doc_font_sz}`);
   const name_css = cdn+"dist/"+name+".min.css?v=1.1";
