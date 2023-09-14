@@ -13,6 +13,7 @@ quran-madina-html-header {
   display: block;
   padding: 0 5px 0 10px;
   color: var(--qmh-background);
+  height: 32px;
 }
 quran-madina-html-copy {
   background-color: var(--qmh-header);
@@ -31,7 +32,12 @@ quran-madina-html-line {
 }
 svg.quran-madina-html-icon {
   float:left; 
-  padding:2px;
+  padding:7px 4px 0 4px;
+  border-radius: 5px;
+  margin: 2px 2px 0 0;
+}
+svg.quran-madina-html-icon:hover {
+  background-color: black;
 }
 svg.quran-madina-html-icon path {
   fill: var(--qmh-background);
