@@ -1,7 +1,7 @@
 # Quran Madina Html (no-images)
 [![CodeQL](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/github-code-scanning/codeql)
 [![pylint](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/pylint.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/pylint.yml)
-[![db_test](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/db_test.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/db_test.yml)
+[![py_test](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/py_test.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/py_test.yml)
 [![npm-grunt](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/npm-grunt.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/npm-grunt.yml)
 
 A Madina Quran HTML Renderer without images
