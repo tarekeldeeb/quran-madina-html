@@ -165,7 +165,9 @@
               },
               inserted: function() {},
               removed: function() {},
-              attributeChanged: function() {}
+              attributeChanged: function() {
+                this.render(this);
+              }
             }, 
             events: {},
             accessors: {
@@ -241,6 +243,7 @@
                   console.error(`${name}> Bad arguments: Not rendering!`);
                   return 1;
                 }
+                tag.innerHTML = ""; //Remove all pre-existing elements
                 line_from = madina_data.suras[sura_from].ayas[aya_from].r[0].l;
                 line_to = madina_data.suras[sura_to].ayas[aya_to].r.slice(-1)[0].l;
                 if(line_from!=line_to){
