@@ -30,6 +30,84 @@
   واذا تم اختيار ايات تمتد لأكثر من سطر، فيتم عرض عدة أسطر متوافقة مع ترتيب كلمات مصحف المدينة بشكل تلقائي 
   <quran-madina-html sura="2" aya="13-14"></quran-madina-html> 
   يتميز المشروع بأنه مفتوح المصدر ويسهل تغيير الفونت، كما يعمل على مصاحف غير مصحف المدينة
+
+	<h2>منطقة التجارب</h2>
+  <table border="0" cellpadding="1" cellspacing="1" style="width:500px">
+    <thead>
+      <tr>
+        <th scope="col" style="border-left: solid 1px #000; ">الصفحة</th>
+        <th scope="col">السورة</th>
+        <th scope="col">الآية</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border-left: solid 1px #000; ">
+          <table>
+            <tr>
+              <td><button onclick='decrease("in_page")'>&nbsp;▶</button></td>
+              <td><input id="in_page" value="1" min="1" max="604" style="width:50px"></td>
+              <td><button onclick='increase("in_page")'>◀&nbsp;</button> </td>
+            </tr>
+          </table>
+        </td>
+        <td>
+          <table>
+            <tr>
+              <td><button onclick='decrease("in_sura")'>&nbsp;▶</button></td>
+              <td><input id="in_sura" value="1" min="1" max="114" style="width:50px"></td>
+              <td><button onclick='increase("in_sura")'>◀&nbsp;</button> </td>
+            </tr>
+          </table>
+        </td>
+        <td>
+          <table>
+            <tr>
+              <td><button onclick='decrease("in_aya")'>&nbsp;▶</button></td>
+              <td><input id="in_aya" value="1" min="1" max="286" style="width:50px"></td>
+              <td><button onclick='increase("in_aya")'>◀&nbsp;</button> </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+      </tr>
+    </tbody>
+  </table>
+  <quran-madina-html id="test" page="1"></quran-madina-html> 
+  <script>
+    function increase(id){
+      elem = document.getElementById(id);
+      elem.value = parseInt(elem.value)+1;
+      elem.dispatchEvent(new Event('input'));
+    }
+    function decrease(id){
+      elem = document.getElementById(id);
+      if(parseInt(elem.value) > 1){
+        elem.value = parseInt(elem.value)-1;
+        elem.dispatchEvent(new Event('input'));
+      }
+    }
+    test = document.getElementById("test");
+    document.getElementById("in_page").addEventListener('input', function() {
+        test.removeAttribute("sura");
+        test.removeAttribute("aya");
+        test.setAttribute("page", this.value);
+      }, false);
+    document.getElementById("in_sura").addEventListener('input', function() {
+        test.removeAttribute("page");
+        test.setAttribute("sura", this.value);
+        test.setAttribute("aya", document.getElementById("in_aya").value);
+      }, false);
+    document.getElementById("in_aya").addEventListener('input', function() {
+        test.removeAttribute("page");
+        test.setAttribute("sura", document.getElementById("in_sura").value);
+        test.setAttribute("aya", this.value);
+      }, false);  
+  </script>
 </body>
 
 </html>
