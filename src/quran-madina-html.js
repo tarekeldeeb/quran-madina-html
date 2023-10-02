@@ -217,7 +217,8 @@
                 var aya_to;
                 var line_from;
                 var line_to;
-                if(this.sura != null && this.aya != null ){
+                if(this.page == null) this.page_param='false';
+                if(this.sura != null && this.aya != null && this.page_param != 'true'){
                   sura_from = parseSuraRange(this.sura)[0]; 
                   this.sura = (sura_from+1).toString(); // Only a single Sura
                   sura_to = sura_from;
@@ -244,6 +245,7 @@
                   return 1;
                 }
                 tag.innerHTML = ""; //Remove all pre-existing elements
+                tag.removeAttribute('style'); // and styles.
                 line_from = madina_data.suras[sura_from].ayas[aya_from].r[0].l;
                 line_to = madina_data.suras[sura_to].ayas[aya_to].r.slice(-1)[0].l;
                 if(line_from!=line_to){
