@@ -190,7 +190,7 @@ class Surah:
                 "الماعون", "الكوثر", "الكافرون", "النصر", "المسد", "الإخلاص",
                 "الفلق", "الناس"]
         sura_name = "سورة " + __name[sura_id]
-        if decorate:
+        if 0 and decorate: #Disable this feature
             decorated = "▓▓▓▒▒▒░░░ "
             return decorated + sura_name + decorated[::-1]
         return sura_name
@@ -397,7 +397,8 @@ class DbBuilder:
     @staticmethod
     def get_test_filename():
         """returns the Html file name to be used for testing/web_driver"""
-        suffix = f'-{DbBuilder.cfg.font_family}-{DbBuilder.cfg.font_size}' # type: ignore
+        suffix = f'-{DbBuilder.cfg.font_family.replace(" ","_")}' \
+                 f'-{DbBuilder.cfg.font_size}' # type: ignore
         return os.path.join(DbBuilder.base_dir,"src/db/test"+suffix+".html")
     @staticmethod
     def print_dbg_widths():
@@ -440,6 +441,11 @@ class DbBuilder:
         chrome_options = Options()
         chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
         chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6)"\
+                                    " AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98"\
+                                    " Safari/537.36")
+        chrome_options.add_argument('--ignore-certificate-errors')
+        chrome_options.add_argument('--ignore-ssl-errors')
         DbBuilder.web_driver = webdriver.Chrome(options=chrome_options)
         test_url = "file://" + DbBuilder.get_test_filename()
         DbBuilder.web_driver.get(test_url)

@@ -30,6 +30,11 @@ quran-madina-html-line {
 .quran-madina-html-part{
   transition: background-color 0.5s ease;
 }
+quran-madina-html-line:has(.quran-madina-html-sura-start){
+  background-image: url(../assets/img/sura_border_sym4.svg);
+  background-size: 100% 100%;
+  background-repeat:no-repeat;
+}
 svg.quran-madina-html-icon {
   float:left; 
   padding:7px 4px 0 4px;
