@@ -1,6 +1,6 @@
 {
   "name": "quran-madina-html",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "devDependencies": {
     "grunt": "^1.6.1",
     "grunt-contrib-clean": "^2.0.1",
