@@ -47,7 +47,7 @@
   function getAyaClass(sura, aya){
     const zeroPad = (num, places) => String(num).padStart(places, '0');
     const classes = [`${name}-part`, `${name}-${zeroPad(sura,3)}-${zeroPad(aya,3)}`];
-    if(!aya) classes.push("quran-madina-html-sura-start"); // Decorate Sura Name @Aya0
+    if(aya == -1) classes.push("quran-madina-html-sura-start"); // Decorate Sura Name
     return classes;
   }
   function getCopyIcon(){
