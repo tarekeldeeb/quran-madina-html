@@ -26,7 +26,7 @@ class BasicRenderTest(unittest.TestCase):
     for option in options:
         chrome_options.add_argument(option)
     chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
-    chrome_options.set_capability("loggingPrefs", {'performance': 'ALL'})
+    chrome_options.set_capability("goog:loggingPrefs", {'performance': 'ALL'})
     web_driver = webdriver.Chrome(options=chrome_options)
     test_file = os.path.join("template", "render_test.html")
     test_url = "http://localhost:8000/" + test_file
