@@ -1,22 +1,22 @@
 quran-madina-html {
   --qmh-background: #F5F5DC; /*#beige; */
-  --qmh-header: #696969; /* #dimgrey; */
+  --qmh-header: black; /* #dimgrey; */
   display: inline-flex;
   direction: rtl;
-  background-color:var(--qmh-background);
+  background-color:color-mix(in srgb, var(--qmh-background) 20%, transparent);
   border-radius: 5px;
   overflow: hidden;
 }
 quran-madina-html-header {
-  background-color: var(--qmh-header);
+  background-color: color-mix(in srgb, var(--qmh-header) 20%, transparent);
   font-size: smaller;
   display: block;
   padding: 0 5px 0 10px;
   color: var(--qmh-background);
-  height: 32px;
+  height: 25px;
 }
 quran-madina-html-copy {
-  background-color: var(--qmh-header);
+  background-color: color-mix(in srgb, var(--qmh-header) 20%, transparent);
   display: inline-block;
   padding: 0 5px;
   margin-right: 3px;
@@ -34,15 +34,17 @@ quran-madina-html-line:has(.quran-madina-html-sura-start){
   background-image: url(../assets/img/sura_border_sym4.svg);
   background-size: 100% 100%;
   background-repeat:no-repeat;
+  /*background-color: currentColor;
+  mask-image:url(../assets/img/sura_border_sym4.svg);
+  mask-size: 100% 100%; */
 }
 svg.quran-madina-html-icon {
   float:left; 
-  padding:7px 4px 0 4px;
+  padding:4px 4px 0 7px;
   border-radius: 5px;
-  margin: 2px 2px 0 0;
 }
 svg.quran-madina-html-icon:hover {
-  background-color: black;
+  background-color: rgba(black, 0.8);
 }
 svg.quran-madina-html-icon path {
   fill: var(--qmh-background);
