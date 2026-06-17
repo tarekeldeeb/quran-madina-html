@@ -40,6 +40,16 @@ Then in your body, just add the tag.
 
  If the selected aya(s) fit on a single line, the default is to generate an inline ``<span>`` element, otherwise a ``<div>`` is generated.
 
+ You can also restrict the output to a specific word sequence with the ``words`` attribute (1-based, inclusive; ``start-end``, ``start:end`` or a single ``index``). Word indices are counted starting from the given ``sura``/``aya`` and may run past it, so the rendered selection can span multiple ayas — and even cross page and sura boundaries (the sura name/basmala are shown for context but not counted as words). The non-selected words are kept in place so the original Madina line layout is preserved — only the chosen words are shown. Aya-number markers are not counted.
+
+ ```html
+<quran-madina-html sura="1" aya="1" words="1:2"></quran-madina-html>  <!-- first two words only -->
+<quran-madina-html sura="1" aya="1" words="3-10"></quran-madina-html> <!-- words 3..10, spanning ayas 1-3 -->
+<quran-madina-html sura="1" aya="7" words="1-10"></quran-madina-html> <!-- spans Al-Fatiha into Al-Baqara -->
+```
+
+ The ``words`` attribute is ignored when rendering a full ``page``.
+
  Another option exists to render a complete quran page:
 
  ```html

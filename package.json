@@ -2,7 +2,7 @@
   "name": "quran-madina-html",
   "version": "0.3.3",
   "devDependencies": {
-    "grunt": "^1.6.1",
+    "grunt": "^1.6.2",
     "grunt-contrib-clean": "^2.0.1",
     "grunt-contrib-concat": "^2.1.0",
     "grunt-contrib-cssmin": "^5.0.0",
@@ -11,7 +11,7 @@
     "grunt-contrib-watch": "^1.1.0",
     "grunt-json-minify": "^1.1.0",
     "http-server": "^14.1.1",
-    "release-it": "^16.1.5"
+    "release-it": "^20.2.0"
   },
   "description": "A Madina Quran HTML Renderer without images.",
   "main": "dist/quran-madina-html.min.js",

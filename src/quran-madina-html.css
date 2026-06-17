@@ -3,7 +3,7 @@ quran-madina-html {
   --qmh-header: black; /* #dimgrey; */
   display: inline-flex;
   direction: rtl;
-  background-color:color-mix(in srgb, var(--qmh-background) 20%, transparent);
+  background-color:color-mix(in srgb, var(--qmh-background) 10%, transparent);
   border-radius: 5px;
   overflow: hidden;
 }
@@ -12,11 +12,12 @@ quran-madina-html-header {
   font-size: smaller;
   display: block;
   padding: 0 5px 0 10px;
-  color: var(--qmh-background);
+  color: color-mix(in srgb, currentColor 60%, transparent);
   height: 25px;
 }
 quran-madina-html-copy {
   background-color: color-mix(in srgb, var(--qmh-header) 20%, transparent);
+  color: color-mix(in srgb, currentColor 60%, transparent);
   display: inline-block;
   padding: 0 5px;
   margin-right: 3px;
@@ -29,6 +30,12 @@ quran-madina-html-line {
 }
 .quran-madina-html-part{
   transition: background-color 0.5s ease;
+}
+/* Words outside a words="a:b" selection: kept in place to preserve the Madina line
+   geometry (stretch/offset), but blanked. visibility:hidden also drops them from
+   innerText, so copy-to-clipboard yields only the selected words. */
+.quran-madina-html-word-hidden{
+  visibility: hidden;
 }
 quran-madina-html-line:has(.quran-madina-html-sura-start){
   background-image: url(../assets/img/sura_border_sym4.svg);
@@ -44,8 +51,8 @@ svg.quran-madina-html-icon {
   border-radius: 5px;
 }
 svg.quran-madina-html-icon:hover {
-  background-color: rgba(black, 0.8);
+  background-color: color-mix(in srgb, var(--qmh-header) 50%, transparent);;
 }
 svg.quran-madina-html-icon path {
-  fill: var(--qmh-background);
+  fill: color-mix(in srgb, currentColor 60%, transparent);
 }

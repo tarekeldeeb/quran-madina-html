@@ -21,9 +21,46 @@
     script.setAttribute("data-font", "hafs");
     document.head.appendChild(script);
   </script>
+  <style>
+    body {
+      margin: 0;
+      background-color: #f3f1ea;
+      color: #20201d;
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, "Noto Naskh Arabic", sans-serif;
+      line-height: 1.9;
+    }
+    .page-wrapper {
+      max-width: 820px;
+      margin: 24px auto;
+      padding: 28px 32px 40px;
+      background-color: #eef1f5;
+      border: 1px solid #e4ded0;
+      border-radius: 12px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+    }
+    .page-wrapper h2 {
+      line-height: 1.4;
+      margin-top: 0;
+    }
+    .page-wrapper code {
+      background-color: #ece8dc;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    @media (max-width: 600px) {
+      .page-wrapper {
+        margin: 0;
+        border: none;
+        border-radius: 0;
+        padding: 20px 18px 32px;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <main class="page-wrapper">
 	<h2>عرض لإمكانية مشروع قران المدينة Html بدون صور</h2>
 
   يمكن عرض نص آية قصيرة وسط الكلام مثل قوله تعالى: 
@@ -31,6 +68,14 @@
   واذا تم اختيار ايات تمتد لأكثر من سطر، فيتم عرض عدة أسطر متوافقة مع ترتيب كلمات مصحف المدينة بشكل تلقائي 
   <quran-madina-html sura="2" aya="13-14"></quran-madina-html> 
   يتميز المشروع بأنه مفتوح المصدر ويسهل تغيير الفونت، كما يعمل على مصاحف غير مصحف المدينة
+
+  <p>
+  ويمكن كذلك عرض تتابع محدد من الكلمات فقط باستخدام الخاصية <code>words</code>، مثل أول كلمتين من الفاتحة:
+  <quran-madina-html sura="1" aya="1" words="1:2"></quran-madina-html>
+  ويستمر عدّ الكلمات ابتداءً من الآية المحددة، بل ويتجاوز حدود الصفحات والسور؛ فمثلاً الكلمات
+  <code>words="1-10"</code> بدءاً من آخر آيات الفاتحة تمتد إلى أول سورة البقرة:
+  <quran-madina-html sura="1" aya="7" words="1-10"></quran-madina-html>
+  </p>
 
   <div style="color:#DDD; background-color: #282828; padding: 10px; margin: 30px; border-radius: 10px;">
     <h2>منطقة التجارب</h2>
@@ -79,9 +124,10 @@
         </tr>
       </tbody>
     </table>
-    <quran-madina-html id="test" page="1"></quran-madina-html> 
+    <quran-madina-html id="test" page="1"></quran-madina-html>
   </div>
-	
+  </main>
+
   <script>
     function increase(id){
       elem = document.getElementById(id);
@@ -110,7 +156,7 @@
         test.removeAttribute("page");
         test.setAttribute("sura", document.getElementById("in_sura").value);
         test.setAttribute("aya", this.value);
-      }, false);  
+      }, false);
   </script>
 </body>
 

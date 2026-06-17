@@ -44,6 +44,144 @@
     if (str.split('-').length == 2) return str.split('-').map(elem => parseInt(elem) +1);
     return Array(2).fill(parseInt(str.split('-')[0])+1);
   }
+  // Aya-number ornaments (ornate parens for Hafs/Uthman/me_quran, end-of-aya for Amiri).
+  // These are markers, not words, so they never count towards the words= index.
+  var AYA_MARKER = /[﴿﴾۝]/;
+  function parseWordsRange(str){
+    // 1-based, inclusive. "n" => [n,n]; "n:m" or "n-m" => [n,m]. Returns null if malformed.
+    if(str == null) return null;
+    var parts = str.split(/[-:]/).map(elem => parseInt(elem, 10));
+    if(parts.length == 1) parts = [parts[0], parts[0]];
+    if(parts.length != 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
+    return parts;
+  }
+  function countAyaWords(aya){
+    // Number of selectable words in an aya (whitespace-separated, excluding aya-number markers).
+    var n = 0;
+    aya.r.forEach(function(part){
+      part.t.split(/\s+/).forEach(function(token){
+        if(token !== "" && !AYA_MARKER.test(token)) n = n + 1;
+      });
+    });
+    return n;
+  }
+  function appendWords(parent, text, range, counter){
+    // Render each whitespace-separated word as its own span so non-selected words can be
+    // hidden in place (visibility:hidden) while keeping the original Madina line geometry.
+    // `counter` is the running 1-based word index across the whole selection (spans ayas).
+    text.split(/(\s+)/).forEach(function(token){
+      if(token === "") return;
+      if(/^\s+$/.test(token)){ parent.appendChild(document.createTextNode(token)); return; }
+      var span = document.createElement("span");
+      span.textContent = token;
+      span.classList.add(`${name}-word`);
+      if(AYA_MARKER.test(token)){
+        span.classList.add(`${name}-word-hidden`); // ornament: never a selectable word
+      } else {
+        counter = counter + 1;
+        if(counter < range[0] || counter > range[1]) span.classList.add(`${name}-word-hidden`);
+      }
+      parent.appendChild(span);
+    });
+    return counter;
+  }
+  function collectWordParts(sura_start, aya_start, range){
+    // Walk ayas in reading order from (sura_start, aya_start), crossing page AND sura
+    // boundaries, grouping parts into visual lines keyed by (page, line), until the end word
+    // index is covered. Aya indices 0/1 of each sura are the name/basmala decoration: rendered
+    // for context but not counted as words (countable=false).
+    var groups = [];
+    var current = null;
+    var counted = 0;
+    for(var s = sura_start; s < madina_data.suras.length; s++){
+      var ayas = madina_data.suras[s].ayas;
+      var aya_begin = (s === sura_start) ? aya_start : 0;
+      var reached = false;
+      for(var a = aya_begin; a < ayas.length; a++){
+        var countable = (a >= 2);
+        var aya = ayas[a];
+        for(var pi = 0; pi < aya.r.length; pi++){
+          var part = aya.r[pi];
+          var key = `${aya.p}:${part.l}`;
+          if(!current || current.key !== key){
+            current = {key: key, offset: part.o, stretch: part.s, parts: []};
+            groups.push(current);
+          }
+          current.parts.push({sura: s, ayaIdx: a, part: part, countable: countable});
+        }
+        if(countable){
+          counted = counted + countAyaWords(aya);
+          if(counted >= range[1]){ reached = true; break; }
+        }
+      }
+      if(reached) break;
+    }
+    return groups;
+  }
+  function renderWordsSpan(tag, sura_start, aya_start, range){
+    // Dedicated render path for the words= selection. Unlike the page/aya loop it is not bound
+    // to a single page or sura, so a word range can span both.
+    var groups = collectWordParts(sura_start, aya_start, range);
+    var multiline = groups.length > 1;
+    var counter = 0; // running 1-based word index from the start aya, drives word visibility
+    tag.innerHTML = "";
+    tag.removeAttribute('style');
+    if(multiline){
+      tag.style = "display:block;";
+      tag.style.setProperty('font-family', madina_data.font_family, '');
+      tag.style.setProperty('font-size', madina_data.font_size+"px", '');
+      if(madina_data.font_family === "me_quran"){
+        tag.style.setProperty('line-height', madina_data.font_size*2+"px", '');
+      }
+      tag.style.width = (madina_data.line_width+10)+"px";
+      let start_page = madina_data.suras[sura_start].ayas[aya_start].p;
+      tag.style.setProperty('box-shadow', 'inset '+(start_page%2==1?"":"-")+'8px 0 7px -7px #333', '');
+      let header = document.createElement("quran-madina-html-header");
+      header.innerHTML = madina_data.suras[sura_start].name;
+      let copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
+      let translation = getTranslateIcon(); translation.addEventListener("click", openTranslate);
+      header.appendChild(copy); header.appendChild(translation);
+      tag.appendChild(header);
+    }
+    groups.forEach(function(group){
+      var line = document.createElement("quran-madina-html-line");
+      if(multiline){
+        line.style.setProperty('display', 'block', '');
+        if(group.offset > 0){
+          line.style.setProperty('padding-right', group.offset+"px", '');
+          line.style.setProperty('transform-origin', "left");
+        }
+        if(group.stretch >= 0){
+          line.style.setProperty("transform", `scaleX(${group.stretch})`, "");
+        } else {
+          line.style.setProperty("text-align", "center", "");
+        }
+      } else {
+        line.style.setProperty('font-family', madina_data.font_family, '');
+        line.style.setProperty('font-size', madina_data.font_size+"px", '');
+      }
+      tag.appendChild(line);
+      group.parts.forEach(function(item){
+        var aya_part = document.createElement("div");
+        var classes = getAyaClass(item.sura+1, item.ayaIdx-1);
+        DOMTokenList.prototype.add.apply(aya_part.classList, classes);
+        if(item.countable){
+          counter = appendWords(aya_part, item.part.t, range, counter);
+        } else {
+          aya_part.textContent = item.part.t; // sura name / basmala: always visible
+        }
+        aya_part.style.cssText = 'display:inline';
+        line.appendChild(aya_part);
+        hoverByType(classes.slice(-1)[0]);
+      });
+    });
+    if(!multiline){
+      let tag_copy = document.createElement("quran-madina-html-copy");
+      let copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
+      tag_copy.appendChild(copy);
+      tag.appendChild(tag_copy);
+    }
+  }
   function getAyaClass(sura, aya){
     const zeroPad = (num, places) => String(num).padStart(places, '0');
     const classes = [`${name}-part`, `${name}-${zeroPad(sura,3)}-${zeroPad(aya,3)}`];
@@ -127,13 +265,14 @@
     alert("\u2398 تم نسخ:\n\n" + text);
   }
   function openTranslate(){
-    if(this.parentElement.parentElement.getAttribute("page_param") === "true"){
-      let page_index = this.parentElement.parentElement.getAttribute("page");
-      URL = `https://quran.com/page/${page_index}`;
-    } else {
-      let sura_index = this.parentElement.parentElement.getAttribute("sura");
-      let aya_index = this.parentElement.parentElement.getAttribute("aya");
+    let host = this.parentElement.parentElement;
+    if(host.getAttribute("sura") != null && host.getAttribute("aya") != null){
+      let sura_index = host.getAttribute("sura");
+      let aya_index = host.getAttribute("aya");
       URL = `https://quran.com/${sura_index}/${aya_index}`;
+    } else {
+      let page_index = host.getAttribute("page");
+      URL = `https://quran.com/page/${page_index}`;
     }
     window.open(URL, '_blank');
   }
@@ -208,10 +347,32 @@
                 get: function(){
                   return this.getAttribute("sura");
                 }
-              }              
-            }, 
+              },
+              words:{
+                attribute: {},
+                set: function(value) {
+                  this.xtag.data.words = value;
+                },
+                get: function(){
+                  return this.getAttribute("words");
+                }
+              }
+            },
             methods: {
                render: function(tag){
+                // Re-entrancy guard. While building we mutate the element's style attribute, and
+                // x-tag re-invokes render() on any attribute change — that nested render would clear
+                // and rebuild mid-build, duplicating the output. The guard drops such re-entrant
+                // calls; genuine user-driven renders run when no render is in progress.
+                if(this.xtag.data.rendering){ return; }
+                this.xtag.data.rendering = true;
+                try {
+                  this.doRender(tag);
+                } finally {
+                  this.xtag.data.rendering = false;
+                }
+               },
+               doRender: function(tag){
                 var sura_from;
                 var sura_to;
                 var multiline;
@@ -219,32 +380,46 @@
                 var aya_to;
                 var line_from;
                 var line_to;
-                if(this.page == null) this.page_param='false';
-                if(this.sura != null && this.aya != null && this.page_param != 'true'){
-                  sura_from = parseSuraRange(this.sura)[0]; 
-                  this.sura = (sura_from+1).toString(); // Only a single Sura
+                var words_range = null;
+                // `page` is the page to render, derived locally. We deliberately never write derived
+                // state (sura/aya/page) back onto the element: those are x-tag accessor attributes,
+                // and writing them re-triggers render(), which used to cascade and duplicate output.
+                var page = this.page;
+                var verse_mode = (this.sura != null && this.aya != null);
+                if(verse_mode){
+                  sura_from = parseSuraRange(this.sura)[0];
                   sura_to = sura_from;
                   multiline = false;
                   [aya_from,aya_to] = parseAyaRange(this.aya);
-                  if(this.page != null)print("Ignoring page parameter!");
-                  this.page = madina_data.suras[sura_from].ayas[aya_from].p;
-                  this.page_param = false;
+                  if(this.page != null) print("Ignoring page parameter!");
+                  page = madina_data.suras[sura_from].ayas[aya_from].p;
                 } else if(this.page != null){
                   sura_from = 0; sura_to = 0; aya_from=0; aya_to=0;
-                  while(madina_data.suras[sura_from].ayas.slice(-1)[0].p < this.page) sura_from = sura_from + 1;
+                  while(madina_data.suras[sura_from].ayas.slice(-1)[0].p < page) sura_from = sura_from + 1;
                   sura_to = sura_from;
-                  while(sura_to < 114 && madina_data.suras[sura_to].ayas[0].p <= this.page) sura_to = sura_to + 1;
+                  while(sura_to < 114 && madina_data.suras[sura_to].ayas[0].p <= page) sura_to = sura_to + 1;
                   sura_to = sura_to -1;
-                  this.sura =(sura_from == sura_to)? `${sura_from+1}`:`${sura_from+1}-${sura_to+1}`;
-                  while(madina_data.suras[sura_from].ayas[aya_from].p < this.page) aya_from = aya_from + 1;
+                  while(madina_data.suras[sura_from].ayas[aya_from].p < page) aya_from = aya_from + 1;
                   aya_to = madina_data.suras[sura_to].ayas.length-1;
-                  while (madina_data.suras[sura_to].ayas[aya_to].p > this.page) aya_to = aya_to - 1;
-                  this.aya = `${aya_from-1}-${aya_to-1}`;
+                  while (madina_data.suras[sura_to].ayas[aya_to].p > page) aya_to = aya_to - 1;
                   multiline = true;
-                  this.page_param = true;
                 } else{
                   console.error(`${name}> Bad arguments: Not rendering!`);
                   return 1;
+                }
+                if(this.words != null){
+                  if(!verse_mode){
+                    print("Ignoring words parameter with page!");
+                  } else {
+                    words_range = parseWordsRange(this.words);
+                    if(words_range == null){
+                      print(`Bad words parameter: ${this.words}`);
+                    } else {
+                      // words= has its own renderer that spans pages and suras from the start aya.
+                      renderWordsSpan(tag, sura_from, aya_from, words_range);
+                      return;
+                    }
+                  }
                 }
                 tag.innerHTML = ""; //Remove all pre-existing elements
                 tag.removeAttribute('style'); // and styles.
@@ -293,7 +468,7 @@
                   } 
                   let look_ahead = (sura_from == sura_to)? aya_to: madina_data.suras[sura_current].ayas.length-1;
                   for(let a = aya_current; a <= Math.min(aya_current+5, look_ahead) ; a++) {
-                    if(madina_data.suras[sura_current].ayas[a].p == this.page){
+                    if(madina_data.suras[sura_current].ayas[a].p == page){
                       line_match = madina_data.suras[sura_current].ayas[a].r.filter(rr => rr.l == ll);
                       if (line_match.length){
                         if(multiline){
@@ -318,7 +493,7 @@
                         aya_current = a;
                         if(aya_current >= look_ahead && 
                           sura_current < 113 &&
-                          madina_data.suras[sura_current+1].ayas[0].p == this.page && 
+                          madina_data.suras[sura_current+1].ayas[0].p == page &&
                           madina_data.suras[sura_current+1].ayas[0].r[0].l == ll+1) { 
                           //Jump to next Sura
                           sura_current = sura_current + 1;
