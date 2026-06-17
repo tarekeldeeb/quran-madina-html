@@ -85,6 +85,36 @@
     });
     return counter;
   }
+  function partOnLine(aya, line_no){
+    // The aya's render part that falls on the given page-line, or null.
+    for(var k = 0; k < aya.r.length; k++){ if(aya.r[k].l === line_no) return aya.r[k]; }
+    return null;
+  }
+  function lineContext(sura_idx, page, line_no, aya_idx, dir){
+    // Parts on (page, line_no) that lie outside the selection on one side, in reading order. dir<0
+    // walks back from the first selected aya (text preceding it); dir>0 walks forward from the last
+    // selected aya (text following it). Rendering these invisibly lets the line's own centering or
+    // stretch place the visible text exactly where it sits on the full page.
+    var ayas = madina_data.suras[sura_idx].ayas, parts = [];
+    for(var a = aya_idx + dir; a >= 0 && a < ayas.length; a += dir){
+      if(ayas[a].p != page) break;
+      var match = partOnLine(ayas[a], line_no);
+      if(match === null) break;
+      if(dir < 0){ parts.unshift(match); if(match.o === 0) break; } // reached the line's right start
+      else { parts.push(match); }
+    }
+    return parts;
+  }
+  function appendSpacers(line_el, parts){
+    // Render parts as invisible spacers: they hold the line's layout but show nothing and are
+    // excluded from copy-to-clipboard. Shared by the verse and words= render paths.
+    for(var i = 0; i < parts.length; i++){
+      var spacer = document.createElement("div");
+      spacer.textContent = parts[i].t;
+      spacer.style.cssText = 'display:inline;visibility:hidden';
+      line_el.appendChild(spacer);
+    }
+  }
   function collectWordParts(sura_start, aya_start, range){
     // Walk ayas in reading order from (sura_start, aya_start), crossing page AND sura
     // boundaries, grouping parts into visual lines keyed by (page, line), until the end word
@@ -143,18 +173,24 @@
       header.appendChild(copy); header.appendChild(translation);
       tag.appendChild(header);
     }
-    groups.forEach(function(group){
+    groups.forEach(function(group, gi){
       var line = document.createElement("quran-madina-html-line");
       if(multiline){
         line.style.setProperty('display', 'block', '');
-        if(group.offset > 0){
-          line.style.setProperty('padding-right', group.offset+"px", '');
-          line.style.setProperty('transform-origin', "left");
-        }
         if(group.stretch >= 0){
           line.style.setProperty("transform", `scaleX(${group.stretch})`, "");
         } else {
           line.style.setProperty("text-align", "center", "");
+        }
+        if(group.offset > 0 && gi === 0){
+          // The selection begins mid-line: rebuild the preceding text invisibly so the line's own
+          // centering/stretch positions the first word exactly as it sits on the page.
+          var first = group.parts[0];
+          appendSpacers(line, lineContext(first.sura,
+            madina_data.suras[first.sura].ayas[first.ayaIdx].p, first.part.l, first.ayaIdx, -1));
+        } else if(group.offset > 0){
+          line.style.setProperty('padding-right', group.offset+"px", '');
+          line.style.setProperty('transform-origin', "left");
         }
       } else {
         line.style.setProperty('font-family', madina_data.font_family, '');
@@ -174,6 +210,13 @@
         line.appendChild(aya_part);
         hoverByType(classes.slice(-1)[0]);
       });
+      if(multiline && gi === groups.length - 1){
+        // The selection ends mid-line: rebuild the following text invisibly to keep the last line
+        // laid out (and centered) exactly as on the page.
+        var last = group.parts[group.parts.length - 1];
+        appendSpacers(line, lineContext(last.sura,
+          madina_data.suras[last.sura].ayas[last.ayaIdx].p, last.part.l, last.ayaIdx, 1));
+      }
     });
     if(!multiline){
       let tag_copy = document.createElement("quran-madina-html-copy");
@@ -465,7 +508,10 @@
                     let isRightPage = madina_data.suras[sura_current].ayas[aya_current].p%2==1?"":"-";
                     tag.style.setProperty('box-shadow', 'inset '+isRightPage+'8px 0 7px -7px #333','');
                     line.style.setProperty('display','block','');
-                  } 
+                  }
+                  if(multiline && verse_mode && l === line_from){
+                    appendSpacers(line, lineContext(sura_from, page, line_from, aya_from, -1));
+                  }
                   let look_ahead = (sura_from == sura_to)? aya_to: madina_data.suras[sura_current].ayas.length-1;
                   for(let a = aya_current; a <= Math.min(aya_current+5, look_ahead) ; a++) {
                     if(madina_data.suras[sura_current].ayas[a].p == page){
@@ -491,16 +537,19 @@
                         line.appendChild(aya_part);
                         hoverByType(classes.slice(-1)[0]);
                         aya_current = a;
-                        if(aya_current >= look_ahead && 
+                        if(aya_current >= look_ahead &&
                           sura_current < 113 &&
                           madina_data.suras[sura_current+1].ayas[0].p == page &&
-                          madina_data.suras[sura_current+1].ayas[0].r[0].l == ll+1) { 
+                          madina_data.suras[sura_current+1].ayas[0].r[0].l == ll+1) {
                           //Jump to next Sura
                           sura_current = sura_current + 1;
                           aya_current = 0;
                         }
                       }
                     }
+                  }
+                  if(multiline && verse_mode && l === line_to){
+                    appendSpacers(line, lineContext(sura_to, page, line_to, aya_to, 1));
                   }
                 }
                 if(!multiline){
