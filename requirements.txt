@@ -1,5 +1,5 @@
 beautifulsoup4==4.15.0
-requests==2.34.2
+requests==2.32.4
 selenium==4.45.0
 tqdm==4.68.3
 ruff==0.15.17

@@ -92,7 +92,7 @@ class BasicRenderTest(unittest.TestCase):
             EC.presence_of_element_located((By.TAG_NAME, "quran-madina-html-line")) )
         except TimeoutException:
             print(f"Timeout Exception at page {page}")
-        
+
     def test_0_lines_exists(self):
         """Check if all 15 lines exist in all pages
         """
@@ -114,7 +114,7 @@ class BasicRenderTest(unittest.TestCase):
                                         f'\n::Console::\n{self.dump_log()}')
 
     def set_attrs(self, **attrs):
-        """Rewrite the template's <quran-madina-html> tag with a fresh set of attributes and reload"""
+        """Rewrite the template's <quran-madina-html> tag with fresh attributes and reload"""
         with open(self.test_file, "r", encoding="utf8") as template:
             soup = BeautifulSoup(template.read(), 'html.parser')
         tag = soup.find("quran-madina-html")

@@ -34,6 +34,7 @@ DEFAULTS = {'name':'Madina05', 'published': 1405,
            'font_family':'Hafs',
            'font_url':REPO+'assets/fonts/Hafs.woff2',
            'font_size':16, 'line_width':275}
+DECORATE_SURA_NAME = False  # Feature kill-switch: surround sura names with a shaded border
 
 class LineCursor:
     """Part of the global DbBuilder, points to the current point in DB"""
@@ -190,7 +191,7 @@ class Surah:
                 "الماعون", "الكوثر", "الكافرون", "النصر", "المسد", "الإخلاص",
                 "الفلق", "الناس"]
         sura_name = "سورة " + __name[sura_id]
-        if 0 and decorate: #Disable this feature
+        if DECORATE_SURA_NAME and decorate:
             decorated = "▓▓▓▒▒▒░░░ "
             return decorated + sura_name + decorated[::-1]
         return sura_name
