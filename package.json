@@ -16,9 +16,9 @@
   "description": "A Madina Quran HTML Renderer without images.",
   "main": "dist/quran-madina-html.min.js",
   "files": [
-    "dist",
-    "assets",
-    "demo"
+    "dist/quran-madina-html.min.js",
+    "dist/quran-madina-html.min.css",
+    "assets"
   ],
   "scripts": {
     "build": "grunt",
@@ -55,5 +55,10 @@
   },
   "dependencies": {
     "x-tag": "^1.5.11"
+  },
+  "overrides": {
+    "minimatch": "3.1.5",
+    "undici": "7.28.0",
+    "lodash": "4.18.1"
   }
 }
