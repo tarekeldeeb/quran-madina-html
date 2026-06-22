@@ -15,6 +15,11 @@
   },
   "description": "A Madina Quran HTML Renderer without images.",
   "main": "dist/quran-madina-html.min.js",
+  "files": [
+    "dist",
+    "assets",
+    "demo"
+  ],
   "scripts": {
     "build": "grunt",
     "build-db": "python src/db/build_all.py",

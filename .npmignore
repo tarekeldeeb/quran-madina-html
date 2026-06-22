@@ -5,5 +5,10 @@ bower_components
 node_modules
 __pycache__
 .pytest_cache
+.ruff_cache
 .vscode
 .github
+.claude
+.venv
+quran
+.DS_Store
