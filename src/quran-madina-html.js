@@ -47,6 +47,12 @@
   // Aya-number ornaments (ornate parens for Hafs/Uthman/me_quran, end-of-aya for Amiri).
   // These are markers, not words, so they never count towards the words= index.
   var AYA_MARKER = /[﴿﴾۝]/;
+  function isTrue(val){
+    // Boolean HTML attribute: true when present as `headless`, `headless=""`, "true", "1" or "yes".
+    if(val == null) return false;
+    var v = String(val).trim().toLowerCase();
+    return v === "" || v === "true" || v === "1" || v === "yes";
+  }
   function parseWordsRange(str){
     // 1-based, inclusive. "n" => [n,n]; "n:m" or "n-m" => [n,m]. Returns null if malformed.
     if(str == null) return null;
@@ -148,7 +154,7 @@
     }
     return groups;
   }
-  function renderWordsSpan(tag, sura_start, aya_start, range){
+  function renderWordsSpan(tag, sura_start, aya_start, range, headless){
     // Dedicated render path for the words= selection. Unlike the page/aya loop it is not bound
     // to a single page or sura, so a word range can span both.
     var groups = collectWordParts(sura_start, aya_start, range);
@@ -166,12 +172,14 @@
       tag.style.width = (madina_data.line_width+10)+"px";
       let start_page = madina_data.suras[sura_start].ayas[aya_start].p;
       tag.style.setProperty('box-shadow', 'inset '+(start_page%2==1?"":"-")+'8px 0 7px -7px #333', '');
-      let header = document.createElement("quran-madina-html-header");
-      header.innerHTML = madina_data.suras[sura_start].name;
-      let copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
-      let translation = getTranslateIcon(); translation.addEventListener("click", openTranslate);
-      header.appendChild(copy); header.appendChild(translation);
-      tag.appendChild(header);
+      if(!headless){
+        let header = document.createElement("quran-madina-html-header");
+        header.innerHTML = madina_data.suras[sura_start].name;
+        let copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
+        let translation = getTranslateIcon(); translation.addEventListener("click", openTranslate);
+        header.appendChild(copy); header.appendChild(translation);
+        tag.appendChild(header);
+      }
     }
     groups.forEach(function(group, gi){
       var line = document.createElement("quran-madina-html-line");
@@ -218,7 +226,7 @@
           madina_data.suras[last.sura].ayas[last.ayaIdx].p, last.part.l, last.ayaIdx, 1));
       }
     });
-    if(!multiline){
+    if(!multiline && !headless){
       let tag_copy = document.createElement("quran-madina-html-copy");
       let copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
       tag_copy.appendChild(copy);
@@ -399,6 +407,15 @@
                 get: function(){
                   return this.getAttribute("words");
                 }
+              },
+              headless:{
+                attribute: {},
+                set: function(value) {
+                  this.xtag.data.headless = value;
+                },
+                get: function(){
+                  return this.getAttribute("headless");
+                }
               }
             },
             methods: {
@@ -428,6 +445,7 @@
                 // state (sura/aya/page) back onto the element: those are x-tag accessor attributes,
                 // and writing them re-triggers render(), which used to cascade and duplicate output.
                 var page = this.page;
+                var headless = isTrue(this.headless); // hide header (multiline) / copy button (inline)
                 var verse_mode = (this.sura != null && this.aya != null);
                 if(verse_mode){
                   sura_from = parseSuraRange(this.sura)[0];
@@ -459,7 +477,7 @@
                       print(`Bad words parameter: ${this.words}`);
                     } else {
                       // words= has its own renderer that spans pages and suras from the start aya.
-                      renderWordsSpan(tag, sura_from, aya_from, words_range);
+                      renderWordsSpan(tag, sura_from, aya_from, words_range, headless);
                       return;
                     }
                   }
@@ -481,7 +499,7 @@
                 }
                 /**Add Header with Copy button */
                 var tag_header = "";
-                if(multiline){
+                if(multiline && !headless){
                   tag_header = document.createElement("quran-madina-html-header");
                   tag_header.innerHTML = madina_data.suras[sura_from].name;
                   var copy = getCopyIcon();
@@ -552,7 +570,7 @@
                     appendSpacers(line, lineContext(sura_to, page, line_to, aya_to, 1));
                   }
                 }
-                if(!multiline){
+                if(!multiline && !headless){
                   tag_header = document.createElement("quran-madina-html-copy");
                   let copy = getCopyIcon();
                   copy.addEventListener("click", copyToClipboard);

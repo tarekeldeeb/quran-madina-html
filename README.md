@@ -55,7 +55,14 @@ Then in your body, just add the tag.
  ```html
 <quran-madina-html page="106"></quran-madina-html>
 ```
-  
+
+ By default a header (sura name + copy/translate icons, on a multiline render) or a copy button (on an inline render) is added. Set ``headless="true"`` to drop that chrome and render only the Quran text:
+
+ ```html
+<quran-madina-html sura="2" aya="8-10" headless="true"></quran-madina-html> <!-- no header -->
+<quran-madina-html sura="1" aya="1" headless="true"></quran-madina-html>    <!-- no copy button -->
+```
+
 ## Dev Setup
 
 The project is published on npm ``npm install quran-madina-html``, with sources, assets and distributables.

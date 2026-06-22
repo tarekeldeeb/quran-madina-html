@@ -83,7 +83,11 @@ class BasicRenderTest(unittest.TestCase):
         """Sets page argument in the test.html"""
         with open(self.test_file, "r", encoding="utf8") as template:
             soup = BeautifulSoup(template.read(), 'html.parser')
-        soup.find("quran-madina-html")["page"] = page #type: ignore
+        tag = soup.find("quran-madina-html")
+        for key in ("sura", "aya", "words", "headless"):  # ensure a clean page-only render
+            if key in tag.attrs:  # type: ignore
+                del tag[key]  # type: ignore
+        tag["page"] = page  # type: ignore
         with open(self.test_file, 'w', encoding="utf8") as file:
             file.write(str(soup))
         self.web_driver.refresh()
@@ -118,7 +122,7 @@ class BasicRenderTest(unittest.TestCase):
         with open(self.test_file, "r", encoding="utf8") as template:
             soup = BeautifulSoup(template.read(), 'html.parser')
         tag = soup.find("quran-madina-html")
-        for key in ("page", "sura", "aya", "words"):
+        for key in ("page", "sura", "aya", "words", "headless"):
             if key in tag.attrs:  # type: ignore
                 del tag[key]  # type: ignore
         for key, value in attrs.items():
@@ -197,6 +201,44 @@ class BasicRenderTest(unittest.TestCase):
                          "page rendering must not split words")
         self.assertEqual(self.count("quran-madina-html-line"), 15,
                          "page 5 still renders 15 lines")
+
+    def test_8_headless_inline_hides_copy(self):
+        """headless removes the copy button from an inline (single-line) verse render"""
+        self.set_attrs(sura=1, aya=1)
+        self.assertEqual(self.count("quran-madina-html-line"), 1, "aya 1:1 fits one line")
+        self.assertEqual(self.count("quran-madina-html-copy"), 1, "inline render has a copy button")
+        self.set_attrs(sura=1, aya=1, headless=True)
+        self.assertEqual(self.count("quran-madina-html-line"), 1, "still one line when headless")
+        self.assertEqual(self.count("quran-madina-html-copy"), 0, "headless removes the copy button")
+
+    def test_9_headless_multiline_hides_header(self):
+        """headless removes the header from a multiline verse-range render"""
+        self.set_attrs(sura=1, aya="1-7")
+        self.assertGreater(self.count("quran-madina-html-line"), 1, "aya 1-7 spans many lines")
+        self.assertEqual(self.count("quran-madina-html-header"), 1, "multiline render has a header")
+        self.set_attrs(sura=1, aya="1-7", headless=True)
+        self.assertEqual(self.count("quran-madina-html-header"), 0, "headless removes the header")
+        self.assertGreater(self.count("quran-madina-html-line"), 1, "lines are still rendered")
+
+    def test_10_headless_words_paths(self):
+        """headless hides chrome on both words= paths without changing the visible words"""
+        # Inline words selection: copy button only.
+        self.set_attrs(sura=1, aya=1, words="1:2", headless=True)
+        self.assertEqual(self.count("quran-madina-html-copy"), 0, "headless drops inline copy button")
+        self.assertEqual(self.visible_words(), collect_words(self.db["suras"], 0, 2, 2)[0:2],
+                         "selected words are unchanged by headless")
+        # Multiline words selection: header only.
+        self.set_attrs(sura=1, aya=1, words="3-10", headless=True)
+        self.assertEqual(self.count("quran-madina-html-header"), 0, "headless drops multiline header")
+        self.assertEqual(self.visible_words(), collect_words(self.db["suras"], 0, 2, 10)[2:10],
+                         "selected words are unchanged by headless")
+
+    def test_11_headless_false_keeps_chrome(self):
+        """headless=False (and the default) leave the header/copy button in place"""
+        self.set_attrs(sura=1, aya=1, headless="False")
+        self.assertEqual(self.count("quran-madina-html-copy"), 1, "headless=False keeps copy")
+        self.set_attrs(sura=1, aya="1-7", headless="False")
+        self.assertEqual(self.count("quran-madina-html-header"), 1, "headless=False keeps header")
 
 if __name__ == '__main__':
     unittest.main()
