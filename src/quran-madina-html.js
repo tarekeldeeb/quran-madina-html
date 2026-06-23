@@ -1,6 +1,11 @@
 (
   function(){
   var name = "quran-madina-html";
+  // Base URL the runtime fetches its CSS + JSON DB from. Default: the repo root when served
+  // from localhost (local dev / demo), otherwise the unpkg package root. A `data-cdn` attribute
+  // on the loader <script> overrides this, which is what makes the tag embeddable inside a
+  // bundled app (React dev server, Capacitor, etc.) where the host is also "localhost" but the
+  // assets do NOT live at `../`. Resolved below once the script element is known.
   var cdn = (/localhost/.test(document.location.hostname))? "../":`https://www.unpkg.com/${name}/`;
   function loadJSON(path, success, error){
     var xhr = new XMLHttpRequest();
@@ -332,6 +337,8 @@
   var doc_name    = this_script.getAttribute('data-name') || "Madina05";
   var doc_font    = (this_script.getAttribute('data-font') || "me_quran").replaceAll(" ","_");
   var doc_font_sz = this_script.getAttribute('data-font-size') || 16;
+  var doc_cdn     = this_script.getAttribute('data-cdn');
+  if (doc_cdn) cdn = doc_cdn.replace(/\/?$/, "/"); // honor explicit base, ensure trailing slash
   print(`${doc_name} with font: ${doc_font} size: ${doc_font_sz}`);
   const name_css = cdn+"dist/"+name+".min.css?v=1.1";
   if (!document.getElementById(name))
