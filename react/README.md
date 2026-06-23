@@ -112,16 +112,28 @@ Not provided here. React Native has no DOM/HTML/CSS, so the custom element canno
 require porting the renderer to native `View`/`Text` + `transform: scaleX`. Use the Capacitor path
 above unless you specifically need native (non-WebView) rendering.
 
-## Developing / publishing this package
+## Developing this package
 
 ```bash
 cd react
 npm install
 npm test                # vitest (jsdom) — wrapper + loader unit tests
 npm run build           # esbuild → dist/index.mjs + dist/index.cjs, copies dist/index.d.ts
-npm publish --access public   # scoped package: first publish needs --access public
 ```
 
 `dist/` is git-ignored and rebuilt automatically on publish (`prepublishOnly`). Source lives in
-`src/`; the public API is hand-typed in `src/index.d.ts`. This package versions independently from
-the core `quran-madina-html` library.
+`src/`; the public API is hand-typed in `src/index.d.ts`.
+
+## Releasing
+
+This package is released **in lockstep with the core library** by the repo-root command:
+
+```bash
+npm run release         # release-it: builds + publishes quran-madina-html AND this wrapper
+```
+
+The root `release-it` config syncs this `package.json` to the core's new version before the release
+commit, then publishes `@tarekeldeeb/quran-madina-react@<version>` (matching the core) after the
+core lands on npm (see `scripts/sync-wrapper-version.mjs` and `scripts/publish-wrapper.mjs`). So the
+wrapper version always equals the core version. A manual one-off publish is still possible with
+`npm publish --access public` from this folder (scoped packages need `--access public`).

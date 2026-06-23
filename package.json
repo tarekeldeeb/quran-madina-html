@@ -50,6 +50,13 @@
     "hooks": {
       "after:init": [
         "grunt"
+      ],
+      "after:bump": [
+        "node scripts/sync-wrapper-version.mjs ${version}",
+        "git add react/package.json react/package-lock.json"
+      ],
+      "after:release": [
+        "node scripts/publish-wrapper.mjs ${version}"
       ]
     }
   },
