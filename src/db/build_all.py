@@ -8,15 +8,17 @@
 from multiprocessing import Pool
 from argparse import Namespace
 from tqdm import tqdm
-from build_db import DbBuilder, DEFAULTS, CDN
+from build_db import DbBuilder, DEFAULTS
 
+# font_url is stored relative (see DEFAULTS in build_db.py); the runtime resolves it against its
+# `cdn` base and the builder makes it absolute only for width measurement.
 amiri16 = DEFAULTS.copy()
 amiri16['font_family'] = 'Amiri Quran'
-amiri16['font_url'] = CDN+'assets/fonts/AmiriQuran.woff2'
+amiri16['font_url'] = 'assets/fonts/AmiriQuran.woff2'
 
 amiri_color16 = DEFAULTS.copy()
 amiri_color16['font_family'] = 'Amiri Quran Colored'
-amiri_color16['font_url'] = CDN+'assets/fonts/AmiriQuranColored.woff2'
+amiri_color16['font_url'] = 'assets/fonts/AmiriQuranColored.woff2'
 
 amiri_color24 = amiri_color16.copy()
 amiri_color24['font_size']=24
@@ -24,11 +26,11 @@ amiri_color24['line_width']=410
 
 uthman16 = DEFAULTS.copy()
 uthman16['font_family'] = 'Uthman'
-uthman16['font_url'] = CDN+"assets/fonts/UthmanTN_v2-0.woff2"
+uthman16['font_url'] = "assets/fonts/UthmanTN_v2-0.woff2"
 
 me_quran16 = DEFAULTS.copy()
 me_quran16['font_family'] = 'me_quran'
-me_quran16['font_url'] = CDN+"assets/fonts/me_quran-Regular.woff2"
+me_quran16['font_url'] = "assets/fonts/me_quran-Regular.woff2"
 
 configs = [ DEFAULTS, amiri16, uthman16, amiri_color16, amiri_color24, me_quran16]
 

@@ -120,5 +120,7 @@ export default function QuranMadinaHtml({
     set("headless", headless);
   }, [ready, page, sura, aya, words, headless]);
 
-  return React.createElement(TAG, { ref, className, style, ...rest });
+  // Render as `class` rather than `className`: React < 19 does not map className -> class for
+  // custom elements, so passing className would silently drop the class on those versions.
+  return React.createElement(TAG, { ref, class: className, style, ...rest });
 }

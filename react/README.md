@@ -98,9 +98,11 @@ Notes for mobile:
 
 - Capacitor serves the app from `localhost`, so keep the default `cdn` (unpkg) **or** self-host the
   assets and point `cdn` at them — see above. Do not rely on the library's `../` default.
-- **Offline support:** bundle the `assets/` folder (and `dist/*.min.css`) into your web build, host
-  them at a path inside the app, set `src` to the bundled JS and `cdn` to that path. Then the app
-  needs no network.
+- **Offline support:** bundle the library `dist/quran-madina-html.min.js`, `dist/*.min.css`, the
+  `assets/db/*.json` you use and the `assets/fonts/*.woff2` into your web build, then set `src` to
+  the bundled JS and `cdn` to the base path that contains `dist/` and `assets/`. Everything —
+  including the font — resolves from `cdn`, so no network is needed (requires library >= 0.6,
+  which stores font paths relative).
 - This is the recommended mobile path: it reuses the battle-tested HTML/CSS renderer (fonts,
   per-line stretch, offsets) instead of reimplementing the layout natively in React Native.
 
@@ -115,6 +117,7 @@ above unless you specifically need native (non-WebView) rendering.
 ```bash
 cd react
 npm install
+npm test                # vitest (jsdom) — wrapper + loader unit tests
 npm run build           # esbuild → dist/index.mjs + dist/index.cjs, copies dist/index.d.ts
 npm publish --access public   # scoped package: first publish needs --access public
 ```

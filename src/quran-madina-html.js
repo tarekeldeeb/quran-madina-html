@@ -49,6 +49,14 @@
     if (str.split('-').length == 2) return str.split('-').map(elem => parseInt(elem) +1);
     return Array(2).fill(parseInt(str.split('-')[0])+1);
   }
+  function resolveUrl(url){
+    // Resolve an asset URL from the DB against `cdn`. Absolute (http(s):// or //) URLs are used
+    // as-is for backward compatibility with older DBs; relative paths (e.g. "assets/fonts/X.woff2")
+    // are prefixed with `cdn`, so a `data-cdn` override redirects fonts too (self-host / offline).
+    if(url == null) return url;
+    if(/^(https?:)?\/\//.test(url)) return url;
+    return cdn + String(url).replace(/^\//, "");
+  }
   // Aya-number ornaments (ornate parens for Hafs/Uthman/me_quran, end-of-aya for Amiri).
   // These are markers, not words, so they never count towards the words= index.
   var AYA_MARKER = /[﴿﴾۝]/;
@@ -355,7 +363,7 @@
   loadJSON(`${cdn}assets/db/${doc_name}-${doc_font}-${doc_font_sz}px.json`,
         function(data) { 
           madina_data = data; 
-          const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(madina_data.font_url)+')');
+          const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(resolveUrl(madina_data.font_url))+')');
           myFont.load().then( () => {document.fonts.add(myFont);});
           xtag.register(name, {
             lifecycle: {

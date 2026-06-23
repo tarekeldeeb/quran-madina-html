@@ -32,7 +32,10 @@ REPO = CDN #'https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html-no-
 DEFAULTS = {'name':'Madina05', 'published': 1405,
            'title':"مصحف المدينة الإصدار القديم - مجمع الملك فهد لطباعة المصحف الشريف",
            'font_family':'Hafs',
-           'font_url':REPO+'assets/fonts/Hafs.woff2',
+           # Stored relative so the runtime can resolve it against its `cdn` base (enables
+           # self-hosting / offline via the data-cdn override). Made absolute only for the
+           # build-time width measurement, see HtmlHelper.make_html_test.
+           'font_url':'assets/fonts/Hafs.woff2',
            'font_size':16, 'line_width':275}
 DECORATE_SURA_NAME = False  # Feature kill-switch: surround sura names with a shaded border
 
@@ -340,7 +343,8 @@ class HtmlHelper:
         style_elem = soup.find("style").string # type: ignore
         style_elem = style_elem.replace("me_quran", font) # type: ignore
         style_elem = style_elem.replace("Amiri Quran Colored", font)
-        style_elem = re.sub(r"https.*woff", font_url, style_elem)
+        # font_url is stored relative; make it absolute so headless Chrome can fetch it here.
+        style_elem = re.sub(r"https.*woff", CDN + font_url, style_elem)
         style_elem = style_elem.replace("260", str(line_width))
         style_elem = style_elem.replace("16", str(font_sz))
         soup.find("style").string = style_elem # type: ignore
