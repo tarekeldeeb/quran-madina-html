@@ -1,0 +1,50 @@
+{
+  "name": "@tarekeldeeb/quran-madina-react",
+  "version": "0.1.0",
+  "description": "React wrapper for the quran-madina-html custom element — render Madina-style Quran pages (no images) in React on web and mobile (via a Capacitor WebView).",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "node build.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  },
+  "keywords": [
+    "quran",
+    "madina",
+    "mushaf",
+    "arabic",
+    "react",
+    "quran-madina-html"
+  ],
+  "author": "Tarek Eldeeb",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tarekeldeb/quran-madina-html.git",
+    "directory": "react"
+  },
+  "bugs": {
+    "url": "https://github.com/tarekeldeb/quran-madina-html/issues"
+  },
+  "homepage": "https://github.com/tarekeldeb/quran-madina-html/tree/main/react#readme"
+}

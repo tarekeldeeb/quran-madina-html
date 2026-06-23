@@ -1,0 +1,124 @@
+# @tarekeldeeb/quran-madina-react
+
+A thin React component around the `<quran-madina-html>` custom element. The actual rendering is
+still done by the [`quran-madina-html`](https://www.npmjs.com/package/quran-madina-html) library
+(HTML/CSS, no images) — this just loads it and exposes the tag as a normal React component. The
+**same** wrapper drives **web, iOS and Android** (mobile via a WebView container such as Capacitor;
+see below).
+
+The library is not bundled: the component injects its `<script>` at runtime (the library reads its
+config from its own `<script>` tag, so a plain `import` of it would not work). `react` is a peer
+dependency.
+
+## Install
+
+```bash
+npm install @tarekeldeeb/quran-madina-react react
+```
+
+## Usage
+
+```jsx
+import QuranMadinaHtml from "@tarekeldeeb/quran-madina-react";
+
+export default function App() {
+  return (
+    <div dir="rtl">
+      {/* full page */}
+      <QuranMadinaHtml page={106} font="Hafs" />
+
+      {/* aya range */}
+      <QuranMadinaHtml sura={2} aya="8-10" />
+
+      {/* a word subsequence (1-based, inclusive) */}
+      <QuranMadinaHtml sura={1} aya={1} words="1:2" />
+
+      {/* no header / copy chrome */}
+      <QuranMadinaHtml sura={2} aya="13-14" headless />
+    </div>
+  );
+}
+```
+
+### Props
+
+| Prop        | Type                | Notes |
+|-------------|---------------------|-------|
+| `page`      | number \| string    | Full page 1–604. Mutually exclusive with `sura`/`aya` (page wins). |
+| `sura`      | number \| string    | Sura 1–114, with `aya`. |
+| `aya`       | number \| string    | Aya or range, e.g. `"8-10"`. |
+| `words`     | string              | 1-based word range: `"1:2"`, `"3-10"`, or a single index. |
+| `headless`  | boolean             | Drop the header/copy chrome. |
+| `font`      | string              | `Hafs`, `Uthman`, `Amiri Quran`, `Amiri Quran Colored`, `me_quran`. |
+| `name`      | string              | DB name, default `Madina05`. |
+| `fontSize`  | number \| string    | px, default 16. |
+| `src`       | string              | Library script URL. Default: unpkg latest. |
+| `cdn`       | string              | Base URL for CSS + JSON assets. Default: unpkg package root. |
+
+> **Global config caveat:** `font`, `name`, `fontSize`, `src` and `cdn` configure the single
+> library instance for the whole page. Only the **first** mounted `<QuranMadinaHtml>` sets them;
+> later values are ignored. Put your config on the first instance you render.
+
+## Why `cdn` matters (localhost gotcha)
+
+The library figures out where to fetch its CSS + JSON DB from based on the **page** host: on any
+`localhost` host it assumes the assets live at `../` (that's how this repo's own demo works). A
+React dev server (`localhost:3000`) and a Capacitor app (host is also `localhost`) do **not** have
+the assets at `../`, so without help the DB fetch 404s.
+
+The wrapper fixes this by setting `data-cdn` to the unpkg package root by default, so assets always
+resolve. Override `cdn` if you self-host the assets:
+
+```jsx
+<QuranMadinaHtml page={1} cdn="https://my.cdn.example/quran-madina-html/" />
+```
+
+> `data-cdn` support requires a build of the library that includes it (the release that introduced
+> this feature, or a local `npm run build` of this repo). When loading from a CDN, pin a version
+> that supports it, e.g. `src="https://unpkg.com/quran-madina-html@X.Y.Z"`.
+
+## Mobile: iOS + Android with Capacitor
+
+Capacitor wraps your existing React web build in a native shell with a WebView, so the very same
+component runs on device. Outline:
+
+```bash
+# in your React app
+npm install @capacitor/core @capacitor/cli
+npx cap init "My Quran App" com.example.quran --web-dir=dist   # or build/ for CRA
+npm run build                 # produce the web bundle
+npx cap add ios
+npx cap add android
+npx cap copy
+npx cap open ios              # opens Xcode  → run on simulator/device
+npx cap open android         # opens Android Studio
+```
+
+Notes for mobile:
+
+- Capacitor serves the app from `localhost`, so keep the default `cdn` (unpkg) **or** self-host the
+  assets and point `cdn` at them — see above. Do not rely on the library's `../` default.
+- **Offline support:** bundle the `assets/` folder (and `dist/*.min.css`) into your web build, host
+  them at a path inside the app, set `src` to the bundled JS and `cdn` to that path. Then the app
+  needs no network.
+- This is the recommended mobile path: it reuses the battle-tested HTML/CSS renderer (fonts,
+  per-line stretch, offsets) instead of reimplementing the layout natively in React Native.
+
+## React Native (native, no WebView)
+
+Not provided here. React Native has no DOM/HTML/CSS, so the custom element cannot run; it would
+require porting the renderer to native `View`/`Text` + `transform: scaleX`. Use the Capacitor path
+above unless you specifically need native (non-WebView) rendering.
+
+## Developing / publishing this package
+
+```bash
+cd react
+npm install
+npm run build           # esbuild → dist/index.mjs + dist/index.cjs, copies dist/index.d.ts
+npm publish --access public   # scoped package: first publish needs --access public
+```
+
+`dist/` is git-ignored and rebuilt automatically on publish (`prepublishOnly`). Source lives in
+`src/`; the public API is hand-typed in `src/index.d.ts`. This package versions independently from
+the core `quran-madina-html` library.
