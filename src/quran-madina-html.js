@@ -72,16 +72,21 @@
     var parts = str.split(/[-:]/).map(elem => parseInt(elem, 10));
     if(parts.length == 1) parts = [parts[0], parts[0]];
     if(parts.length != 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
+    if(parts[0] < 1 || parts[1] < parts[0]) return null; // 1-based; start must not exceed end
     return parts;
   }
-  function countAyaWords(aya){
-    // Number of selectable words in an aya (whitespace-separated, excluding aya-number markers).
+  function countPartWords(part){
+    // Selectable words in a single render part (whitespace-separated, excluding aya-number markers).
     var n = 0;
-    aya.r.forEach(function(part){
-      part.t.split(/\s+/).forEach(function(token){
-        if(token !== "" && !AYA_MARKER.test(token)) n = n + 1;
-      });
+    part.t.split(/\s+/).forEach(function(token){
+      if(token !== "" && !AYA_MARKER.test(token)) n = n + 1;
     });
+    return n;
+  }
+  function countAyaWords(aya){
+    // Number of selectable words in an aya, summed over its render parts.
+    var n = 0;
+    aya.r.forEach(function(part){ n = n + countPartWords(part); });
     return n;
   }
   function appendWords(parent, text, range, counter){
@@ -165,14 +170,30 @@
       }
       if(reached) break;
     }
-    return groups;
+    // Annotate each visual line with the running countable-word index it ends at, then drop the
+    // lines that are entirely outside the selection — leading lines before range[0] and trailing
+    // lines after range[1] (the latter appear because collection grabs whole ayas, which may run
+    // onto further lines). The block then begins and ends on lines that actually show a selected
+    // word (requirement: no fully-hidden lines). Words on dropped leading lines are carried over as
+    // `counterStart` so word visibility downstream still lines up.
+    var running = 0;
+    groups.forEach(function(g){
+      g.parts.forEach(function(item){ if(item.countable){ running = running + countPartWords(item.part); } });
+      g.lastWord = running;
+    });
+    var start = 0;
+    while(start < groups.length - 1 && groups[start].lastWord < range[0]) start = start + 1;
+    var end = start;
+    while(end < groups.length - 1 && groups[end].lastWord < range[1]) end = end + 1;
+    return {groups: groups.slice(start, end + 1), counterStart: start > 0 ? groups[start - 1].lastWord : 0};
   }
   function renderWordsSpan(tag, sura_start, aya_start, range, headless){
     // Dedicated render path for the words= selection. Unlike the page/aya loop it is not bound
     // to a single page or sura, so a word range can span both.
-    var groups = collectWordParts(sura_start, aya_start, range);
+    var collected = collectWordParts(sura_start, aya_start, range);
+    var groups = collected.groups;
     var multiline = groups.length > 1;
-    var counter = 0; // running 1-based word index from the start aya, drives word visibility
+    var counter = collected.counterStart; // running 1-based word index, seeded past any skipped lines
     tag.innerHTML = "";
     tag.removeAttribute('style');
     if(multiline){
@@ -183,11 +204,11 @@
         tag.style.setProperty('line-height', madina_data.font_size*2+"px", '');
       }
       tag.style.width = (madina_data.line_width+10)+"px";
-      let start_page = madina_data.suras[sura_start].ayas[aya_start].p;
+      let start_page = parseInt(groups[0].key.split(':')[0], 10); // page of the first visible line
       tag.style.setProperty('box-shadow', 'inset '+(start_page%2==1?"":"-")+'8px 0 7px -7px #333', '');
       if(!headless){
         let header = document.createElement("quran-madina-html-header");
-        header.innerHTML = madina_data.suras[sura_start].name;
+        header.innerHTML = madina_data.suras[groups[0].parts[0].sura].name;
         let copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
         let translation = getTranslateIcon(); translation.addEventListener("click", openTranslate);
         header.appendChild(copy); header.appendChild(translation);
@@ -317,14 +338,42 @@
   function print(str){
     console.log(`${name}> ${str}`);
   }
+  function visibleClone(host){
+    // Clone the rendered tag and strip everything that must not be copied: the header chrome,
+    // word spans hidden by a words= selection, and the invisible layout spacers. Working on a
+    // detached clone lets us read textContent (no layout needed) instead of relying on innerText's
+    // browser-specific handling of visibility:hidden.
+    var clone = host.cloneNode(true);
+    var header = clone.querySelector("quran-madina-html-header");
+    if(header) header.parentNode.removeChild(header);
+    Array.from(clone.querySelectorAll(`.${name}-word-hidden`)).forEach(function(e){
+      e.parentNode.removeChild(e);
+    });
+    Array.from(clone.querySelectorAll("div,span")).forEach(function(e){
+      if(/visibility:\s*hidden/.test(e.getAttribute("style") || "")) e.parentNode.removeChild(e);
+    });
+    return clone;
+  }
   function copyToClipboard(){
-    textWithHeader = this.parentElement.parentElement.innerText.split("\n");
-    if(textWithHeader.length > 1){
-      text = textWithHeader.slice(1).join(" ") + "\n\n" + textWithHeader[0];
+    var host = this.parentElement.parentElement;
+    var header = host.querySelector("quran-madina-html-header");
+    var sura_name;
+    if(header){
+      sura_name = header.textContent.replace(/\s+/g, " ").trim(); // icons are svg, contribute no text
     } else {
-      let sura_index = this.parentElement.parentElement.getAttribute("sura");
-      text = textWithHeader[0]+ "\n\n" + madina_data.suras[sura_index-1].name;
+      let sura_index = host.getAttribute("sura");
+      sura_name = (sura_index != null) ? madina_data.suras[sura_index - 1].name : "";
     }
+    var clone = visibleClone(host);
+    var lines = clone.querySelectorAll("quran-madina-html-line");
+    var body;
+    if(lines.length){
+      body = Array.from(lines).map(function(l){ return l.textContent.replace(/\s+/g, " ").trim(); })
+                  .filter(function(s){ return s !== ""; }).join(" ");
+    } else {
+      body = clone.textContent.replace(/\s+/g, " ").trim();
+    }
+    var text = body + "\n\n" + sura_name;
     navigator.clipboard.writeText(text);
     alert("\u2398 تم نسخ:\n\n" + text);
   }
@@ -491,6 +540,11 @@
                     if(words_range == null){
                       print(`Bad words parameter: ${this.words}`);
                     } else {
+                      if(aya_to !== aya_from) print("Ignoring aya range end with words parameter!");
+                      if(words_range[1] - words_range[0] + 1 > 500){
+                        print("words selection capped at 500 words");
+                        words_range[1] = words_range[0] + 499;
+                      }
                       // words= has its own renderer that spans pages and suras from the start aya.
                       renderWordsSpan(tag, sura_from, aya_from, words_range, headless);
                       return;

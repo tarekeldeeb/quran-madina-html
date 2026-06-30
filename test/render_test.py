@@ -240,5 +240,49 @@ class BasicRenderTest(unittest.TestCase):
         self.set_attrs(sura=1, aya="1-7", headless="False")
         self.assertEqual(self.count("quran-madina-html-header"), 1, "headless=False keeps header")
 
+    def test_12_words_invalid_range_falls_back(self):
+        """A reversed or zero words= range is rejected; the aya renders normally (no word spans)"""
+        for bad in ("3-1", "0", "0-2"):
+            self.set_attrs(sura=1, aya=1, words=bad)
+            self.assertEqual(self.count("span.quran-madina-html-word"), 0,
+                             f"words={bad} should not split into word spans\n{self.dump_log()}")
+            self.assertGreaterEqual(self.count("quran-madina-html-line"), 1,
+                                    f"words={bad} should still render the aya")
+
+    def test_13_words_capped_at_500(self):
+        """An over-long words= span is capped at 500 visible words"""
+        self.set_attrs(sura=1, aya=1, words="1-1000")
+        self.assertEqual(len(self.visible_words()), 500, f"selection capped at 500\n{self.dump_log()}")
+
+    def test_14_words_no_fully_hidden_leading_lines(self):
+        """Leading lines that are entirely hidden are skipped: every word line shows >=1 word"""
+        self.set_attrs(sura=1, aya=1, words="20-22")
+        expected = collect_words(self.db["suras"], 0, 2, 22)[19:22]
+        self.assertEqual(self.visible_words(), expected,
+                         f"words=20-22 should show words 20..22\n{self.dump_log()}")
+        fully_hidden = self.web_driver.execute_script(
+            "return Array.from(document.querySelectorAll('quran-madina-html-line')).filter("
+            "function(line){var w=line.querySelectorAll('span.quran-madina-html-word');"
+            "return w.length>0 && Array.from(w).every(function(s){"
+            "return s.classList.contains('quran-madina-html-word-hidden');});}).length;")
+        self.assertEqual(fully_hidden, 0, "no rendered line may be entirely hidden")
+
+    def test_15_copy_excludes_hidden_words(self):
+        """Copy-to-clipboard carries only the visible words, not the ones hidden by words="""
+        self.set_attrs(sura=1, aya=1, words="1:2")
+        self.web_driver.execute_script(
+            "window.__copied=null;window.alert=function(){};"
+            "navigator.clipboard.writeText=function(t){window.__copied=t;return Promise.resolve();};")
+        self.web_driver.execute_script(
+            "document.querySelector('quran-madina-html-copy svg')."
+            "dispatchEvent(new MouseEvent('click',{bubbles:true}));")
+        copied = self.web_driver.execute_script("return window.__copied;")
+        shown = collect_words(self.db["suras"], 0, 2, 3)
+        self.assertIsNotNone(copied, f"copy handler should have run\n{self.dump_log()}")
+        self.assertIn(shown[0], copied)
+        self.assertIn(shown[1], copied)
+        self.assertNotIn(shown[2], copied, "a hidden word must not be copied")
+        self.assertIn(self.db["suras"][0]["name"], copied, "sura name is appended to the copy")
+
 if __name__ == '__main__':
     unittest.main()
