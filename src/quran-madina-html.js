@@ -57,9 +57,16 @@
     if(/^(https?:)?\/\//.test(url)) return url;
     return cdn + String(url).replace(/^\//, "");
   }
-  // Aya-number ornaments (ornate parens for Hafs/Uthman/me_quran, end-of-aya for Amiri).
-  // These are markers, not words, so they never count towards the words= index.
-  var AYA_MARKER = /[﴿﴾۝]/;
+  // A render token counts as a selectable word only if it contains an Arabic letter. Everything
+  // else in the Madina text appears as its own whitespace-separated token and must NOT be counted
+  // or selectable, otherwise the words= index drifts: aya-number ornaments (ornate parens ﴿N﴾ for
+  // Hafs/Uthman/me_quran, end-of-aya ۝N for Amiri), waqf/pause marks (ۖ ۗ ۘ ۙ ۚ ۛ ۜ), and the
+  // ۞ (rub-el-hizb) / ۩ (sajdah) ornaments — none of these carry an Arabic letter.
+  // ASCII \u escapes on purpose: a literal Arabic class here would be misread if the script is ever
+  // served without charset=utf-8 (some static servers do this), breaking the match and hiding every
+  // word. The ranges are U+0621-U+064A (basic Arabic letters) and U+0671-U+06D3 (alef-wasla etc.).
+  var ARABIC_LETTER = /[\u0621-\u064A\u0671-\u06D3]/;
+  function isWordToken(token){ return ARABIC_LETTER.test(token); }
   function isTrue(val){
     // Boolean HTML attribute: true when present as `headless`, `headless=""`, "true", "1" or "yes".
     if(val == null) return false;
@@ -76,10 +83,11 @@
     return parts;
   }
   function countPartWords(part){
-    // Selectable words in a single render part (whitespace-separated, excluding aya-number markers).
+    // Selectable words in a single render part: whitespace-separated tokens that carry a letter
+    // (markers, pause marks and ornaments are excluded by isWordToken).
     var n = 0;
     part.t.split(/\s+/).forEach(function(token){
-      if(token !== "" && !AYA_MARKER.test(token)) n = n + 1;
+      if(isWordToken(token)) n = n + 1;
     });
     return n;
   }
@@ -99,8 +107,8 @@
       var span = document.createElement("span");
       span.textContent = token;
       span.classList.add(`${name}-word`);
-      if(AYA_MARKER.test(token)){
-        span.classList.add(`${name}-word-hidden`); // ornament: never a selectable word
+      if(!isWordToken(token)){
+        span.classList.add(`${name}-word-hidden`); // marker/pause/ornament: never a selectable word
       } else {
         counter = counter + 1;
         if(counter < range[0] || counter > range[1]) span.classList.add(`${name}-word-hidden`);

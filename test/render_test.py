@@ -17,15 +17,16 @@ from selenium.common.exceptions import TimeoutException
 # default DB (name=Madina05, font=me_quran, size=16). Drive the words= expectations from that same
 # JSON so the assertions stay in sync with the data regardless of font.
 DEFAULT_DB = os.path.join("assets", "db", "Madina05-me_quran-16px.json")
-AYA_MARKER = re.compile("[﴿﴾۝]")  # ornate parens / end-of-aya: not words
+ARABIC_LETTER = re.compile("[ء-يٱ-ۓ]")  # a token is a word only if it carries an Arabic letter;
+# markers (﴿N﴾, ۝N), waqf/pause marks (ۖ ۗ ۚ …) and ornaments (۞ ۩) carry none and are not words.
 
 
 def aya_word_list(aya):
-    """Selectable words of an aya (whitespace-separated, excluding aya-number markers)."""
+    """Selectable words of an aya (whitespace-separated tokens that contain an Arabic letter)."""
     words = []
     for part in aya["r"]:
         for token in part["t"].split():
-            if token and not AYA_MARKER.search(token):
+            if ARABIC_LETTER.search(token):
                 words.append(token)
     return words
 
@@ -67,10 +68,19 @@ class BasicRenderTest(unittest.TestCase):
     web_driver = webdriver.Chrome(options=chrome_options)
     test_file = os.path.join("template", "render_test.html")
     test_url = "http://localhost:8000/" + test_file
+    with open(test_file, encoding="utf8") as _tpl_handle:
+        original_template = _tpl_handle.read()  # pristine, restored in tearDownClass
     web_driver.get(test_url)
     time.sleep(10)
     with open(DEFAULT_DB, encoding="utf8") as _db_handle:
         db = json.load(_db_handle)
+
+    @classmethod
+    def tearDownClass(cls):
+        """Restore the template the set_attrs/set_page helpers rewrite, and close the browser."""
+        with open(cls.test_file, "w", encoding="utf8") as tpl:
+            tpl.write(cls.original_template)
+        cls.web_driver.quit()
 
     def dump_log(self):
         """Prints console logs from the browser"""
@@ -283,6 +293,18 @@ class BasicRenderTest(unittest.TestCase):
         self.assertIn(shown[1], copied)
         self.assertNotIn(shown[2], copied, "a hidden word must not be copied")
         self.assertIn(self.db["suras"][0]["name"], copied, "sura name is appended to the copy")
+
+    def test_16_pause_marks_not_counted_as_words(self):
+        """Waqf/pause marks (e.g. the two ۛ in Al-Baqara 2) are never counted or shown as words"""
+        self.set_attrs(sura=2, aya=2, words="1-7")
+        expected = collect_words(self.db["suras"], 1, 3, 7)[0:7]
+        self.assertEqual(len(expected), 7, "Al-Baqara aya 2 has 7 real words")
+        shown = self.visible_words()
+        self.assertEqual(shown, expected,
+                         f"words=1-7 should be the 7 real words, not split by pause marks\n{self.dump_log()}")
+        for tok in shown:
+            self.assertRegex(tok, "[ء-يٱ-ۓ]", f"a shown word must carry a letter, got [{tok}]")
+        self.assertNotIn("ۛ", shown, "a bare pause mark must never be a visible word")
 
 if __name__ == '__main__':
     unittest.main()
