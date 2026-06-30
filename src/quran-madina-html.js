@@ -62,7 +62,10 @@
   // or selectable, otherwise the words= index drifts: aya-number ornaments (ornate parens ﴿N﴾ for
   // Hafs/Uthman/me_quran, end-of-aya ۝N for Amiri), waqf/pause marks (ۖ ۗ ۘ ۙ ۚ ۛ ۜ), and the
   // ۞ (rub-el-hizb) / ۩ (sajdah) ornaments — none of these carry an Arabic letter.
-  var ARABIC_LETTER = /[ء-يٱ-ۓ]/;
+  // ASCII \u escapes on purpose: a literal Arabic class here would be misread if the script is ever
+  // served without charset=utf-8 (some static servers do this), breaking the match and hiding every
+  // word. The ranges are U+0621-U+064A (basic Arabic letters) and U+0671-U+06D3 (alef-wasla etc.).
+  var ARABIC_LETTER = /[\u0621-\u064A\u0671-\u06D3]/;
   function isWordToken(token){ return ARABIC_LETTER.test(token); }
   function isTrue(val){
     // Boolean HTML attribute: true when present as `headless`, `headless=""`, "true", "1" or "yes".
