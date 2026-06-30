@@ -68,10 +68,19 @@ class BasicRenderTest(unittest.TestCase):
     web_driver = webdriver.Chrome(options=chrome_options)
     test_file = os.path.join("template", "render_test.html")
     test_url = "http://localhost:8000/" + test_file
+    with open(test_file, encoding="utf8") as _tpl_handle:
+        original_template = _tpl_handle.read()  # pristine, restored in tearDownClass
     web_driver.get(test_url)
     time.sleep(10)
     with open(DEFAULT_DB, encoding="utf8") as _db_handle:
         db = json.load(_db_handle)
+
+    @classmethod
+    def tearDownClass(cls):
+        """Restore the template the set_attrs/set_page helpers rewrite, and close the browser."""
+        with open(cls.test_file, "w", encoding="utf8") as tpl:
+            tpl.write(cls.original_template)
+        cls.web_driver.quit()
 
     def dump_log(self):
         """Prints console logs from the browser"""
