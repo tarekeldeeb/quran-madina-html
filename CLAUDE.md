@@ -86,6 +86,18 @@ are baked in at build time in `Ayah.__init__`.
   (`visibility:hidden`), so the Madina stretch/offset geometry is preserved and only the chosen words
   are visible. A selection that fits one line renders inline; otherwise it gets the multiline block +
   header. Aya-number ornaments (`AYA_MARKER`) are never counted. See `appendWords()`.
+  Validation/limits in this path: `parseWordsRange()` rejects a malformed, zero/negative, or reversed
+  range (`start > end`) by returning `null`, and `doRender()` then **falls back to the normal verse
+  render** (logs `Bad words parameter`). The span is **capped at 500 words** (`doRender` clamps
+  `range[1]`). Because counting is per-word, `collectWordParts()` returns `{groups, counterStart}` and
+  **trims fully-hidden lines** off both ends — leading lines before `range[0]` and trailing lines after
+  `range[1]` (the latter occur because collection grabs whole ayas that spill onto further lines), so
+  the block always starts and ends on a line that shows a selected word; `counterStart` carries the
+  skipped leading words so visibility still lines up. `countPartWords()` counts a single part (and
+  `countAyaWords()` sums it over an aya). Combining `words` with an `aya` **range** ignores the range
+  end (only the start aya seeds the walk) and logs a warning. The copy button (`copyToClipboard()` via
+  `visibleClone()`) copies only visible text — it strips the header, `quran-madina-html-word-hidden`
+  spans, and `visibility:hidden` spacers from a detached clone rather than trusting `innerText`.
 - A range that fits on one line renders as an inline `<span>`; otherwise a multiline `<div>` with a
   header (sura name + copy/translate icons). Generated child tags: `<quran-madina-html-line>`,
   `<quran-madina-html-header>`, `<quran-madina-html-copy>`, and per-aya `<div>`s classed
