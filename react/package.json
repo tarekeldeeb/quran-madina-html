@@ -1,6 +1,6 @@
 {
   "name": "@tarekeldeeb/quran-madina-react",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "React wrapper for the quran-madina-html custom element — render Madina-style Quran pages (no images) in React on web and mobile (via a Capacitor WebView).",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -30,11 +30,11 @@
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.1.0",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.28.0",
     "jsdom": "^25.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.9"
   },
   "keywords": [
     "quran",
