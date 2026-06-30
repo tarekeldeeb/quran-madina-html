@@ -1,5 +1,7 @@
 # @tarekeldeeb/quran-madina-react
 
+[![Socket Badge](https://badge.socket.dev/npm/package/@tarekeldeeb/quran-madina-react)](https://socket.dev/npm/package/@tarekeldeeb/quran-madina-react)
+
 A thin React component around the `<quran-madina-html>` custom element. The actual rendering is
 still done by the [`quran-madina-html`](https://www.npmjs.com/package/quran-madina-html) library
 (HTML/CSS, no images) — this just loads it and exposes the tag as a normal React component. The
