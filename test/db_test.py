@@ -65,15 +65,5 @@ class BasicDBTest(unittest.TestCase):
                     self.assertTrue(self._line_exists(data["data"]['suras'], page, line),
                                     f'Missing Line: {line} in page: {page}!')
 
-    def test_5_offset_boundaries(self):
-        """Test Offset < Page width
-        """
-        for data in self.db:
-            for sura_index, sura in enumerate(data["data"]['suras']):
-                for aya_index, aya in enumerate(sura['ayas']):
-                    for part_index, part in enumerate(aya['r']):
-                        self.assertLessEqual(part['o'], data["data"]["line_width"],
-                            f"Offset is too high @{sura_index}:{aya_index}:{part_index}")
-
 if __name__ == '__main__':
     unittest.main()

@@ -122,6 +122,18 @@
     for(var k = 0; k < aya.r.length; k++){ if(aya.r[k].l === line_no) return aya.r[k]; }
     return null;
   }
+  function isLineStartPart(sura_idx, aya_idx, line_no){
+    // True if this aya's part on line_no is the first (rightmost, RTL) on its page-line — i.e. the
+    // previous aya in the same sura does not also sit on that line. This replaces the old `o === 0`
+    // sentinel now that the pixel offset is gone from the DB: line starts are derivable structurally
+    // because the render walks ayas in order. A sura that begins mid-line is treated as a line start
+    // (its preceding text lives in the previous sura), matching the earlier same-sura behavior.
+    var ayas = madina_data.suras[sura_idx].ayas;
+    if(aya_idx <= 0) return true;
+    var prev = ayas[aya_idx - 1];
+    if(prev.p !== ayas[aya_idx].p) return true;
+    return partOnLine(prev, line_no) === null;
+  }
   function lineContext(sura_idx, page, line_no, aya_idx, dir){
     // Parts on (page, line_no) that lie outside the selection on one side, in reading order. dir<0
     // walks back from the first selected aya (text preceding it); dir>0 walks forward from the last
@@ -132,7 +144,7 @@
       if(ayas[a].p != page) break;
       var match = partOnLine(ayas[a], line_no);
       if(match === null) break;
-      if(dir < 0){ parts.unshift(match); if(match.o === 0) break; } // reached the line's right start
+      if(dir < 0){ parts.unshift(match); if(isLineStartPart(sura_idx, a, line_no)) break; } // reached the line's right start
       else { parts.push(match); }
     }
     return parts;
@@ -166,7 +178,7 @@
           var part = aya.r[pi];
           var key = `${aya.p}:${part.l}`;
           if(!current || current.key !== key){
-            current = {key: key, offset: part.o, stretch: part.s, parts: []};
+            current = {key: key, stretch: part.s, parts: []};
             groups.push(current);
           }
           current.parts.push({sura: s, ayaIdx: a, part: part, countable: countable});
@@ -232,15 +244,14 @@
         } else {
           line.style.setProperty("text-align", "center", "");
         }
-        if(group.offset > 0 && gi === 0){
-          // The selection begins mid-line: rebuild the preceding text invisibly so the line's own
-          // centering/stretch positions the first word exactly as it sits on the page.
-          var first = group.parts[0];
+        var first = group.parts[0];
+        if(!isLineStartPart(first.sura, first.ayaIdx, first.part.l)){
+          // This line begins mid-line — its first word is preceded on the page by text from ayas
+          // before the selection start. Rebuild that preceding text invisibly so the line's own
+          // centering/stretch positions the first visible word exactly as on the page. (Only the
+          // leading line can be mid-line; every later group enters a line at its right start.)
           appendSpacers(line, lineContext(first.sura,
             madina_data.suras[first.sura].ayas[first.ayaIdx].p, first.part.l, first.ayaIdx, -1));
-        } else if(group.offset > 0){
-          line.style.setProperty('padding-right', group.offset+"px", '');
-          line.style.setProperty('transform-origin', "left");
         }
       } else {
         line.style.setProperty('font-family', madina_data.font_family, '');
@@ -613,11 +624,6 @@
                       line_match = madina_data.suras[sura_current].ayas[a].r.filter(rr => rr.l == ll);
                       if (line_match.length){
                         if(multiline){
-                          if(line.innerHTML.trim() == ""){ // First part in the line
-                            var offset = line_match[0].o;
-                            line.style.setProperty('padding-right', offset+"px", '');
-                            if(offset > 0) line.style.setProperty('transform-origin', "left");
-                          }
                           if(line_match[0].s>=0){
                             line.style.setProperty("transform",`scaleX(${line_match[0].s})`,"");                        
                           } else {

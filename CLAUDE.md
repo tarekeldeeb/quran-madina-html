@@ -50,8 +50,10 @@ Each run, in `DbBuilder.run()`:
    text from Tanzil.net into `tmp_download/` (skipped if `tmp_download/` already exists).
 2. Spins up **headless Chrome via Selenium** and measures the rendered pixel width of every aya part
    in the target font (`HtmlHelper.get_width` against `template/part_width_test.html`).
-3. Computes per-line `stretch` (scaleX factor, clamped roughly 0.5–2.0) and `offset` so each line
-   fills `line_width`, then writes `assets/db/Madina05-<font>-<size>px.json`.
+3. Computes a per-line `stretch` (scaleX factor, clamped roughly 0.5–2.0) so each line fills
+   `line_width`, then writes `assets/db/Madina05-<font>-<size>px.json`. (No per-part pixel offset is
+   stored — text that starts mid-line is positioned at render time by re-flowing the preceding text
+   invisibly; see below.)
 
 Class roles: `Mushaf` → `Surah` → `Ayah` → `QuranLine`/`Part` model the document tree.
 `DbReader` reads the OCR SQLite for page/line geometry. `JsonHelper` writes the final JSON
@@ -61,9 +63,13 @@ Class roles: `Mushaf` → `Surah` → `Ayah` → `QuranLine`/`Part` model the do
 ## JSON DB shape (the contract between the two halves)
 
 `suras[].ayas[]` each have `p` (page) and `r[]` (render parts). Each part: `l` (line 1–15),
-`t` (text), `o` (left offset px), `s` (stretch/scaleX; **`-1` means center this line instead of
-stretching**). The runtime in `src/quran-madina-html.js` reads exactly these keys — if you change
-field names in `build_db.py`, update `render()` in the JS too. Hindi (Arabic-Indic) aya numbers and
+`t` (text), `s` (stretch/scaleX; **`-1` means center this line instead of stretching**). The runtime
+in `src/quran-madina-html.js` reads exactly these keys — if you change field names in `build_db.py`,
+update `render()` in the JS too. **There is no per-part pixel offset** (`o` was removed): a part that
+begins mid-line is positioned by rendering the preceding text on that line invisibly (spacers /
+`lineContext`), so the line's own stretch/centering places it exactly as on the full page. Line
+starts are detected structurally via `isLineStartPart()` (a part is a line start iff the previous
+aya doesn't also sit on that page-line) rather than a stored `o === 0` sentinel. Hindi (Arabic-Indic) aya numbers and
 font-specific text tweaks (Amiri uses `۝`, others use ornate parens; Uthman replaces `ٱ`→`ا`)
 are baked in at build time in `Ayah.__init__`.
 
@@ -102,7 +108,9 @@ are baked in at build time in `Ayah.__init__`.
   header (sura name + copy/translate icons). Generated child tags: `<quran-madina-html-line>`,
   `<quran-madina-html-header>`, `<quran-madina-html-copy>`, and per-aya `<div>`s classed
   `quran-madina-html-NNN-NNN` for hover highlighting and the "translate" deep-link to quran.com.
-- Stretch is applied as a CSS `scaleX()` transform on the line; offset as `padding-right`.
+- Stretch is applied as a CSS `scaleX()` transform on the line. There is no stored offset; a
+  selection/line that starts mid-line reflows the preceding text invisibly (spacers) so the line's
+  own stretch/centering positions the first visible word.
 
 ## Conventions
 

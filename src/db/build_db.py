@@ -10,8 +10,6 @@
 """
 import os
 import time
-import math
-from functools import reduce
 from typing import List
 import json
 import re
@@ -62,11 +60,10 @@ class Part:
         self.line = line
         self.text = text
         self.width = width
-        self.offset = None
         self.stretch = None
     def to_json(self):
         """Returns a JSON-ready Object"""
-        return {"l":self.line, "t":self.text,"o":self.offset, "s": self.stretch}
+        return {"l":self.line, "t":self.text, "s": self.stretch}
 
 class QuranLine:
     """Temp Class that holds a single line, with multiple aya parts"""
@@ -74,25 +71,18 @@ class QuranLine:
     def __init__(self, page, parts):
         self.page = page
         self.parts = parts
-    def previous_widths(self, parts, stretch)-> int:
-        """Offset each aya by sum of widths of previous ayas on the same line"""
-        if len(parts)==0:
-            return 0
-        if len(parts)==1:
-            return math.ceil(parts[0].width * stretch)
-        return math.ceil(reduce(lambda a,b: (a.width*stretch if hasattr(a,'width') else a)
-                                +b.width*stretch, parts))
     def update_parts(self, line_width: int)->List[Part]:
-        """Apply stretch and offset calculations to all line parts"""
+        """Apply the per-line stretch (scaleX) factor to all line parts. Text that starts mid-line
+        is positioned at render time by re-flowing the preceding text invisibly, so no per-part
+        pixel offset is stored."""
         initial_width = 0
         for part in self.parts:
             initial_width = initial_width + part.width
         stretch = line_width/initial_width
         DbBuilder.dbg_line_widths.append(initial_width)
-        for part_index, part in enumerate(self.parts):
+        for part in self.parts:
             part.stretch = round(stretch, self.STRETCH_ROUNDING) if self.page>2 and stretch<1.5 \
                            else -1
-            part.offset = self.previous_widths(self.parts[0:part_index], stretch)
         return self.parts
 
 class Ayah:
@@ -118,7 +108,6 @@ class Ayah:
         instance.page = page
         instance.line_start = line
         part = Part(line, text, 100)
-        part.offset = 0 # type: ignore
         part.stretch = -1  # type: ignore
         part.text = text
         instance.parts = [part]
@@ -238,7 +227,7 @@ class Surah:
         """
         for aya_index, aya in enumerate(self.ayas):
             for part_index, part in enumerate(aya.parts):
-                if part.offset is None: # Ignore already processed part
+                if part.stretch is None: # Ignore already processed part (stretch set once handled)
                     if part_index<len(aya.parts)-1: # Complete Line
                         part = QuranLine(aya.page, [part]).update_parts(DbBuilder.cfg.line_width)[0]
                     else:
