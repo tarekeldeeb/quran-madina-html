@@ -71,7 +71,7 @@ def main():
         while suras[sura_from]["ayas"][-1]["p"] < page:
             sura_from += 1
         sura_to = sura_from
-        while sura_to < len(suras) - 1 and suras[sura_to]["ayas"][0]["p"] <= page:
+        while sura_to < len(suras) and suras[sura_to]["ayas"][0]["p"] <= page:
             sura_to += 1
         sura_to -= 1
         aya_from = 0
