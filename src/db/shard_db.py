@@ -9,6 +9,7 @@ Shards carry each aya's (suraIdx, ayaIdx) so the runtime can merge partial suras
 
 Usage: python src/db/shard_db.py assets/db/Madina05-me_quran-16px.json <out_dir>
 """
+import hashlib
 import json
 import os
 import sys
@@ -57,6 +58,14 @@ def shard(src, out_root):
 
     manifest = {k: db[k] for k in
                 ("title", "published", "font_family", "font_url", "font_size", "line_width")}
+    # Hashes the *whole* DB (not just the manifest's own header/skeleton fields), since the render
+    # data that actually changes when the DB is rebuilt (stretch factors, text, ...) lives in the
+    # juz shards, invisible to everything else in this manifest. The runtime always re-fetches
+    # manifest.json fresh and compares this against what it last saw, so a rebuilt/updated DB
+    # invalidates any stale cached shards immediately instead of silently serving old data for the
+    # rest of the browser session.
+    manifest["content_hash"] = hashlib.sha256(
+        json.dumps(db, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:12]
     manifest["suras"] = [[s["name"], len(s["ayas"])] for s in db["suras"]]
     manifest["juz"] = [[JUZ_STARTS[j][0], JUZ_STARTS[j][1], juz_start_page[j]] for j in range(30)]
 

@@ -20,7 +20,7 @@ from build_db import DbBuilder, DEFAULTS
 
 hafs24 = DEFAULTS.copy()
 hafs24['font_size'] = 24
-hafs24['line_width'] = 345
+hafs24['line_width'] = 410
 
 amiri16 = DEFAULTS.copy()
 amiri16['font_family'] = 'Amiri Quran'
@@ -29,7 +29,7 @@ amiri16['line_width'] = 320
 
 amiri24 = amiri16.copy()
 amiri24['font_size'] = 24
-amiri24['line_width'] = 345
+amiri24['line_width'] = 410
 
 amiri_color16 = DEFAULTS.copy()
 amiri_color16['font_family'] = 'Amiri Quran Colored'
@@ -48,7 +48,7 @@ uthman16['line_width'] = 330
 
 uthman24 = uthman16.copy()
 uthman24['font_size'] = 24
-uthman24['line_width'] = 350
+uthman24['line_width'] = 420
 
 me_quran16 = DEFAULTS.copy()
 me_quran16['font_family'] = 'me_quran'
@@ -57,7 +57,7 @@ me_quran16['line_width'] = 330
 
 me_quran24 = me_quran16.copy()
 me_quran24['font_size'] = 24
-me_quran24['line_width'] = 350
+me_quran24['line_width'] = 420
 
 
 configs = [ DEFAULTS, hafs24, amiri16, amiri24, uthman16, uthman24, amiri_color16, 

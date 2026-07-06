@@ -45,13 +45,31 @@
     try { sessionStorage.setItem("quran-madina-html:" + path, raw); }
     catch(e) { /* quota exceeded or sessionStorage disabled: in-memory cache still holds it */ }
   }
+  // Drops every cached shard (sessionStorage + in-memory) fetched from under `base` so far this
+  // session. Used when the manifest's content_hash (see bootFromManifest) shows the DB was
+  // rebuilt/updated since a shard from the old content was cached - otherwise that stale shard
+  // would keep being served from cache for the rest of the browser session.
+  function clearShardCache(base){
+    try {
+      for(var i = sessionStorage.length - 1; i >= 0; i--){
+        var key = sessionStorage.key(i);
+        if(key && key.indexOf("quran-madina-html:" + base) === 0) sessionStorage.removeItem(key);
+      }
+    } catch(e) { /* sessionStorage disabled */ }
+    Object.keys(jsonCache).forEach(function(path){
+      if(path.indexOf(base) === 0) delete jsonCache[path];
+    });
+  }
   // path -> array of {success, error} waiting on an XHR already in flight for that path. Several
   // <quran-madina-html> elements on the same page independently need the same juz' shard and would
   // otherwise each fire their own fetch before the first one lands (loadedJuz only flips to true
   // once a fetch *completes*); queuing waiters here coalesces them into a single request.
   var pendingRequests = {};
-  function loadJSON(path, success, error){
-    var cached = readJSONCache(path);
+  function loadJSON(path, success, error, forceFresh){
+    // forceFresh (used for manifest.json only): skip the cache read and always hit the network.
+    // The manifest is small, so this costs nothing, and it's what lets bootFromManifest notice a
+    // rebuilt/updated DB on every load rather than only once per session.
+    var cached = !forceFresh && readJSONCache(path);
     // Deferred even on a cache hit: callers (the module boot sequence in particular) rely on
     // loadJSON always resolving asynchronously, since x-tag is concatenated after this file and
     // only becomes available once the current synchronous script execution finishes.
@@ -243,6 +261,90 @@
     var copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
     wrap.appendChild(copy);
     return wrap;
+  }
+
+  // ==========================================================================
+  // Per-aya click popup: clicking a hovered aya shows a small copy/translate
+  // popup scoped to *that* aya, instead of the frame-level buildHeader/buildInlineCopy
+  // actions above (which always act on the whole frame / its first aya).
+  // ==========================================================================
+
+  var openAyaPopup = null; // {popup, outsideClick, onEscape} for the currently shown popup, if any
+  function closeAyaPopup(){
+    if(!openAyaPopup) return;
+    openAyaPopup.popup.classList.remove(`${name}-open`);
+    document.removeEventListener("click", openAyaPopup.outsideClick);
+    document.removeEventListener("keydown", openAyaPopup.onEscape);
+    openAyaPopup = null;
+  }
+  function getOrCreateAyaPopup(tag){
+    // One popup per host tag, lazily created and reused across clicks; tag.innerHTML="" at the
+    // start of each render already discards it along with everything else, so it's recreated on
+    // the next click after a re-render. Appended as a direct child of `tag` (never inside a
+    // quran-madina-html-line, which may carry its own scaleX transform and would turn this
+    // position:fixed popup into one relative to that transformed line instead of the viewport).
+    var popup = tag.querySelector(`${name}-aya-popup`);
+    if(popup) return popup;
+    popup = document.createElement(`${name}-aya-popup`);
+    popup.appendChild(getCopyIcon());
+    popup.appendChild(getTranslateIcon());
+    tag.appendChild(popup);
+    return popup;
+  }
+  function ayaFragmentsText(tag, class_name){
+    // Every line fragment of this aya shares class_name (see hoverByType/getAyaClass), so joining
+    // them gives the aya's full text even when it wraps across lines. Scoped to `tag`, not
+    // document-wide: the same aya can appear in more than one <quran-madina-html> tag on a page
+    // (e.g. a normal render and a headless="true" one of the same range), which would otherwise
+    // duplicate the copied text with fragments from every tag that happens to share the class.
+    return Array.from(tag.getElementsByClassName(class_name))
+      .map(function(e){ return e.textContent; })
+      .join(" ").replace(/\s+/g, " ").trim();
+  }
+  function positionAyaPopup(popup, elm){
+    var rect = elm.getBoundingClientRect();
+    popup.style.left = Math.max(4, rect.left) + "px";
+    // Prefer floating above the aya; if that would run off the top of the viewport, place it below.
+    var estHeight = 34;
+    popup.style.top = (rect.top - estHeight - 6 > 0 ? rect.top - estHeight - 6 : rect.bottom + 6) + "px";
+  }
+  function showAyaPopup(tag, elm, class_name, sura, aya){
+    closeAyaPopup(); // only one popup open at a time
+    var popup = getOrCreateAyaPopup(tag);
+    var copyBtn = popup.children[0], translateBtn = popup.children[1];
+    copyBtn.onclick = function(e){
+      e.stopPropagation();
+      var text = ayaFragmentsText(tag, class_name) + "\n\n" + madina_data.suras[sura - 1].name;
+      navigator.clipboard.writeText(text);
+      alert("\u2398 تم نسخ:\n\n" + text);
+      closeAyaPopup();
+    };
+    translateBtn.onclick = function(e){
+      e.stopPropagation();
+      window.open(`https://quran.com/${sura}/${aya}`, '_blank');
+      closeAyaPopup();
+    };
+    positionAyaPopup(popup, elm);
+    popup.classList.add(`${name}-open`);
+    var outsideClick = function(e){ if(!popup.contains(e.target)) closeAyaPopup(); };
+    var onEscape = function(e){ if(e.key === "Escape") closeAyaPopup(); };
+    document.addEventListener("click", outsideClick);
+    document.addEventListener("keydown", onEscape);
+    openAyaPopup = {popup: popup, outsideClick: outsideClick, onEscape: onEscape};
+  }
+  function wireAyaClick(tag, class_name, sura, aya){
+    if(aya < 1) return; // decoration slot (sura title / basmala): nothing to copy/translate
+    // Scoped to `tag`, not document-wide: the same aya/class can exist in another
+    // <quran-madina-html> tag on the page, whose elements must not be rebound to *this* tag/popup.
+    Array.from(tag.getElementsByClassName(class_name)).forEach(function(elm){
+      elm.style.cursor = "pointer";
+      // Overwrite (not addEventListener) so re-registering this aya's other line fragments doesn't
+      // stack duplicate handlers - mirrors hoverByType's onmouseover/onmouseout assignment above.
+      elm.onclick = function(e){
+        e.stopPropagation();
+        showAyaPopup(tag, elm, class_name, sura, aya);
+      };
+    });
   }
 
   // ==========================================================================
@@ -494,6 +596,7 @@
         aya_part.style.cssText = 'display:inline';
         line.appendChild(aya_part);
         hoverByType(classes.slice(-1)[0]);
+        wireAyaClick(tag, classes.slice(-1)[0], item.sura+1, item.ayaIdx-1);
       });
       if(multiline && gi === groups.length - 1){
         // The selection ends mid-line: rebuild the following text invisibly to keep the last line
@@ -762,6 +865,7 @@
                         aya_part.style.cssText = 'display:inline';
                         line.appendChild(aya_part);
                         hoverByType(classes.slice(-1)[0]);
+                        wireAyaClick(tag, classes.slice(-1)[0], sura_current+1, a-1);
                         aya_current = a;
                         let next_sura_aya0 = (sura_current < 113) ?
                           madina_data.suras[sura_current+1].ayas[0] : undefined;
@@ -794,8 +898,20 @@
   // ==========================================================================
 
   function bootFromManifest(){
+    // forceFresh: the manifest itself never changes when only render data (stretch factors, text)
+    // is fixed/rebuilt - only its content_hash does, since that's hashed over the whole DB. Always
+    // fetching it fresh (it's small) is what lets that comparison run on every load, so a stale
+    // juz shard cached from before a DB update gets purged instead of served for the rest of the
+    // browser session.
     loadJSON(shardBase + "manifest.json",
       function(m){
+        if(m.content_hash){
+          var hashKey = "quran-madina-html:hash:" + shardBase;
+          var prevHash = null;
+          try { prevHash = sessionStorage.getItem(hashKey); } catch(e) { /* ignore */ }
+          if(prevHash !== null && prevHash !== m.content_hash) clearShardCache(shardBase);
+          try { sessionStorage.setItem(hashKey, m.content_hash); } catch(e) { /* ignore */ }
+        }
         madina_data = {
           title: m.title, published: m.published, font_family: m.font_family, font_url: m.font_url,
           font_size: m.font_size, line_width: m.line_width,
@@ -804,7 +920,8 @@
         };
         initTag();
       },
-      bootMonolith
+      bootMonolith,
+      true
     );
   }
   function bootMonolith(){

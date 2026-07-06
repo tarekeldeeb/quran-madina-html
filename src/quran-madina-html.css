@@ -14,6 +14,7 @@ quran-madina-html-header {
   padding: 0 5px 0 10px;
   color: color-mix(in srgb, currentColor 60%, transparent);
   height: 25px;
+  line-height: 25px;
 }
 quran-madina-html-copy {
   background-color: color-mix(in srgb, var(--qmh-header) 20%, transparent);
@@ -55,4 +56,28 @@ svg.quran-madina-html-icon:hover {
 }
 svg.quran-madina-html-icon path {
   fill: color-mix(in srgb, currentColor 60%, transparent);
+}
+/* Popup shown when a hovered aya is clicked (see wireAyaClick/showAyaPopup): copy/translate
+   scoped to that one aya, positioned over it via position:fixed. Hidden by default; JS toggles
+   the -open class and sets left/top per click. */
+quran-madina-html-aya-popup {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  align-items: center;
+  gap: 2px;
+  background-color: color-mix(in srgb, var(--qmh-header) 85%, transparent);
+  border-radius: 6px;
+  padding: 2px 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+quran-madina-html-aya-popup.quran-madina-html-open {
+  display: flex;
+}
+quran-madina-html-aya-popup svg.quran-madina-html-icon {
+  float: none;
+  padding: 4px;
+}
+quran-madina-html-aya-popup svg.quran-madina-html-icon path {
+  fill: var(--qmh-background);
 }

@@ -69,21 +69,54 @@ class Part:
 class QuranLine:
     """Temp Class that holds a single line, with multiple aya parts"""
     STRETCH_ROUNDING = 3
+    MIN_STRETCH = 0.5
+    MAX_STRETCH = 2.0
+    SHORT_WORD_LIMIT = 2  # <= this many real words: a standalone short line (e.g. Huroof
+                          # Muqattaat like "الٓمٓ"), left un-stretched rather than blown up to fill.
+    # An aya's own trailing aya-number ornament (default: "﴿١﴾", Amiri: "۝1") is always its own
+    # whitespace-separated token (Ayah.__init__ prepends a space before it), so it can be excluded
+    # from the word count by matching the whole token.
+    AYA_MARKER_PATTERN = re.compile(r'^(﴿[٠-٩]+﴾|۝\d+)$')
     def __init__(self, page, parts):
         self.page = page
         self.parts = parts
-    def update_parts(self, line_width: int)->List[Part]:
+    def _real_word_count(self)->int:
+        """Word count of this line's actual Quran text, excluding aya-number ornaments."""
+        count = 0
+        for part in self.parts:
+            for token in part.text.split():
+                if not self.AYA_MARKER_PATTERN.match(token):
+                    count += 1
+        return count
+    def update_parts(self, line_width: int, is_sura_end: bool = False)->List[Part]:
         """Apply the per-line stretch (scaleX) factor to all line parts. Text that starts mid-line
         is positioned at render time by re-flowing the preceding text invisibly, so no per-part
-        pixel offset is stored."""
+        pixel offset is stored.
+
+        stretch=-1 (natural width, centered, no scaleX) is reserved for lines that are structurally
+        known to be unjustified in the printed Mushaf: Al-Fatiha's page (every line there gets its
+        own dedicated, un-stretched line regardless of length - a deliberate page-1-only layout),
+        a surah's actual last line (`is_sura_end`), and standalone short lines like Huroof Muqattaat
+        openers (`_real_word_count() <= SHORT_WORD_LIMIT`, e.g. "الٓمٓ ﴿١﴾" on page 2). Any other line
+        is always justified to `line_width`, even if that requires a large scaleX - the required
+        ratio used to be treated as a proxy for "this must be a short/final line" (and *all* of
+        page<=2 was hardcoded to -1 outright), but magnitude varies by font (glyph metrics differ,
+        e.g. Uthman's ٱ->ا substitution) and even within a single font a normal-length line can
+        legitimately need >=1.5x - so ordinary lines were being mistaken for short/final ones and
+        left un-stretched, overflowing (page<=2) or looking flat (other pages) instead. The ratio is
+        clamped instead, so it can never desync from what's structurally/textually true."""
         initial_width = 0
         for part in self.parts:
             initial_width = initial_width + part.width
         stretch = line_width/initial_width
         DbBuilder.dbg_line_widths.append(initial_width)
-        for part in self.parts:
-            part.stretch = round(stretch, self.STRETCH_ROUNDING) if self.page>2 and stretch<1.5 \
-                           else -1
+        if self.page==1 or is_sura_end or self._real_word_count()<=self.SHORT_WORD_LIMIT:
+            for part in self.parts:
+                part.stretch = -1
+        else:
+            stretch = max(self.MIN_STRETCH, min(self.MAX_STRETCH, stretch))
+            for part in self.parts:
+                part.stretch = round(stretch, self.STRETCH_ROUNDING)
         return self.parts
 
 class Ayah:
@@ -234,12 +267,25 @@ class Surah:
                     else:
                         line_parts = [part]
                         search_index = aya_index +1
+                        # True only while the last aya folded onto this line ends its own content
+                        # right here. A forward aya can *open* on this line and still run on to
+                        # more lines of its own further down (e.g. Al-Baqara's long last aya, 286,
+                        # opening on the same line as aya 285's tail) - in that case this shared
+                        # line is NOT the surah's last line, even though no *other* aya follows it.
+                        next_aya_ends_here = True
                         while search_index<len(self.ayas) and\
                             self.ayas[search_index].parts[0].line == part.line:
-                            line_parts.append(self.ayas[search_index].parts[0])
+                            next_aya = self.ayas[search_index]
+                            line_parts.append(next_aya.parts[0])
+                            next_aya_ends_here = len(next_aya.parts) == 1
                             search_index = search_index + 1
+                        # No later aya in this surah shares this line, and whatever was folded onto
+                        # it doesn't continue further: it's the surah's last line, which the printed
+                        # Mushaf leaves unjustified (new surahs always start a fresh line, so this
+                        # can't just be a mid-surah gap between ayas).
+                        is_sura_end = search_index == len(self.ayas) and next_aya_ends_here
                         line_parts = QuranLine(aya.page,line_parts)\
-                            .update_parts(DbBuilder.cfg.line_width)
+                            .update_parts(DbBuilder.cfg.line_width, is_sura_end)
         return self.update_json()
 
 class Mushaf:
