@@ -38,8 +38,8 @@ def juz_of(sura0, aya_idx):
     return j
 
 
-def main():
-    src, out_root = sys.argv[1], sys.argv[2]
+def shard(src, out_root):
+    """Split the DB JSON at `src` into a manifest + 30 juz' shards under `out_root`/<db-stem>/."""
     db = json.load(open(src, encoding="utf8"))
     stem = os.path.splitext(os.path.basename(src))[0]
     out = os.path.join(out_root, stem)
@@ -100,6 +100,10 @@ def main():
             rebuilt[s0]["ayas"][ai] = {"p": page, "r": parts}
     assert rebuilt == db["suras"], "round-trip mismatch!"
     print(f"{stem}: manifest + 30 shards, reassembles losslessly. total on disk={total} bytes")
+
+
+def main():
+    shard(sys.argv[1], sys.argv[2])
 
 
 if __name__ == "__main__":

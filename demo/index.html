@@ -12,13 +12,28 @@
   <script type="text/javascript" src="https://unpkg.com/quran-madina-html"></script> 
   --> 
   <script>
+    // Font/size are read once by the runtime from this <script>'s data attributes, so switching
+    // them at runtime requires a full page reload. The chooser below just persists the pick and
+    // reloads; this reads it back before the runtime script is injected.
+    var FONT_CHOICES = [
+      { value: "me_quran", label: "خط المصحف" },
+      { value: "Hafs", label: "حفص" },
+      { value: "Amiri Quran", label: "أميري" },
+      { value: "Amiri Quran Colored", label: "أميري ملون" },
+      { value: "Uthman", label: "عثمان طه" }
+    ];
+    var SIZE_CHOICES = [16, 24];
+    var savedFont = localStorage.getItem("quran-madina-html-font") || FONT_CHOICES[0].value;
+    var savedSize = localStorage.getItem("quran-madina-html-font-size") || String(SIZE_CHOICES[0]);
+
     var script = document.createElement("script");
     if (/localhost/.test(document.location.hostname)) {
         script.setAttribute("src", "../dist/quran-madina-html.js");
     } else {
         script.setAttribute("src", "https://unpkg.com/quran-madina-html");
     }
-    script.setAttribute("data-font", "hafs");
+    script.setAttribute("data-font", savedFont);
+    script.setAttribute("data-font-size", savedSize);
     document.head.appendChild(script);
   </script>
   <style>
@@ -56,6 +71,29 @@
         padding: 20px 18px 32px;
       }
     }
+    .font-chooser {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 20px;
+      margin: 0 0 20px;
+      padding: 10px 14px;
+      background-color: #ece8dc;
+      border: 1px solid #e4ded0;
+      border-radius: 8px;
+      font-size: 0.95em;
+    }
+    .font-chooser label {
+      font-weight: bold;
+    }
+    .font-chooser select {
+      font-family: inherit;
+      font-size: 1em;
+      padding: 3px 6px;
+      border-radius: 4px;
+      border: 1px solid #cfc8b3;
+      background-color: #fff;
+    }
   </style>
 </head>
 
@@ -63,7 +101,14 @@
   <main class="page-wrapper">
 	<h2>عرض لإمكانية مشروع قران المدينة Html بدون صور</h2>
 
-  يمكن عرض نص آية قصيرة وسط الكلام مثل قوله تعالى: 
+  <div class="font-chooser">
+    <label for="font_choice">الخط:</label>
+    <select id="font_choice"></select>
+    <label for="size_choice">الحجم:</label>
+    <select id="size_choice"></select>
+  </div>
+
+  يمكن عرض نص آية قصيرة وسط الكلام مثل قوله تعالى:
 	<quran-madina-html sura="1" aya="3"></quran-madina-html> 
   واذا تم اختيار ايات تمتد لأكثر من سطر، فيتم عرض عدة أسطر متوافقة مع ترتيب كلمات مصحف المدينة بشكل تلقائي 
   <quran-madina-html sura="2" aya="13-14"></quran-madina-html> 
@@ -135,6 +180,31 @@
   </main>
 
   <script>
+    var font_choice = document.getElementById("font_choice");
+    FONT_CHOICES.forEach(function(f) {
+      var opt = document.createElement("option");
+      opt.value = f.value;
+      opt.textContent = f.label;
+      if (f.value === savedFont) opt.selected = true;
+      font_choice.appendChild(opt);
+    });
+    var size_choice = document.getElementById("size_choice");
+    SIZE_CHOICES.forEach(function(sz) {
+      var opt = document.createElement("option");
+      opt.value = sz;
+      opt.textContent = sz + "px";
+      if (String(sz) === savedSize) opt.selected = true;
+      size_choice.appendChild(opt);
+    });
+    font_choice.addEventListener("change", function() {
+      localStorage.setItem("quran-madina-html-font", this.value);
+      location.reload();
+    });
+    size_choice.addEventListener("change", function() {
+      localStorage.setItem("quran-madina-html-font-size", this.value);
+      location.reload();
+    });
+
     function increase(id){
       elem = document.getElementById(id);
       elem.value = parseInt(elem.value)+1;

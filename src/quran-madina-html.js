@@ -28,17 +28,48 @@
   // Small utilities
   // ==========================================================================
 
+  // In-memory cache of every DB shard/manifest fetched so far this page load, keyed by URL.
+  // sessionStorage backs it up so a full page reload/navigation within the same tab still hits
+  // the cache instead of the network (in-memory state alone would reset on reload).
+  var jsonCache = {};
+  function readJSONCache(path){
+    if(jsonCache[path]) return jsonCache[path];
+    try {
+      var raw = sessionStorage.getItem("quran-madina-html:" + path);
+      if(raw){ return (jsonCache[path] = JSON.parse(raw)); }
+    } catch(e) { /* sessionStorage disabled/full or entry corrupted: fall through to network */ }
+    return null;
+  }
+  function writeJSONCache(path, data, raw){
+    jsonCache[path] = data;
+    try { sessionStorage.setItem("quran-madina-html:" + path, raw); }
+    catch(e) { /* quota exceeded or sessionStorage disabled: in-memory cache still holds it */ }
+  }
+  // path -> array of {success, error} waiting on an XHR already in flight for that path. Several
+  // <quran-madina-html> elements on the same page independently need the same juz' shard and would
+  // otherwise each fire their own fetch before the first one lands (loadedJuz only flips to true
+  // once a fetch *completes*); queuing waiters here coalesces them into a single request.
+  var pendingRequests = {};
   function loadJSON(path, success, error){
+    var cached = readJSONCache(path);
+    // Deferred even on a cache hit: callers (the module boot sequence in particular) rely on
+    // loadJSON always resolving asynchronously, since x-tag is concatenated after this file and
+    // only becomes available once the current synchronous script execution finishes.
+    if(cached){ if(success) setTimeout(function(){ success(cached); }, 0); return; }
+    if(pendingRequests[path]){ pendingRequests[path].push({success: success, error: error}); return; }
+    pendingRequests[path] = [{success: success, error: error}];
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
     {
         if (xhr.readyState === XMLHttpRequest.DONE) {
+            var waiters = pendingRequests[path];
+            delete pendingRequests[path];
             if (xhr.status === 200) {
-                if (success)
-                    success(JSON.parse(xhr.responseText));
+                var data = JSON.parse(xhr.responseText);
+                writeJSONCache(path, data, xhr.responseText);
+                waiters.forEach(function(w){ if(w.success) w.success(data); });
             } else {
-                if (error)
-                    error(xhr);
+                waiters.forEach(function(w){ if(w.error) w.error(xhr); });
             }
         }
     };
@@ -481,10 +512,11 @@
   // Boot configuration (read from the loader <script> tag)
   // ==========================================================================
 
+  var DEFAULT_FONT_SIZE = 16;
   var this_script = document.currentScript || document.querySelector(`script[src*="${name}"]`);
   var doc_name    = this_script.getAttribute('data-name') || "Madina05";
   var doc_font    = (this_script.getAttribute('data-font') || "me_quran").replaceAll(" ","_");
-  var doc_font_sz = this_script.getAttribute('data-font-size') || 16;
+  var doc_font_sz = parseInt(this_script.getAttribute('data-font-size'), 10) || DEFAULT_FONT_SIZE;
   var doc_cdn     = this_script.getAttribute('data-cdn');
   if (doc_cdn) cdn = doc_cdn.replace(/\/?$/, "/"); // honor explicit base, ensure trailing slash
   print(`${doc_name} with font: ${doc_font} size: ${doc_font_sz}`);
@@ -507,9 +539,16 @@
 
   // DB loading is sharded by default: a small manifest.json (header + sura skeleton + juz'/page
   // maps) loads first, then each juz' data shard is fetched on demand as pages/ranges render.
-  // Falls back to the single monolithic <stem>.json when no manifest is present.
-  var dbstem    = `${doc_name}-${doc_font}-${doc_font_sz}px`;
-  var shardBase = `${cdn}assets/db/${dbstem}/`;
+  // Falls back to the single monolithic <stem>.json when no manifest is present. `dbstem`/`shardBase`
+  // are recomputed (not const) so a font-size with no DB built for it can fall back to the default
+  // size's DB — see the boot sequence below.
+  var dbstem, shardBase;
+  function setFontSize(sz){
+    doc_font_sz = sz;
+    dbstem = `${doc_name}-${doc_font}-${doc_font_sz}px`;
+    shardBase = `${cdn}assets/db/${dbstem}/`;
+  }
+  setFontSize(doc_font_sz);
   var loadedJuz = {}; // juz' index (0..29) -> true once its shard is merged into madina_data
   function suraAyaToJuz(sura0, aya_idx){
     // Last juz' whose (startSura, startAya) <= (sura0, aya). Decoration slots (idx 0/1) use aya 1's
@@ -750,25 +789,37 @@
   }
 
   // ==========================================================================
-  // Boot: prefer the sharded manifest, fall back to the monolithic DB
+  // Boot: prefer the sharded manifest, fall back to the monolithic DB, fall back to the default
+  // font-size's DB if no DB was ever built for the requested size (e.g. a font only shipped at 16px).
   // ==========================================================================
 
+  function bootFromManifest(){
+    loadJSON(shardBase + "manifest.json",
+      function(m){
+        madina_data = {
+          title: m.title, published: m.published, font_family: m.font_family, font_url: m.font_url,
+          font_size: m.font_size, line_width: m.line_width,
+          suras: m.suras.map(function(e){ return {name: e[0], ayas: new Array(e[1])}; }),
+          juz: m.juz, pages: m.pages
+        };
+        initTag();
+      },
+      bootMonolith
+    );
+  }
   function bootMonolith(){
     loadJSON(`${cdn}assets/db/${dbstem}.json`,
       function(data){ madina_data = data; initTag(); },
-      function(xhr){ console.error(`${name}> no manifest and no monolithic DB`, xhr); });
+      function(xhr){
+        if(doc_font_sz != DEFAULT_FONT_SIZE){
+          print(`no DB for font: ${doc_font} size: ${doc_font_sz}, falling back to size: ${DEFAULT_FONT_SIZE}`);
+          setFontSize(DEFAULT_FONT_SIZE);
+          bootFromManifest();
+        } else {
+          console.error(`${name}> no manifest and no monolithic DB`, xhr);
+        }
+      });
   }
-  loadJSON(shardBase + "manifest.json",
-    function(m){
-      madina_data = {
-        title: m.title, published: m.published, font_family: m.font_family, font_url: m.font_url,
-        font_size: m.font_size, line_width: m.line_width,
-        suras: m.suras.map(function(e){ return {name: e[0], ayas: new Array(e[1])}; }),
-        juz: m.juz, pages: m.pages
-      };
-      initTag();
-    },
-    bootMonolith
-  );
+  bootFromManifest();
 
 })();

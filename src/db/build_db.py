@@ -23,6 +23,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from shard_db import shard
 
 # Internal Constants: Do not edit!
 CDN = 'https://www.unpkg.com/quran-madina-html/'
@@ -455,6 +456,7 @@ class DbBuilder:
         DbBuilder.web_driver.close()
         os.remove(DbBuilder.get_test_filename())
         DbBuilder.json_helper.save_json(suras)
+        shard(DbBuilder.json_helper.get_json_filename(), DbReader.DB_OUT)
         DbBuilder.error_logger.flush()
         DbBuilder.print_dbg_widths()
 
