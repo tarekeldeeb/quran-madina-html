@@ -6,27 +6,130 @@
 [![npm-grunt](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/npm-grunt.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/npm-grunt.yml)
 [![Socket Badge](https://badge.socket.dev/npm/package/quran-madina-html)](https://socket.dev/npm/package/quran-madina-html)
 
-A Madina Quran HTML Renderer without images
+A Quran renderer for the browser that looks like the printed Madina Mushaf — **without a single image**.
+Every glyph is real, selectable, copy-pasteable text laid out with pure HTML/CSS, wrapped in one custom
+element:
 
-Theres a pre-processing python script to generate Json databases with quran text with special metadata. The preprocessing is based on text from [Tanzil](tanzil.net), and the [OCR DB](https://github.com/quran/ayah-detection) downloaded from [Murtaza Raja](https://github.com/murtraja/quran-android-images-helper) helper project.
-Every line has a stretch-x factor pre-computed to ensure the best text fitting. Afterwards, the JS library uses those Json objects to render Madina-based Quran pages and lines.
+```html
+<quran-madina-html sura="2" aya="255"></quran-madina-html>
+```
 
-The main purpose of this library is:
+**[See it live →](https://tarekeldeeb.github.io/quran-madina-html/demo/index.html)** (view the page source too —
+GitHub strips `<script>` tags from this README, so the tag can't render *here*, but it's just as simple as
+the snippet above once it's on your own page.)
 
-* Render Quran text that's visually similar to Madina Printed Pages
-* Efficient Loading of Quran Visual Text (Not image-based, but pure Html)
-* Easy to use: just a simple HTML tag!
+## Why
 
-| <img src="demo/img/p106-image.JPG" width="200px" alt="Demo"> <br />Reference Image | <img src="demo/img/p106-me_quran.JPG" width="200px" alt="Demo"> <br /> HTML: Font=me_quran |<img src="demo/img/p106-hafs.JPG" width="200px" alt="Demo"> <br />HTML: Font=Hafs |<img src="demo/img/p106-amiri-colored.JPG" width="200px" alt="Demo"> <br /> HTML: Font=Amiri Quran Colored |
-| -------------------------------------------------------------------|--------------------------------------------------|-------------------------------------------------------------------|--------------------------------------------------|
-| <img src="demo/img/p106-amiri.JPG" width="200px" alt="Demo"> <br />HTML: Font=Amiri Quran |  <img src="demo/img/p106-hafs-part.JPG" width="200px" alt="Demo"> <br /> HTML: Range of Ayas |
+* **Pixel-faithful to the printed Madina Mushaf** — same line breaks, same justification, same page layout.
+* **Pure HTML/CSS, no images** — text stays selectable, searchable, and copy-pasteable; pages load fast.
+* **One HTML tag** — no build step, no framework required.
+* **Any font** — Hafs, Uthman, Amiri Quran (plain or tajweed-colored), or your own.
+* **Word-level addressing** — render any word range, even across ayas, pages, and suras.
+
+## See it in action
+
+Page 106, rendered by the library next to a scan of the actual printed page:
+
+<table>
+<tr>
+<td align="center"><img src="demo/img/p106-image.JPG" width="190" alt="Scanned Madina Mushaf page 106"><br/>Printed Madina Mushaf</td>
+<td align="center"><img src="demo/img/p106-hafs.png" width="190" alt="quran-madina-html rendering of page 106"><br/><code>&lt;quran-madina-html page="106"&gt;</code></td>
+</tr>
+</table>
+
+### One engine, any font
+
+The same JSON-driven layout engine re-flows for whichever font you point it at —
+`data-font="Hafs"` (default), `Uthman`, `Amiri Quran`, `Amiri Quran Colored` (tajweed rules
+color-coded), or the bundled `me_quran`.
+
+<table>
+<tr>
+<td align="center"><img src="demo/img/p106-hafs.png" width="170" alt="Hafs font"><br/>Hafs</td>
+<td align="center"><img src="demo/img/p106-uthman.png" width="170" alt="Uthman font"><br/>Uthman</td>
+<td align="center"><img src="demo/img/p106-amiri.png" width="170" alt="Amiri Quran font"><br/>Amiri Quran</td>
+</tr>
+<tr>
+<td align="center"><img src="demo/img/p106-amiri-colored.png" width="170" alt="Amiri Quran Colored font"><br/>Amiri Quran Colored</td>
+<td align="center"><img src="demo/img/p106-me_quran.png" width="170" alt="me_quran font"><br/>me_quran</td>
+<td></td>
+</tr>
+</table>
+
+### Verse ranges — framed or frameless
+
+`sura`/`aya` renders just the ayat you ask for, laid out exactly as they sit on the Madina page.
+By default you get a header (sura name + copy/translate icons); add `headless="true"` to strip
+that chrome and keep only the Quran text:
+
+<table>
+<tr>
+<td align="center">
+
+```html
+<quran-madina-html sura="5" aya="1-2">
+</quran-madina-html>
+```
+
+<img src="demo/img/verse-default.png" width="260" alt="Verse range with the default header">
+</td>
+<td align="center">
+
+```html
+<quran-madina-html sura="5" aya="1-2"
+  headless="true">
+</quran-madina-html>
+```
+
+<img src="demo/img/verse-headless.png" width="260" alt="Same verse range, headless">
+</td>
+</tr>
+</table>
+
+### Word-level selection
+
+The `words` attribute picks out a word range — 1-based, inclusive — and hides the rest of the
+text *in place*, so the original Madina line justification is preserved instead of being
+reflowed. Counting continues past the end of the given aya, so a selection can cross aya, page,
+and even sura boundaries:
+
+<table>
+<tr>
+<td align="center">
+
+```html
+<quran-madina-html sura="1" aya="1"
+  words="1:2">
+</quran-madina-html>
+```
+
+first two words of Al-Fatiha; the dashed
+outline marks the hidden remainder of the line
+<br/><br/>
+<img src="demo/img/words-inline.png" width="260" alt="words attribute, inline selection">
+</td>
+<td align="center">
+
+```html
+<quran-madina-html sura="1" aya="7"
+  words="1-10">
+</quran-madina-html>
+```
+
+words 1-10 counted from Al-Fatiha's last aya
+spill into Surat Al-Baqara
+<br/><br/>
+<img src="demo/img/words-multiline.png" width="260" alt="words attribute, spanning Al-Fatiha into Al-Baqara">
+</td>
+</tr>
+</table>
 
 ## Getting Started
 
 In your Html header, add this script:
 
 ```html
-  <script type="text/javascript" src="https://unpkg.com/quran-madina-html"></script>
+<script type="text/javascript" src="https://unpkg.com/quran-madina-html"></script>
 ```
 
 * Supported ``data-name`` parameters are: Madina05 (default), others are under development (Shemerly, Qaloon, Newer Madina)
@@ -39,27 +142,27 @@ Then in your body, just add the tag.
 <quran-madina-html sura="2" aya="8-10"></quran-madina-html>
 ```
 
- If the selected aya(s) fit on a single line, the default is to generate an inline ``<span>`` element, otherwise a ``<div>`` is generated.
+If the selected aya(s) fit on a single line, the default is to generate an inline ``<span>`` element, otherwise a ``<div>`` is generated.
 
- You can also restrict the output to a specific word sequence with the ``words`` attribute (1-based, inclusive; ``start-end``, ``start:end`` or a single ``index``). Word indices are counted starting from the given ``sura``/``aya`` and may run past it, so the rendered selection can span multiple ayas — and even cross page and sura boundaries (the sura name/basmala are shown for context but not counted as words). The non-selected words are kept in place so the original Madina line layout is preserved — only the chosen words are shown. Aya-number markers are not counted.
+You can also restrict the output to a specific word sequence with the ``words`` attribute (1-based, inclusive; ``start-end``, ``start:end`` or a single ``index``). Word indices are counted starting from the given ``sura``/``aya`` and may run past it, so the rendered selection can span multiple ayas — and even cross page and sura boundaries (the sura name/basmala are shown for context but not counted as words). The non-selected words are kept in place so the original Madina line layout is preserved — only the chosen words are shown. Aya-number markers are not counted.
 
- ```html
+```html
 <quran-madina-html sura="1" aya="1" words="1:2"></quran-madina-html>  <!-- first two words only -->
 <quran-madina-html sura="1" aya="1" words="3-10"></quran-madina-html> <!-- words 3..10, spanning ayas 1-3 -->
 <quran-madina-html sura="1" aya="7" words="1-10"></quran-madina-html> <!-- spans Al-Fatiha into Al-Baqara -->
 ```
 
- The ``words`` attribute is ignored when rendering a full ``page``.
+The ``words`` attribute is ignored when rendering a full ``page``.
 
- Another option exists to render a complete quran page:
+Another option exists to render a complete quran page:
 
- ```html
+```html
 <quran-madina-html page="106"></quran-madina-html>
 ```
 
- By default a header (sura name + copy/translate icons, on a multiline render) or a copy button (on an inline render) is added. Set ``headless="true"`` to drop that chrome and render only the Quran text:
+By default a header (sura name + copy/translate icons, on a multiline render) or a copy button (on an inline render) is added. Set ``headless="true"`` to drop that chrome and render only the Quran text:
 
- ```html
+```html
 <quran-madina-html sura="2" aya="8-10" headless="true"></quran-madina-html> <!-- no header -->
 <quran-madina-html sura="1" aya="1" headless="true"></quran-madina-html>    <!-- no copy button -->
 ```
