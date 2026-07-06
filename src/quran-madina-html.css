@@ -16,18 +16,23 @@ quran-madina-html-header {
   height: 25px;
   line-height: 25px;
 }
-quran-madina-html-copy {
-  background-color: color-mix(in srgb, var(--qmh-header) 20%, transparent);
-  color: color-mix(in srgb, currentColor 60%, transparent);
-  display: inline-block;
-  padding: 0 5px;
-  margin-right: 3px;
-}
 quran-madina-html-line {
   text-align: right;
   white-space: nowrap;
   transform-origin: top right;
   margin-right: 5px;
+}
+/* Inline (single-line) renders have no header and no copy button (removed - the per-aya click
+   popup covers them too), so quote marks are their only visual cue that this is a quoted excerpt.
+   Generated content, not real text, so it's invisible to textContent-based copy logic (which adds
+   its own matching quotes around what it reads - see copyToClipboard/showAyaPopup). */
+quran-madina-html.quran-madina-html-inline quran-madina-html-line::before {
+  content: "\201D";
+  color: color-mix(in srgb, currentColor 50%, transparent);
+}
+quran-madina-html.quran-madina-html-inline quran-madina-html-line::after {
+  content: "\201C";
+  color: color-mix(in srgb, currentColor 50%, transparent);
 }
 .quran-madina-html-part{
   transition: background-color 0.5s ease;

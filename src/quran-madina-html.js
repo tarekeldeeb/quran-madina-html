@@ -255,18 +255,12 @@
     header.appendChild(translation);
     return header;
   }
-  function buildInlineCopy(){
-    // The single-line chrome: a lone copy button, shared by both render paths.
-    var wrap = document.createElement("quran-madina-html-copy");
-    var copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
-    wrap.appendChild(copy);
-    return wrap;
-  }
-
   // ==========================================================================
   // Per-aya click popup: clicking a hovered aya shows a small copy/translate
-  // popup scoped to *that* aya, instead of the frame-level buildHeader/buildInlineCopy
-  // actions above (which always act on the whole frame / its first aya).
+  // popup scoped to *that* aya, instead of the frame-level buildHeader actions
+  // above (which always act on the whole frame / its first aya). Inline (single-line)
+  // renders used to also get their own lone copy button (buildInlineCopy) - removed,
+  // since this popup already covers them (their aya divs are wired the same way).
   // ==========================================================================
 
   var openAyaPopup = null; // {popup, outsideClick, onEscape} for the currently shown popup, if any
@@ -314,7 +308,8 @@
     var copyBtn = popup.children[0], translateBtn = popup.children[1];
     copyBtn.onclick = function(e){
       e.stopPropagation();
-      var text = ayaFragmentsText(tag, class_name) + "\n\n" + madina_data.suras[sura - 1].name;
+      var text = "\u201C" + ayaFragmentsText(tag, class_name) + "\u201D" + "\n\n" +
+        madina_data.suras[sura - 1].name;
       navigator.clipboard.writeText(text);
       alert("\u2398 تم نسخ:\n\n" + text);
       closeAyaPopup();
@@ -478,7 +473,7 @@
     } else {
       body = clone.textContent.replace(/\s+/g, " ").trim();
     }
-    var text = body + "\n\n" + sura_name;
+    var text = "\u201C" + body + "\u201D" + "\n\n" + sura_name;
     navigator.clipboard.writeText(text);
     alert("\u2398 تم نسخ:\n\n" + text);
   }
@@ -558,6 +553,10 @@
     var counter = collected.counterStart; // running 1-based word index, seeded past any skipped lines
     tag.innerHTML = "";
     tag.removeAttribute('style');
+    // Inline (single-line) renders get quote marks around the verse instead of any chrome (see the
+    // -inline CSS rule) - it's their only visual cue that this is a quoted excerpt, now that they
+    // have no header and no lone copy button (removed; the per-aya click popup covers them too).
+    tag.classList.toggle(`${name}-inline`, !multiline);
     if(multiline){
       let start_page = parseInt(groups[0].key.split(':')[0], 10); // page of the first visible line
       styleMultilineTag(tag, start_page);
@@ -606,9 +605,6 @@
           madina_data.suras[last.sura].ayas[last.ayaIdx].p, last.part.l, last.ayaIdx, 1));
       }
     });
-    if(!multiline && !headless){
-      tag.appendChild(buildInlineCopy());
-    }
   }
 
   // ==========================================================================
@@ -822,6 +818,11 @@
                 line_from = madina_data.suras[sura_from].ayas[aya_from].r[0].l;
                 line_to = madina_data.suras[sura_to].ayas[aya_to].r.slice(-1)[0].l;
                 if(line_from != line_to) multiline = true;
+                // Inline (single-line) renders get quote marks around the verse instead of any chrome
+                // (see the -inline CSS rule) - their only visual cue that this is a quoted excerpt,
+                // now that they have no header and no lone copy button (removed; the per-aya click
+                // popup covers them too).
+                tag.classList.toggle(`${name}-inline`, !multiline);
                 if(multiline){
                   styleMultilineTag(tag, page);
                   if(!headless){
@@ -883,9 +884,6 @@
                   if(multiline && verse_mode && l === line_to){
                     appendSpacers(line, lineContext(sura_to, page, line_to, aya_to, 1));
                   }
-                }
-                if(!multiline && !headless){
-                  tag.appendChild(buildInlineCopy());
                 }
               }
             }

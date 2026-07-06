@@ -106,8 +106,12 @@ are baked in at build time in `Ayah.__init__`.
   spans, and `visibility:hidden` spacers from a detached clone rather than trusting `innerText`.
 - A range that fits on one line renders as an inline `<span>`; otherwise a multiline `<div>` with a
   header (sura name + copy/translate icons). Generated child tags: `<quran-madina-html-line>`,
-  `<quran-madina-html-header>`, `<quran-madina-html-copy>`, and per-aya `<div>`s classed
-  `quran-madina-html-NNN-NNN` for hover highlighting and the "translate" deep-link to quran.com.
+  `<quran-madina-html-header>`, and per-aya `<div>`s classed `quran-madina-html-NNN-NNN` for hover
+  highlighting and the "translate" deep-link to quran.com. Clicking one of those per-aya divs
+  (`wireAyaClick`/`showAyaPopup`) shows a `<quran-madina-html-aya-popup>` positioned over it with its
+  own copy/translate buttons scoped to *that* aya alone (vs. the header's, which act on the whole
+  frame/its first aya) — this is the only copy/translate affordance for inline (single-line) renders,
+  which have no header of their own.
 - Stretch is applied as a CSS `scaleX()` transform on the line. There is no stored offset; a
   selection/line that starts mid-line reflows the preceding text invisibly (spacers) so the line's
   own stretch/centering positions the first visible word.
