@@ -249,7 +249,10 @@
       span.textContent = token;
       span.classList.add(`${name}-word`);
       if(!isWordToken(token)){
-        span.classList.add(`${name}-word-hidden`); // marker/pause/ornament: never a selectable word
+        // Marker/pause/ornament: never counted as a word itself, but it attaches to the word it
+        // follows (e.g. the aya-end marker is appended to that aya's last word at build time), so
+        // show it exactly when that preceding word is visible.
+        if(counter < range[0] || counter > range[1]) span.classList.add(`${name}-word-hidden`);
       } else {
         counter = counter + 1;
         if(counter < range[0] || counter > range[1]) span.classList.add(`${name}-word-hidden`);
