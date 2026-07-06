@@ -1,12 +1,33 @@
 (
   function(){
   var name = "quran-madina-html";
+
+  // ==========================================================================
+  // Configuration & shared state
+  // ==========================================================================
+
   // Base URL the runtime fetches its CSS + JSON DB from. Default: the repo root when served
   // from localhost (local dev / demo), otherwise the unpkg package root. A `data-cdn` attribute
   // on the loader <script> overrides this, which is what makes the tag embeddable inside a
   // bundled app (React dev server, Capacitor, etc.) where the host is also "localhost" but the
   // assets do NOT live at `../`. Resolved below once the script element is known.
   var cdn = (/localhost/.test(document.location.hostname))? "../":`https://www.unpkg.com/${name}/`;
+  var madina_data = {"content":"Loading .."};
+
+  // A render token counts as a selectable word only if it contains an Arabic letter. Everything
+  // else in the Madina text appears as its own whitespace-separated token and must NOT be counted
+  // or selectable, otherwise the words= index drifts: aya-number ornaments (ornate parens ﴿N﴾ for
+  // Hafs/Uthman/me_quran, end-of-aya ۝N for Amiri), waqf/pause marks (ۖ ۗ ۘ ۙ ۚ ۛ ۜ), and the
+  // ۞ (rub-el-hizb) / ۩ (sajdah) ornaments — none of these carry an Arabic letter.
+  // ASCII \u escapes on purpose: a literal Arabic class here would be misread if the script is ever
+  // served without charset=utf-8 (some static servers do this), breaking the match and hiding every
+  // word. The ranges are U+0621-U+064A (basic Arabic letters) and U+0671-U+06D3 (alef-wasla etc.).
+  var ARABIC_LETTER = /[\u0621-\u064A\u0671-\u06D3]/;
+
+  // ==========================================================================
+  // Small utilities
+  // ==========================================================================
+
   function loadJSON(path, success, error){
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
@@ -24,30 +45,15 @@
     xhr.open("GET", path, true);
     xhr.send();
   }
-  function hoverByType(class_name, type="class", color_bg="lightgrey", color_out="transparent"){
-    var elms = (type.toLowerCase() === "tag") ? document.getElementsByTagName(class_name)  
-                                              : document.getElementsByClassName(class_name);
-    Array.from(elms).forEach(function(elm) {
-      elm.onmouseover = function() {
-        Array.from(elms).forEach(function(element) {
-          element.style.backgroundColor = color_bg;
-        });
-      };
-      elm.onmouseout = function() {
-        Array.from(elms).forEach(function(element) {
-          element.style.backgroundColor = color_out;
-        });
-      };
-    });
+  function print(str){
+    console.log(`${name}> ${str}`);
   }
-  function parseSuraRange(str){
-    // Sura count is 0-based, we need to subtract 1
-    return Array(2).fill(str.split('-')[0]-1);
-  }
-  function parseAyaRange(str){
-    // Aya count is 0-based, there are 2 extra ayas (Title + Basmala)
-    if (str.split('-').length == 2) return str.split('-').map(elem => parseInt(elem) +1);
-    return Array(2).fill(parseInt(str.split('-')[0])+1);
+  function pad2(n){ return (n < 10 ? "0" : "") + n; }
+  function isTrue(val){
+    // Boolean HTML attribute: true when present as `headless`, `headless=""`, "true", "1" or "yes".
+    if(val == null) return false;
+    var v = String(val).trim().toLowerCase();
+    return v === "" || v === "true" || v === "1" || v === "yes";
   }
   function resolveUrl(url){
     // Resolve an asset URL from the DB against `cdn`. Absolute (http(s):// or //) URLs are used
@@ -57,21 +63,19 @@
     if(/^(https?:)?\/\//.test(url)) return url;
     return cdn + String(url).replace(/^\//, "");
   }
-  // A render token counts as a selectable word only if it contains an Arabic letter. Everything
-  // else in the Madina text appears as its own whitespace-separated token and must NOT be counted
-  // or selectable, otherwise the words= index drifts: aya-number ornaments (ornate parens ﴿N﴾ for
-  // Hafs/Uthman/me_quran, end-of-aya ۝N for Amiri), waqf/pause marks (ۖ ۗ ۘ ۙ ۚ ۛ ۜ), and the
-  // ۞ (rub-el-hizb) / ۩ (sajdah) ornaments — none of these carry an Arabic letter.
-  // ASCII \u escapes on purpose: a literal Arabic class here would be misread if the script is ever
-  // served without charset=utf-8 (some static servers do this), breaking the match and hiding every
-  // word. The ranges are U+0621-U+064A (basic Arabic letters) and U+0671-U+06D3 (alef-wasla etc.).
-  var ARABIC_LETTER = /[\u0621-\u064A\u0671-\u06D3]/;
-  function isWordToken(token){ return ARABIC_LETTER.test(token); }
-  function isTrue(val){
-    // Boolean HTML attribute: true when present as `headless`, `headless=""`, "true", "1" or "yes".
-    if(val == null) return false;
-    var v = String(val).trim().toLowerCase();
-    return v === "" || v === "true" || v === "1" || v === "yes";
+
+  // ==========================================================================
+  // Attribute range parsing
+  // ==========================================================================
+
+  function parseSuraRange(str){
+    // Sura count is 0-based, we need to subtract 1
+    return Array(2).fill(str.split('-')[0]-1);
+  }
+  function parseAyaRange(str){
+    // Aya count is 0-based, there are 2 extra ayas (Title + Basmala)
+    if(str.split('-').length == 2) return str.split('-').map(elem => parseInt(elem) +1);
+    return Array(2).fill(parseInt(str.split('-')[0])+1);
   }
   function parseWordsRange(str){
     // 1-based, inclusive. "n" => [n,n]; "n:m" or "n-m" => [n,m]. Returns null if malformed.
@@ -82,6 +86,12 @@
     if(parts[0] < 1 || parts[1] < parts[0]) return null; // 1-based; start must not exceed end
     return parts;
   }
+
+  // ==========================================================================
+  // Word counting (for the words= selection)
+  // ==========================================================================
+
+  function isWordToken(token){ return ARABIC_LETTER.test(token); }
   function countPartWords(part){
     // Selectable words in a single render part: whitespace-separated tokens that carry a letter
     // (markers, pause marks and ornaments are excluded by isWordToken).
@@ -97,194 +107,26 @@
     aya.r.forEach(function(part){ n = n + countPartWords(part); });
     return n;
   }
-  function appendWords(parent, text, range, counter){
-    // Render each whitespace-separated word as its own span so non-selected words can be
-    // hidden in place (visibility:hidden) while keeping the original Madina line geometry.
-    // `counter` is the running 1-based word index across the whole selection (spans ayas).
-    text.split(/(\s+)/).forEach(function(token){
-      if(token === "") return;
-      if(/^\s+$/.test(token)){ parent.appendChild(document.createTextNode(token)); return; }
-      var span = document.createElement("span");
-      span.textContent = token;
-      span.classList.add(`${name}-word`);
-      if(!isWordToken(token)){
-        span.classList.add(`${name}-word-hidden`); // marker/pause/ornament: never a selectable word
-      } else {
-        counter = counter + 1;
-        if(counter < range[0] || counter > range[1]) span.classList.add(`${name}-word-hidden`);
-      }
-      parent.appendChild(span);
+
+  // ==========================================================================
+  // DOM building blocks (icons, hover, header/copy chrome, classes)
+  // ==========================================================================
+
+  function hoverByType(class_name, type="class", color_bg="lightgrey", color_out="transparent"){
+    var elms = (type.toLowerCase() === "tag") ? document.getElementsByTagName(class_name)
+                                              : document.getElementsByClassName(class_name);
+    Array.from(elms).forEach(function(elm) {
+      elm.onmouseover = function() {
+        Array.from(elms).forEach(function(element) {
+          element.style.backgroundColor = color_bg;
+        });
+      };
+      elm.onmouseout = function() {
+        Array.from(elms).forEach(function(element) {
+          element.style.backgroundColor = color_out;
+        });
+      };
     });
-    return counter;
-  }
-  function partOnLine(aya, line_no){
-    // The aya's render part that falls on the given page-line, or null.
-    for(var k = 0; k < aya.r.length; k++){ if(aya.r[k].l === line_no) return aya.r[k]; }
-    return null;
-  }
-  function isLineStartPart(sura_idx, aya_idx, line_no){
-    // True if this aya's part on line_no is the first (rightmost, RTL) on its page-line — i.e. the
-    // previous aya in the same sura does not also sit on that line. This replaces the old `o === 0`
-    // sentinel now that the pixel offset is gone from the DB: line starts are derivable structurally
-    // because the render walks ayas in order. A sura that begins mid-line is treated as a line start
-    // (its preceding text lives in the previous sura), matching the earlier same-sura behavior.
-    var ayas = madina_data.suras[sura_idx].ayas;
-    if(aya_idx <= 0) return true;
-    var prev = ayas[aya_idx - 1];
-    if(prev.p !== ayas[aya_idx].p) return true;
-    return partOnLine(prev, line_no) === null;
-  }
-  function lineContext(sura_idx, page, line_no, aya_idx, dir){
-    // Parts on (page, line_no) that lie outside the selection on one side, in reading order. dir<0
-    // walks back from the first selected aya (text preceding it); dir>0 walks forward from the last
-    // selected aya (text following it). Rendering these invisibly lets the line's own centering or
-    // stretch place the visible text exactly where it sits on the full page.
-    var ayas = madina_data.suras[sura_idx].ayas, parts = [];
-    for(var a = aya_idx + dir; a >= 0 && a < ayas.length; a += dir){
-      if(ayas[a].p != page) break;
-      var match = partOnLine(ayas[a], line_no);
-      if(match === null) break;
-      if(dir < 0){ parts.unshift(match); if(isLineStartPart(sura_idx, a, line_no)) break; } // reached the line's right start
-      else { parts.push(match); }
-    }
-    return parts;
-  }
-  function appendSpacers(line_el, parts){
-    // Render parts as invisible spacers: they hold the line's layout but show nothing and are
-    // excluded from copy-to-clipboard. Shared by the verse and words= render paths.
-    for(var i = 0; i < parts.length; i++){
-      var spacer = document.createElement("div");
-      spacer.textContent = parts[i].t;
-      spacer.style.cssText = 'display:inline;visibility:hidden';
-      line_el.appendChild(spacer);
-    }
-  }
-  function collectWordParts(sura_start, aya_start, range){
-    // Walk ayas in reading order from (sura_start, aya_start), crossing page AND sura
-    // boundaries, grouping parts into visual lines keyed by (page, line), until the end word
-    // index is covered. Aya indices 0/1 of each sura are the name/basmala decoration: rendered
-    // for context but not counted as words (countable=false).
-    var groups = [];
-    var current = null;
-    var counted = 0;
-    for(var s = sura_start; s < madina_data.suras.length; s++){
-      var ayas = madina_data.suras[s].ayas;
-      var aya_begin = (s === sura_start) ? aya_start : 0;
-      var reached = false;
-      for(var a = aya_begin; a < ayas.length; a++){
-        var countable = (a >= 2);
-        var aya = ayas[a];
-        for(var pi = 0; pi < aya.r.length; pi++){
-          var part = aya.r[pi];
-          var key = `${aya.p}:${part.l}`;
-          if(!current || current.key !== key){
-            current = {key: key, stretch: part.s, parts: []};
-            groups.push(current);
-          }
-          current.parts.push({sura: s, ayaIdx: a, part: part, countable: countable});
-        }
-        if(countable){
-          counted = counted + countAyaWords(aya);
-          if(counted >= range[1]){ reached = true; break; }
-        }
-      }
-      if(reached) break;
-    }
-    // Annotate each visual line with the running countable-word index it ends at, then drop the
-    // lines that are entirely outside the selection — leading lines before range[0] and trailing
-    // lines after range[1] (the latter appear because collection grabs whole ayas, which may run
-    // onto further lines). The block then begins and ends on lines that actually show a selected
-    // word (requirement: no fully-hidden lines). Words on dropped leading lines are carried over as
-    // `counterStart` so word visibility downstream still lines up.
-    var running = 0;
-    groups.forEach(function(g){
-      g.parts.forEach(function(item){ if(item.countable){ running = running + countPartWords(item.part); } });
-      g.lastWord = running;
-    });
-    var start = 0;
-    while(start < groups.length - 1 && groups[start].lastWord < range[0]) start = start + 1;
-    var end = start;
-    while(end < groups.length - 1 && groups[end].lastWord < range[1]) end = end + 1;
-    return {groups: groups.slice(start, end + 1), counterStart: start > 0 ? groups[start - 1].lastWord : 0};
-  }
-  function renderWordsSpan(tag, sura_start, aya_start, range, headless){
-    // Dedicated render path for the words= selection. Unlike the page/aya loop it is not bound
-    // to a single page or sura, so a word range can span both.
-    var collected = collectWordParts(sura_start, aya_start, range);
-    var groups = collected.groups;
-    var multiline = groups.length > 1;
-    var counter = collected.counterStart; // running 1-based word index, seeded past any skipped lines
-    tag.innerHTML = "";
-    tag.removeAttribute('style');
-    if(multiline){
-      tag.style = "display:block;";
-      tag.style.setProperty('font-family', madina_data.font_family, '');
-      tag.style.setProperty('font-size', madina_data.font_size+"px", '');
-      if(madina_data.font_family === "me_quran"){
-        tag.style.setProperty('line-height', madina_data.font_size*2+"px", '');
-      }
-      tag.style.width = (madina_data.line_width+10)+"px";
-      let start_page = parseInt(groups[0].key.split(':')[0], 10); // page of the first visible line
-      tag.style.setProperty('box-shadow', 'inset '+(start_page%2==1?"":"-")+'8px 0 7px -7px #333', '');
-      if(!headless){
-        let header = document.createElement("quran-madina-html-header");
-        header.innerHTML = madina_data.suras[groups[0].parts[0].sura].name;
-        let copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
-        let translation = getTranslateIcon(); translation.addEventListener("click", openTranslate);
-        header.appendChild(copy); header.appendChild(translation);
-        tag.appendChild(header);
-      }
-    }
-    groups.forEach(function(group, gi){
-      var line = document.createElement("quran-madina-html-line");
-      if(multiline){
-        line.style.setProperty('display', 'block', '');
-        if(group.stretch >= 0){
-          line.style.setProperty("transform", `scaleX(${group.stretch})`, "");
-        } else {
-          line.style.setProperty("text-align", "center", "");
-        }
-        var first = group.parts[0];
-        if(!isLineStartPart(first.sura, first.ayaIdx, first.part.l)){
-          // This line begins mid-line — its first word is preceded on the page by text from ayas
-          // before the selection start. Rebuild that preceding text invisibly so the line's own
-          // centering/stretch positions the first visible word exactly as on the page. (Only the
-          // leading line can be mid-line; every later group enters a line at its right start.)
-          appendSpacers(line, lineContext(first.sura,
-            madina_data.suras[first.sura].ayas[first.ayaIdx].p, first.part.l, first.ayaIdx, -1));
-        }
-      } else {
-        line.style.setProperty('font-family', madina_data.font_family, '');
-        line.style.setProperty('font-size', madina_data.font_size+"px", '');
-      }
-      tag.appendChild(line);
-      group.parts.forEach(function(item){
-        var aya_part = document.createElement("div");
-        var classes = getAyaClass(item.sura+1, item.ayaIdx-1);
-        DOMTokenList.prototype.add.apply(aya_part.classList, classes);
-        if(item.countable){
-          counter = appendWords(aya_part, item.part.t, range, counter);
-        } else {
-          aya_part.textContent = item.part.t; // sura name / basmala: always visible
-        }
-        aya_part.style.cssText = 'display:inline';
-        line.appendChild(aya_part);
-        hoverByType(classes.slice(-1)[0]);
-      });
-      if(multiline && gi === groups.length - 1){
-        // The selection ends mid-line: rebuild the following text invisibly to keep the last line
-        // laid out (and centered) exactly as on the page.
-        var last = group.parts[group.parts.length - 1];
-        appendSpacers(line, lineContext(last.sura,
-          madina_data.suras[last.sura].ayas[last.ayaIdx].p, last.part.l, last.ayaIdx, 1));
-      }
-    });
-    if(!multiline && !headless){
-      let tag_copy = document.createElement("quran-madina-html-copy");
-      let copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
-      tag_copy.appendChild(copy);
-      tag.appendChild(tag_copy);
-    }
   }
   function getAyaClass(sura, aya){
     const zeroPad = (num, places) => String(num).padStart(places, '0');
@@ -354,9 +196,117 @@
     '+QQFEAAJACwAAAAAIAAKAAAEOhCRI2o1I+nNu08TII5A8J0fRZJou6mrmBwuasVF3cLxrKc4Ge3X4a2IH0PQhOwMAoUo'+
     'CZHIaFiuQQQAOw==" alt="Loading .." />';
   }
-  function print(str){
-    console.log(`${name}> ${str}`);
+  function buildHeader(sura_name){
+    // The multiline chrome: sura name + copy + translate icons, shared by both render paths.
+    var header = document.createElement("quran-madina-html-header");
+    header.innerHTML = sura_name;
+    var copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
+    var translation = getTranslateIcon(); translation.addEventListener("click", openTranslate);
+    header.appendChild(copy);
+    header.appendChild(translation);
+    return header;
   }
+  function buildInlineCopy(){
+    // The single-line chrome: a lone copy button, shared by both render paths.
+    var wrap = document.createElement("quran-madina-html-copy");
+    var copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
+    wrap.appendChild(copy);
+    return wrap;
+  }
+
+  // ==========================================================================
+  // Line layout helpers (stretch/center, spacers, structural line starts)
+  // ==========================================================================
+
+  function styleMultilineTag(tag, page){
+    // Apply the shared block-level chrome to the host tag for a multiline render: font, page-fitting
+    // width, and the inset "gutter" shadow whose side depends on the page parity (odd = right page).
+    tag.style = "display:block;";
+    tag.style.setProperty('font-family', madina_data.font_family, '');
+    tag.style.setProperty('font-size', madina_data.font_size+"px", '');
+    if(madina_data.font_family === "me_quran"){
+      tag.style.setProperty('line-height', madina_data.font_size*2+"px", '');
+    }
+    tag.style.width = (madina_data.line_width+10)+"px";
+    tag.style.setProperty('box-shadow', 'inset '+(page%2==1?"":"-")+'8px 0 7px -7px #333', '');
+  }
+  function applyLineStyle(line, stretch){
+    // A stretch >= 0 is a scaleX factor filling the line; -1 means center this line instead.
+    if(stretch >= 0){
+      line.style.setProperty("transform", `scaleX(${stretch})`, "");
+    } else {
+      line.style.setProperty("text-align", "center", "");
+    }
+  }
+  function appendWords(parent, text, range, counter){
+    // Render each whitespace-separated word as its own span so non-selected words can be
+    // hidden in place (visibility:hidden) while keeping the original Madina line geometry.
+    // `counter` is the running 1-based word index across the whole selection (spans ayas).
+    text.split(/(\s+)/).forEach(function(token){
+      if(token === "") return;
+      if(/^\s+$/.test(token)){ parent.appendChild(document.createTextNode(token)); return; }
+      var span = document.createElement("span");
+      span.textContent = token;
+      span.classList.add(`${name}-word`);
+      if(!isWordToken(token)){
+        span.classList.add(`${name}-word-hidden`); // marker/pause/ornament: never a selectable word
+      } else {
+        counter = counter + 1;
+        if(counter < range[0] || counter > range[1]) span.classList.add(`${name}-word-hidden`);
+      }
+      parent.appendChild(span);
+    });
+    return counter;
+  }
+  function partOnLine(aya, line_no){
+    // The aya's render part that falls on the given page-line, or null.
+    for(var k = 0; k < aya.r.length; k++){ if(aya.r[k].l === line_no) return aya.r[k]; }
+    return null;
+  }
+  function isLineStartPart(sura_idx, aya_idx, line_no){
+    // True if this aya's part on line_no is the first (rightmost, RTL) on its page-line — i.e. the
+    // previous aya in the same sura does not also sit on that line. This replaces the old `o === 0`
+    // sentinel now that the pixel offset is gone from the DB: line starts are derivable structurally
+    // because the render walks ayas in order. A sura that begins mid-line is treated as a line start
+    // (its preceding text lives in the previous sura), matching the earlier same-sura behavior.
+    var ayas = madina_data.suras[sura_idx].ayas;
+    if(aya_idx <= 0) return true;
+    var prev = ayas[aya_idx - 1];
+    if(prev === undefined) return true; // previous aya not loaded (sharded boundary): treat as start
+    if(prev.p !== ayas[aya_idx].p) return true;
+    return partOnLine(prev, line_no) === null;
+  }
+  function lineContext(sura_idx, page, line_no, aya_idx, dir){
+    // Parts on (page, line_no) that lie outside the selection on one side, in reading order. dir<0
+    // walks back from the first selected aya (text preceding it); dir>0 walks forward from the last
+    // selected aya (text following it). Rendering these invisibly lets the line's own centering or
+    // stretch place the visible text exactly where it sits on the full page.
+    var ayas = madina_data.suras[sura_idx].ayas, parts = [];
+    for(var a = aya_idx + dir; a >= 0 && a < ayas.length; a += dir){
+      if(ayas[a] === undefined) break; // reached a not-yet-loaded aya (sharded boundary)
+      if(ayas[a].p != page) break;
+      var match = partOnLine(ayas[a], line_no);
+      if(match === null) break;
+      if(dir < 0){ parts.unshift(match); if(isLineStartPart(sura_idx, a, line_no)) break; } // reached the line's right start
+      else { parts.push(match); }
+    }
+    return parts;
+  }
+  function appendSpacers(line_el, parts){
+    // Render parts as invisible spacers: they hold the line's layout but show nothing and are
+    // excluded from copy-to-clipboard. Shared by the verse and words= render paths.
+    for(var i = 0; i < parts.length; i++){
+      var spacer = document.createElement("div");
+      spacer.textContent = parts[i].t;
+      spacer.style.cssText = 'display:inline;visibility:hidden';
+      line_el.appendChild(spacer);
+    }
+  }
+
+  // ==========================================================================
+  // Clipboard & translate actions
+  // ==========================================================================
+
   function visibleClone(host){
     // Clone the rendered tag and strip everything that must not be copied: the header chrome,
     // word spans hidden by a words= selection, and the invisible layout spacers. Working on a
@@ -398,17 +348,136 @@
   }
   function openTranslate(){
     let host = this.parentElement.parentElement;
+    let url;
     if(host.getAttribute("sura") != null && host.getAttribute("aya") != null){
       let sura_index = host.getAttribute("sura");
       let aya_index = host.getAttribute("aya");
-      URL = `https://quran.com/${sura_index}/${aya_index}`;
+      url = `https://quran.com/${sura_index}/${aya_index}`;
     } else {
       let page_index = host.getAttribute("page");
-      URL = `https://quran.com/page/${page_index}`;
+      url = `https://quran.com/page/${page_index}`;
     }
-    window.open(URL, '_blank');
+    window.open(url, '_blank');
   }
-  var madina_data = {"content":"Loading .."};
+
+  // ==========================================================================
+  // words= render path (spans pages and suras from a start aya)
+  // ==========================================================================
+
+  function collectWordParts(sura_start, aya_start, range){
+    // Walk ayas in reading order from (sura_start, aya_start), crossing page AND sura
+    // boundaries, grouping parts into visual lines keyed by (page, line), until the end word
+    // index is covered. Aya indices 0/1 of each sura are the name/basmala decoration: rendered
+    // for context but not counted as words (countable=false).
+    var groups = [];
+    var current = null;
+    var counted = 0;
+    for(var s = sura_start; s < madina_data.suras.length; s++){
+      var ayas = madina_data.suras[s].ayas;
+      var aya_begin = (s === sura_start) ? aya_start : 0;
+      var reached = false;
+      for(var a = aya_begin; a < ayas.length; a++){
+        var countable = (a >= 2);
+        var aya = ayas[a];
+        if(aya === undefined) break; // not-yet-loaded aya (sharded boundary): stop collecting
+        for(var pi = 0; pi < aya.r.length; pi++){
+          var part = aya.r[pi];
+          var key = `${aya.p}:${part.l}`;
+          if(!current || current.key !== key){
+            current = {key: key, stretch: part.s, parts: []};
+            groups.push(current);
+          }
+          current.parts.push({sura: s, ayaIdx: a, part: part, countable: countable});
+        }
+        if(countable){
+          counted = counted + countAyaWords(aya);
+          if(counted >= range[1]){ reached = true; break; }
+        }
+      }
+      if(reached) break;
+    }
+    // Annotate each visual line with the running countable-word index it ends at, then drop the
+    // lines that are entirely outside the selection — leading lines before range[0] and trailing
+    // lines after range[1] (the latter appear because collection grabs whole ayas, which may run
+    // onto further lines). The block then begins and ends on lines that actually show a selected
+    // word (requirement: no fully-hidden lines). Words on dropped leading lines are carried over as
+    // `counterStart` so word visibility downstream still lines up.
+    var running = 0;
+    groups.forEach(function(g){
+      g.parts.forEach(function(item){ if(item.countable){ running = running + countPartWords(item.part); } });
+      g.lastWord = running;
+    });
+    var start = 0;
+    while(start < groups.length - 1 && groups[start].lastWord < range[0]) start = start + 1;
+    var end = start;
+    while(end < groups.length - 1 && groups[end].lastWord < range[1]) end = end + 1;
+    return {groups: groups.slice(start, end + 1), counterStart: start > 0 ? groups[start - 1].lastWord : 0};
+  }
+  function renderWordsSpan(tag, sura_start, aya_start, range, headless){
+    // Dedicated render path for the words= selection. Unlike the page/aya loop it is not bound
+    // to a single page or sura, so a word range can span both.
+    var collected = collectWordParts(sura_start, aya_start, range);
+    var groups = collected.groups;
+    var multiline = groups.length > 1;
+    var counter = collected.counterStart; // running 1-based word index, seeded past any skipped lines
+    tag.innerHTML = "";
+    tag.removeAttribute('style');
+    if(multiline){
+      let start_page = parseInt(groups[0].key.split(':')[0], 10); // page of the first visible line
+      styleMultilineTag(tag, start_page);
+      if(!headless){
+        tag.appendChild(buildHeader(madina_data.suras[groups[0].parts[0].sura].name));
+      }
+    }
+    groups.forEach(function(group, gi){
+      var line = document.createElement("quran-madina-html-line");
+      if(multiline){
+        line.style.setProperty('display', 'block', '');
+        applyLineStyle(line, group.stretch);
+        var first = group.parts[0];
+        if(!isLineStartPart(first.sura, first.ayaIdx, first.part.l)){
+          // This line begins mid-line — its first word is preceded on the page by text from ayas
+          // before the selection start. Rebuild that preceding text invisibly so the line's own
+          // centering/stretch positions the first visible word exactly as on the page. (Only the
+          // leading line can be mid-line; every later group enters a line at its right start.)
+          appendSpacers(line, lineContext(first.sura,
+            madina_data.suras[first.sura].ayas[first.ayaIdx].p, first.part.l, first.ayaIdx, -1));
+        }
+      } else {
+        line.style.setProperty('font-family', madina_data.font_family, '');
+        line.style.setProperty('font-size', madina_data.font_size+"px", '');
+      }
+      tag.appendChild(line);
+      group.parts.forEach(function(item){
+        var aya_part = document.createElement("div");
+        var classes = getAyaClass(item.sura+1, item.ayaIdx-1);
+        DOMTokenList.prototype.add.apply(aya_part.classList, classes);
+        if(item.countable){
+          counter = appendWords(aya_part, item.part.t, range, counter);
+        } else {
+          aya_part.textContent = item.part.t; // sura name / basmala: always visible
+        }
+        aya_part.style.cssText = 'display:inline';
+        line.appendChild(aya_part);
+        hoverByType(classes.slice(-1)[0]);
+      });
+      if(multiline && gi === groups.length - 1){
+        // The selection ends mid-line: rebuild the following text invisibly to keep the last line
+        // laid out (and centered) exactly as on the page.
+        var last = group.parts[group.parts.length - 1];
+        appendSpacers(line, lineContext(last.sura,
+          madina_data.suras[last.sura].ayas[last.ayaIdx].p, last.part.l, last.ayaIdx, 1));
+      }
+    });
+    if(!multiline && !headless){
+      tag.appendChild(buildInlineCopy());
+    }
+  }
+
+  // ==========================================================================
+  // Boot configuration (read from the loader <script> tag)
+  // ==========================================================================
+
   var this_script = document.currentScript || document.querySelector(`script[src*="${name}"]`);
   var doc_name    = this_script.getAttribute('data-name') || "Madina05";
   var doc_font    = (this_script.getAttribute('data-font') || "me_quran").replaceAll(" ","_");
@@ -428,11 +497,93 @@
       link.media = 'all';
       head.appendChild(link);
   }
-  loadJSON(`${cdn}assets/db/${doc_name}-${doc_font}-${doc_font_sz}px.json`,
-        function(data) { 
-          madina_data = data; 
+
+  // ==========================================================================
+  // Sharded DB loading
+  // ==========================================================================
+
+  // DB loading is sharded by default: a small manifest.json (header + sura skeleton + juz'/page
+  // maps) loads first, then each juz' data shard is fetched on demand as pages/ranges render.
+  // Falls back to the single monolithic <stem>.json when no manifest is present.
+  var dbstem    = `${doc_name}-${doc_font}-${doc_font_sz}px`;
+  var shardBase = `${cdn}assets/db/${dbstem}/`;
+  var loadedJuz = {}; // juz' index (0..29) -> true once its shard is merged into madina_data
+  function suraAyaToJuz(sura0, aya_idx){
+    // Last juz' whose (startSura, startAya) <= (sura0, aya). Decoration slots (idx 0/1) use aya 1's
+    // position so a sura that opens a juz' keeps its title/basmala in the new juz'.
+    if(!madina_data.juz) return -1;
+    var pa = Math.max(aya_idx, 2), j = 0, J = madina_data.juz;
+    for(var k = 0; k < J.length; k++){
+      if(J[k][0] < sura0 || (J[k][0] === sura0 && J[k][1] <= pa)) j = k; else break;
+    }
+    return j;
+  }
+  function mergeShard(shard){
+    // shard.d = [[suraIdx, ayaIdx, page, parts], ...] -> fill the sparse skeleton in place.
+    for(var i = 0; i < shard.d.length; i++){
+      var e = shard.d[i];
+      madina_data.suras[e[0]].ayas[e[1]] = {p: e[2], r: e[3]};
+    }
+  }
+  function ensureJuz(list, cb){
+    // Fetch+merge any not-yet-loaded juz' shards in `list`, then call cb. Monolith mode: no-op.
+    if(!madina_data.juz){ cb(); return; }
+    var need = [];
+    for(var i = 0; i < list.length; i++){
+      var j = list[i];
+      if(j >= 0 && j < madina_data.juz.length && !loadedJuz[j] && need.indexOf(j) < 0) need.push(j);
+    }
+    if(need.length === 0){ cb(); return; }
+    var remaining = need.length;
+    need.forEach(function(j){
+      loadJSON(shardBase + "juz-" + pad2(j + 1) + ".json",
+        function(shard){ mergeShard(shard); loadedJuz[j] = true; if(--remaining === 0) cb(); },
+        function(xhr){ console.error(`${name}> failed to load juz ${j + 1}`, xhr);
+                       loadedJuz[j] = true; if(--remaining === 0) cb(); });
+    });
+  }
+  function neededJuz(el){
+    // Which juz' shards a pending render will read, derived from its attributes. Monolith: none.
+    if(!madina_data.juz) return [];
+    var out = [], k;
+    if(el.getAttribute("sura") != null && el.getAttribute("aya") != null){
+      var sura0 = parseSuraRange(el.getAttribute("sura"))[0];
+      var ar = parseAyaRange(el.getAttribute("aya")); // [from,to] internal indices
+      if(el.getAttribute("words") != null){
+        var j = suraAyaToJuz(sura0, ar[0]); return [j, j + 1]; // words spill forward < one juz'
+      }
+      for(k = suraAyaToJuz(sura0, ar[0]); k <= suraAyaToJuz(sura0, ar[1]); k++) out.push(k);
+      return out;
+    }
+    if(el.getAttribute("page") != null){
+      var pb = madina_data.pages[parseInt(el.getAttribute("page"), 10) - 1];
+      if(!pb) return [];
+      for(k = suraAyaToJuz(pb[0], pb[1]); k <= suraAyaToJuz(pb[2], pb[3]); k++) out.push(k);
+      return out;
+    }
+    return [];
+  }
+
+  // ==========================================================================
+  // Custom-element registration & the render loop
+  // ==========================================================================
+
+  function attrAccessor(attr){
+    // Every public attribute is a plain string mirror: reads pull straight from the DOM attribute,
+    // writes stash into xtag.data. Generated for each name below to kill the boilerplate.
+    return {
+      attribute: {},
+      set: function(value){ this.xtag.data[attr] = value; },
+      get: function(){ return this.getAttribute(attr); }
+    };
+  }
+  function initTag(){
           const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(resolveUrl(madina_data.font_url))+')');
           myFont.load().then( () => {document.fonts.add(myFont);});
+          var accessors = {};
+          ["page", "page_param", "aya", "sura", "words", "headless"].forEach(function(attr){
+            accessors[attr] = attrAccessor(attr);
+          });
           xtag.register(name, {
             lifecycle: {
               created: function() {
@@ -443,64 +594,9 @@
               attributeChanged: function() {
                 this.render(this);
               }
-            }, 
-            events: {},
-            accessors: {
-              page:{
-                attribute: {},
-                set: function(value) {
-                  this.xtag.data.page = value;
-                },
-                get: function(){
-                  return this.getAttribute("page");
-                }
-              },
-              page_param:{
-                attribute: {},
-                set: function(value) {
-                  this.xtag.data.page_param = value;
-                },
-                get: function(){
-                  return this.getAttribute("page_param");
-                }
-              },
-              aya:{
-                attribute: {},
-                set: function(value) {
-                  this.xtag.data.aya = value;
-                },
-                get: function(){
-                  return this.getAttribute("aya");
-                }
-              },
-              sura:{
-                attribute: {},
-                set: function(value) {
-                  this.xtag.data.sura = value;
-                },
-                get: function(){
-                  return this.getAttribute("sura");
-                }
-              },
-              words:{
-                attribute: {},
-                set: function(value) {
-                  this.xtag.data.words = value;
-                },
-                get: function(){
-                  return this.getAttribute("words");
-                }
-              },
-              headless:{
-                attribute: {},
-                set: function(value) {
-                  this.xtag.data.headless = value;
-                },
-                get: function(){
-                  return this.getAttribute("headless");
-                }
-              }
             },
+            events: {},
+            accessors: accessors,
             methods: {
                render: function(tag){
                 // Re-entrancy guard. While building we mutate the element's style attribute, and
@@ -508,21 +604,22 @@
                 // and rebuild mid-build, duplicating the output. The guard drops such re-entrant
                 // calls; genuine user-driven renders run when no render is in progress.
                 if(this.xtag.data.rendering){ return; }
-                this.xtag.data.rendering = true;
-                try {
-                  this.doRender(tag);
-                } finally {
-                  this.xtag.data.rendering = false;
-                }
+                var self = this;
+                // Sharded DB: ensure the juz' shard(s) this render will read are loaded, then render
+                // synchronously. Monolith mode: ensureJuz invokes the callback immediately.
+                ensureJuz(neededJuz(this), function(){
+                  if(self.xtag.data.rendering){ return; }
+                  self.xtag.data.rendering = true;
+                  try {
+                    self.doRender(tag);
+                  } finally {
+                    self.xtag.data.rendering = false;
+                  }
+                });
                },
                doRender: function(tag){
-                var sura_from;
-                var sura_to;
+                var sura_from, sura_to, aya_from, aya_to, line_from, line_to;
                 var multiline;
-                var aya_from;
-                var aya_to;
-                var line_from;
-                var line_to;
                 var words_range = null;
                 // `page` is the page to render, derived locally. We deliberately never write derived
                 // state (sura/aya/page) back onto the element: those are x-tag accessor attributes,
@@ -538,14 +635,19 @@
                   if(this.page != null) print("Ignoring page parameter!");
                   page = madina_data.suras[sura_from].ayas[aya_from].p;
                 } else if(this.page != null){
-                  sura_from = 0; sura_to = 0; aya_from=0; aya_to=0;
-                  while(madina_data.suras[sura_from].ayas.slice(-1)[0].p < page) sura_from = sura_from + 1;
-                  sura_to = sura_from;
-                  while(sura_to < 114 && madina_data.suras[sura_to].ayas[0].p <= page) sura_to = sura_to + 1;
-                  sura_to = sura_to -1;
-                  while(madina_data.suras[sura_from].ayas[aya_from].p < page) aya_from = aya_from + 1;
-                  aya_to = madina_data.suras[sura_to].ayas.length-1;
-                  while (madina_data.suras[sura_to].ayas[aya_to].p > page) aya_to = aya_to - 1;
+                  if(madina_data.pages){ // sharded: page -> [sura_from,aya_from,sura_to,aya_to]
+                    var pb = madina_data.pages[page - 1];
+                    sura_from = pb[0]; aya_from = pb[1]; sura_to = pb[2]; aya_to = pb[3];
+                  } else { // monolith: derive by scanning aya pages
+                    sura_from = 0; sura_to = 0; aya_from=0; aya_to=0;
+                    while(madina_data.suras[sura_from].ayas.slice(-1)[0].p < page) sura_from = sura_from + 1;
+                    sura_to = sura_from;
+                    while(sura_to < 114 && madina_data.suras[sura_to].ayas[0].p <= page) sura_to = sura_to + 1;
+                    sura_to = sura_to -1;
+                    while(madina_data.suras[sura_from].ayas[aya_from].p < page) aya_from = aya_from + 1;
+                    aya_to = madina_data.suras[sura_to].ayas.length-1;
+                    while (madina_data.suras[sura_to].ayas[aya_to].p > page) aya_to = aya_to - 1;
+                  }
                   multiline = true;
                 } else{
                   console.error(`${name}> Bad arguments: Not rendering!`);
@@ -574,61 +676,42 @@
                 tag.removeAttribute('style'); // and styles.
                 line_from = madina_data.suras[sura_from].ayas[aya_from].r[0].l;
                 line_to = madina_data.suras[sura_to].ayas[aya_to].r.slice(-1)[0].l;
-                if(line_from!=line_to){
-                  multiline = true;
-                  tag.style = "display:block;";
-                }
+                if(line_from != line_to) multiline = true;
                 if(multiline){
-                  tag.style.setProperty('font-family', madina_data.font_family, '');
-                  tag.style.setProperty('font-size', madina_data.font_size+"px", '');
-                  if(madina_data.font_family === "me_quran"){
-                    tag.style.setProperty('line-height', madina_data.font_size*2+"px", '');
+                  styleMultilineTag(tag, page);
+                  if(!headless){
+                    tag.appendChild(buildHeader(madina_data.suras[sura_from].name));
                   }
-                }
-                /**Add Header with Copy button */
-                var tag_header = "";
-                if(multiline && !headless){
-                  tag_header = document.createElement("quran-madina-html-header");
-                  tag_header.innerHTML = madina_data.suras[sura_from].name;
-                  var copy = getCopyIcon();
-                  copy.addEventListener("click", copyToClipboard);
-                  var translation = getTranslateIcon();
-                  translation.addEventListener("click", openTranslate);
-                  tag_header.appendChild(copy);
-                  tag_header.appendChild(translation);
-                  tag.appendChild(tag_header);
                 }
                 /** Loop on Ayas, lines, parts */
                 var aya_current = aya_from;
                 var sura_current = sura_from;
                 for(let l = line_from; l <= line_to; l++) {
                   const ll = l; //Const for inner loops to refer
-                  line = document.createElement("quran-madina-html-line");
+                  let line = document.createElement("quran-madina-html-line");
                   tag.appendChild(line);
-                  if(!multiline){
+                  if(multiline){
+                    line.style.setProperty('display','block','');
+                  } else {
                     line.style.setProperty('font-family', madina_data.font_family, '');
                     line.style.setProperty('font-size', madina_data.font_size+"px", '');
-                  }
-                  if(multiline){
-                    tag.style.width = (madina_data.line_width+10)+"px";
-                    let isRightPage = madina_data.suras[sura_current].ayas[aya_current].p%2==1?"":"-";
-                    tag.style.setProperty('box-shadow', 'inset '+isRightPage+'8px 0 7px -7px #333','');
-                    line.style.setProperty('display','block','');
                   }
                   if(multiline && verse_mode && l === line_from){
                     appendSpacers(line, lineContext(sura_from, page, line_from, aya_from, -1));
                   }
                   let look_ahead = (sura_from == sura_to)? aya_to: madina_data.suras[sura_current].ayas.length-1;
                   for(let a = aya_current; a <= Math.min(aya_current+5, look_ahead) ; a++) {
-                    if(madina_data.suras[sura_current].ayas[a].p == page){
-                      line_match = madina_data.suras[sura_current].ayas[a].r.filter(rr => rr.l == ll);
+                    // Sharded DB: the +5 look-ahead (and the sura-jump peek below) can probe an aya
+                    // that belongs to a not-yet-loaded juz' — but any such aya is necessarily off
+                    // this page (every on-page aya lives in a loaded shard), so treat undefined as
+                    // "not on this page". In monolith mode all ayas are present, so these guards are
+                    // inert.
+                    let aya_a = madina_data.suras[sura_current].ayas[a];
+                    if(aya_a !== undefined && aya_a.p == page){
+                      let line_match = aya_a.r.filter(rr => rr.l == ll);
                       if (line_match.length){
                         if(multiline){
-                          if(line_match[0].s>=0){
-                            line.style.setProperty("transform",`scaleX(${line_match[0].s})`,"");                        
-                          } else {
-                            line.style.setProperty("text-align","center","");  
-                          }
+                          applyLineStyle(line, line_match[0].s);
                         }
                         let aya_part = document.createElement("div");
                         let classes = getAyaClass(sura_current+1, a-1);
@@ -638,10 +721,12 @@
                         line.appendChild(aya_part);
                         hoverByType(classes.slice(-1)[0]);
                         aya_current = a;
+                        let next_sura_aya0 = (sura_current < 113) ?
+                          madina_data.suras[sura_current+1].ayas[0] : undefined;
                         if(aya_current >= look_ahead &&
-                          sura_current < 113 &&
-                          madina_data.suras[sura_current+1].ayas[0].p == page &&
-                          madina_data.suras[sura_current+1].ayas[0].r[0].l == ll+1) {
+                          next_sura_aya0 !== undefined &&
+                          next_sura_aya0.p == page &&
+                          next_sura_aya0.r[0].l == ll+1) {
                           //Jump to next Sura
                           sura_current = sura_current + 1;
                           aya_current = 0;
@@ -654,18 +739,33 @@
                   }
                 }
                 if(!multiline && !headless){
-                  tag_header = document.createElement("quran-madina-html-copy");
-                  let copy = getCopyIcon();
-                  copy.addEventListener("click", copyToClipboard);
-                  tag_header.appendChild(copy);
-                  tag.appendChild(tag_header);
+                  tag.appendChild(buildInlineCopy());
                 }
               }
             }
           });
-        
-        },
-         function(xhr) { console.error(xhr); }
+  }
+
+  // ==========================================================================
+  // Boot: prefer the sharded manifest, fall back to the monolithic DB
+  // ==========================================================================
+
+  function bootMonolith(){
+    loadJSON(`${cdn}assets/db/${dbstem}.json`,
+      function(data){ madina_data = data; initTag(); },
+      function(xhr){ console.error(`${name}> no manifest and no monolithic DB`, xhr); });
+  }
+  loadJSON(shardBase + "manifest.json",
+    function(m){
+      madina_data = {
+        title: m.title, published: m.published, font_family: m.font_family, font_url: m.font_url,
+        font_size: m.font_size, line_width: m.line_width,
+        suras: m.suras.map(function(e){ return {name: e[0], ayas: new Array(e[1])}; }),
+        juz: m.juz, pages: m.pages
+      };
+      initTag();
+    },
+    bootMonolith
   );
 
 })();
