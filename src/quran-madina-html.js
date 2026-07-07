@@ -544,7 +544,7 @@
     while(end < groups.length - 1 && groups[end].lastWord < range[1]) end = end + 1;
     return {groups: groups.slice(start, end + 1), counterStart: start > 0 ? groups[start - 1].lastWord : 0};
   }
-  function renderWordsSpan(tag, sura_start, aya_start, range, headless){
+  function renderWordsSpan(tag, sura_start, aya_start, range, headless, noQuotes){
     // Dedicated render path for the words= selection. Unlike the page/aya loop it is not bound
     // to a single page or sura, so a word range can span both.
     var collected = collectWordParts(sura_start, aya_start, range);
@@ -556,7 +556,8 @@
     // Inline (single-line) renders get quote marks around the verse instead of any chrome (see the
     // -inline CSS rule) - it's their only visual cue that this is a quoted excerpt, now that they
     // have no header and no lone copy button (removed; the per-aya click popup covers them too).
-    tag.classList.toggle(`${name}-inline`, !multiline);
+    // quotes="no" opts out of this.
+    tag.classList.toggle(`${name}-inline`, !multiline && !noQuotes);
     if(multiline){
       let start_page = parseInt(groups[0].key.split(':')[0], 10); // page of the first visible line
       styleMultilineTag(tag, start_page);
@@ -722,7 +723,7 @@
           const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(resolveUrl(madina_data.font_url))+')');
           myFont.load().then( () => {document.fonts.add(myFont);});
           var accessors = {};
-          ["page", "page_param", "aya", "sura", "words", "headless"].forEach(function(attr){
+          ["page", "page_param", "aya", "sura", "words", "headless", "quotes"].forEach(function(attr){
             accessors[attr] = attrAccessor(attr);
           });
           xtag.register(name, {
@@ -767,6 +768,9 @@
                 // and writing them re-triggers render(), which used to cascade and duplicate output.
                 var page = this.page;
                 var headless = isTrue(this.headless); // hide header (multiline) / copy button (inline)
+                // quotes="no" (or "false") opts out of the inline quote marks; absent/anything else
+                // keeps the default (shown).
+                var noQuotes = this.quotes != null && !isTrue(this.quotes);
                 var verse_mode = (this.sura != null && this.aya != null);
                 if(verse_mode){
                   sura_from = parseSuraRange(this.sura)[0];
@@ -808,7 +812,7 @@
                         words_range[1] = words_range[0] + 499;
                       }
                       // words= has its own renderer that spans pages and suras from the start aya.
-                      renderWordsSpan(tag, sura_from, aya_from, words_range, headless);
+                      renderWordsSpan(tag, sura_from, aya_from, words_range, headless, noQuotes);
                       return;
                     }
                   }
@@ -821,8 +825,8 @@
                 // Inline (single-line) renders get quote marks around the verse instead of any chrome
                 // (see the -inline CSS rule) - their only visual cue that this is a quoted excerpt,
                 // now that they have no header and no lone copy button (removed; the per-aya click
-                // popup covers them too).
-                tag.classList.toggle(`${name}-inline`, !multiline);
+                // popup covers them too). quotes="no" opts out of this.
+                tag.classList.toggle(`${name}-inline`, !multiline && !noQuotes);
                 if(multiline){
                   styleMultilineTag(tag, page);
                   if(!headless){

@@ -111,7 +111,13 @@ are baked in at build time in `Ayah.__init__`.
   (`wireAyaClick`/`showAyaPopup`) shows a `<quran-madina-html-aya-popup>` positioned over it with its
   own copy/translate buttons scoped to *that* aya alone (vs. the header's, which act on the whole
   frame/its first aya) — this is the only copy/translate affordance for inline (single-line) renders,
-  which have no header of their own.
+  which have no header of their own. Inline renders also get opening/closing quote marks (CSS
+  `::before`/`::after` on `quran-madina-html-line`, gated by a `quran-madina-html-inline` class the
+  render loop toggles) as their only visual cue that the text is a quoted excerpt; the optional
+  `quotes="no"` attribute opts a tag out of this. (Note: an attribute name used as an x-tag accessor
+  key must not contain a hyphen — `this['no-quotes']`-style hyphenated keys silently fail to register,
+  leaving the accessor permanently `undefined`; read hyphenated attributes via `getAttribute()`
+  directly instead, or avoid the hyphen as done here.)
 - Stretch is applied as a CSS `scaleX()` transform on the line. There is no stored offset; a
   selection/line that starts mid-line reflows the preceding text invisibly (spacers) so the line's
   own stretch/centering positions the first visible word.
