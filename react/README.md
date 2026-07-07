@@ -37,6 +37,12 @@ export default function App() {
 
       {/* no header / copy chrome */}
       <QuranMadinaHtml sura={2} aya="13-14" headless />
+
+      {/* inline (single-line) render without the quote marks around it */}
+      <QuranMadinaHtml sura={1} aya={3} quotes="no" />
+
+      {/* force the multiline/header layout even though this would normally fit one line */}
+      <QuranMadinaHtml sura={1} aya={3} inline="no" />
     </div>
   );
 }
@@ -51,6 +57,8 @@ export default function App() {
 | `aya`       | number \| string    | Aya or range, e.g. `"8-10"`. |
 | `words`     | string              | 1-based word range: `"1:2"`, `"3-10"`, or a single index. |
 | `headless`  | boolean             | Drop the header/copy chrome. |
+| `quotes`    | string              | `"no"` (or `"false"`) drops the quote marks shown around inline (single-line) renders. |
+| `inline`    | string              | `"no"` forces the multiline/header layout even for a selection that fits one line. `"auto"` (default) is fit-based. `"yes"` (force a single line for an overflowing selection) is not implemented yet. |
 | `font`      | string              | `Hafs`, `Uthman`, `Amiri Quran`, `Amiri Quran Colored`, `me_quran`. |
 | `name`      | string              | DB name, default `Madina05`. |
 | `fontSize`  | number \| string    | px, default 16. |

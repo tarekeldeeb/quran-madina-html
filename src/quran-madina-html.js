@@ -135,6 +135,20 @@
     if(parts[0] < 1 || parts[1] < parts[0]) return null; // 1-based; start must not exceed end
     return parts;
   }
+  function applyInlineOverride(inlineOpt, multiline){
+    // inline="no": force the multiline/header layout even for a selection that would fit one line.
+    // inline="yes": force a single inline line even for a selection that overflows it - NOT
+    // IMPLEMENTED YET, falls back to the auto (default, current-fits-one-line) behavior.
+    // inline="auto"/absent: auto (default).
+    if(inlineOpt == null || inlineOpt === "auto") return multiline;
+    if(inlineOpt === "no") return true;
+    if(inlineOpt === "yes"){
+      print('inline="yes" is not implemented yet; falling back to "auto"');
+      return multiline;
+    }
+    print(`Bad inline parameter: ${inlineOpt}`);
+    return multiline;
+  }
 
   // ==========================================================================
   // Word counting (for the words= selection)
@@ -544,12 +558,12 @@
     while(end < groups.length - 1 && groups[end].lastWord < range[1]) end = end + 1;
     return {groups: groups.slice(start, end + 1), counterStart: start > 0 ? groups[start - 1].lastWord : 0};
   }
-  function renderWordsSpan(tag, sura_start, aya_start, range, headless, noQuotes){
+  function renderWordsSpan(tag, sura_start, aya_start, range, headless, noQuotes, inlineOpt){
     // Dedicated render path for the words= selection. Unlike the page/aya loop it is not bound
     // to a single page or sura, so a word range can span both.
     var collected = collectWordParts(sura_start, aya_start, range);
     var groups = collected.groups;
-    var multiline = groups.length > 1;
+    var multiline = applyInlineOverride(inlineOpt, groups.length > 1);
     var counter = collected.counterStart; // running 1-based word index, seeded past any skipped lines
     tag.innerHTML = "";
     tag.removeAttribute('style');
@@ -723,7 +737,8 @@
           const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(resolveUrl(madina_data.font_url))+')');
           myFont.load().then( () => {document.fonts.add(myFont);});
           var accessors = {};
-          ["page", "page_param", "aya", "sura", "words", "headless", "quotes"].forEach(function(attr){
+          ["page", "page_param", "aya", "sura", "words", "headless", "quotes", "inline"]
+          .forEach(function(attr){
             accessors[attr] = attrAccessor(attr);
           });
           xtag.register(name, {
@@ -771,6 +786,7 @@
                 // quotes="no" (or "false") opts out of the inline quote marks; absent/anything else
                 // keeps the default (shown).
                 var noQuotes = this.quotes != null && !isTrue(this.quotes);
+                var inlineOpt = this.inline; // "no" | "auto" (default) | "yes" (not implemented yet)
                 var verse_mode = (this.sura != null && this.aya != null);
                 if(verse_mode){
                   sura_from = parseSuraRange(this.sura)[0];
@@ -794,6 +810,7 @@
                     while (madina_data.suras[sura_to].ayas[aya_to].p > page) aya_to = aya_to - 1;
                   }
                   multiline = true;
+                  if(this.inline != null) print("Ignoring inline parameter with page!");
                 } else{
                   console.error(`${name}> Bad arguments: Not rendering!`);
                   return 1;
@@ -812,7 +829,7 @@
                         words_range[1] = words_range[0] + 499;
                       }
                       // words= has its own renderer that spans pages and suras from the start aya.
-                      renderWordsSpan(tag, sura_from, aya_from, words_range, headless, noQuotes);
+                      renderWordsSpan(tag, sura_from, aya_from, words_range, headless, noQuotes, inlineOpt);
                       return;
                     }
                   }
@@ -822,6 +839,7 @@
                 line_from = madina_data.suras[sura_from].ayas[aya_from].r[0].l;
                 line_to = madina_data.suras[sura_to].ayas[aya_to].r.slice(-1)[0].l;
                 if(line_from != line_to) multiline = true;
+                multiline = applyInlineOverride(inlineOpt, multiline);
                 // Inline (single-line) renders get quote marks around the verse instead of any chrome
                 // (see the -inline CSS rule) - their only visual cue that this is a quoted excerpt,
                 // now that they have no header and no lone copy button (removed; the per-aya click

@@ -62,6 +62,19 @@ describe("<QuranMadinaHtml>", () => {
     expect(el.hasAttribute("headless")).toBe(false);
   });
 
+  it("sets quotes and inline as plain string attributes, toggled on rerender", () => {
+    const { container, rerender } = render(
+      <QuranMadinaHtml sura={1} aya={1} quotes="no" inline="no" />
+    );
+    const el = tag(container);
+    expect(el.getAttribute("quotes")).toBe("no");
+    expect(el.getAttribute("inline")).toBe("no");
+
+    rerender(<QuranMadinaHtml sura={1} aya={1} />);
+    expect(el.hasAttribute("quotes")).toBe(false);
+    expect(el.hasAttribute("inline")).toBe(false);
+  });
+
   it("clears stale attributes when switching from page to sura/aya", () => {
     const { container, rerender } = render(<QuranMadinaHtml page={3} />);
     const el = tag(container);

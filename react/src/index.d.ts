@@ -26,6 +26,15 @@ export interface QuranMadinaHtmlProps
   words?: string;
   /** Drop the header / copy chrome and render only the Quran text. */
   headless?: boolean;
+  /** Set to "no" (or "false") to drop the quote marks shown around inline (single-line) renders. */
+  quotes?: "no" | "auto" | "yes" | boolean | string;
+  /**
+   * "no": force the multiline/header layout even if the selection would fit one line.
+   * "auto" (default): fit-based layout, same as omitting the prop.
+   * "yes": force a single inline line even if the selection overflows it - not implemented yet,
+   * falls back to "auto" with a console warning from the underlying library.
+   */
+  inline?: "no" | "auto" | "yes" | string;
 }
 
 /** Inject the loader script once; resolves when the custom element is registered. */
