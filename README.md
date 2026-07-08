@@ -159,7 +159,7 @@ You can also restrict the output to a specific word sequence with the ``words`` 
 
 The ``words`` attribute is ignored when rendering a full ``page``.
 
-To embed a selection inside your own chrome (e.g. a quiz that already labels the sura/aya), the ``notitle`` attribute drops the crossed-into sura's title line entirely — the basmala, being real counted words, still renders:
+To embed a selection inside your own chrome (e.g. a quiz that already labels the sura/aya), the ``notitle`` attribute hides the crossed-into sura's **name text** while keeping its decorated title line (the ornamental frame stays, empty) — and the basmala, being real counted words, still renders:
 
 ```html
 <quran-madina-html sura="1" aya="7" words="1-14" notitle="true"></quran-madina-html>

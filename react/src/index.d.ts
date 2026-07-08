@@ -27,8 +27,9 @@ export interface QuranMadinaHtmlProps
   /** Drop the header / copy chrome and render only the Quran text. */
   headless?: boolean;
   /**
-   * Hide the sura-title decoration line rendered when a `words` selection crosses into a new
-   * sura (the basmala, being real counted words, still renders). Ignored by page/aya renders.
+   * When a `words` selection crosses into a new sura, hide its name text while keeping the
+   * decorated title line (the ornamental frame stays, empty); the basmala, being real counted
+   * words, still renders. Ignored by page/aya renders.
    */
   notitle?: boolean;
   /** Set to "no" (or "false") to drop the quote marks shown around inline (single-line) renders. */

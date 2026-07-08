@@ -60,8 +60,8 @@ export function loadQuranMadinaHtml(opts = {}) {
  * Drop header/copy chrome:      <QuranMadinaHtml sura={2} aya="8-10" headless />
  * Drop the inline quote marks:  <QuranMadinaHtml sura={1} aya={3} quotes="no" />
  * Force the multiline layout:   <QuranMadinaHtml sura={1} aya={3} inline="no" />
- * Hide crossed-into sura titles
- * in a words= selection:        <QuranMadinaHtml sura={1} aya={7} words="1-14" notitle />
+ * Blank crossed-into sura names
+ * (keeps the decorated line):   <QuranMadinaHtml sura={1} aya={7} words="1-14" notitle />
  *
  * `page` and `sura`/`aya` are mutually exclusive (page wins if both are passed).
  */

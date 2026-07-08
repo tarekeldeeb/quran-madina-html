@@ -98,8 +98,10 @@ slot 1 is blank (no basmala in the real text). Decoration slots are always cente
   At-Tawba's blank slot contributes none). Display rule: if **all 4** basmala words fall inside the
   selection they render as the single `﷽` ligature (`BASMALA_LIGATURE`/`isBasmalaSlot()`, still
   advancing the counter by 4); a partial overlap renders the individual word spans. Full-`page`
-  renders always show the ligature. The `notitle` boolean attribute drops crossed-into title lines
-  entirely (safe: a title always has a dedicated line) — words= path only; page/aya renders ignore it.
+  renders always show the ligature. The `notitle` boolean attribute hides crossed-into sura **name
+  text** while keeping the decorated title line (the sura_border SVG frame hangs off
+  `:has(.quran-madina-html-sura-start)`, so the div/class stay; the name renders in a
+  `visibility:hidden` span that still sizes the line) — words= path only; page/aya renders ignore it.
   Decoration slots stay non-clickable in `wireAyaClick` (deliberate: no quran.com verse to link).
   Rendering does **not** re-layout: every
   word becomes its own `<span>` and non-selected words get class `quran-madina-html-word-hidden`

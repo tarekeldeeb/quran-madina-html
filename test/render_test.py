@@ -359,24 +359,28 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertNotIn("﷽", self.visible_tokens(),
                          "a partial basmala must not collapse into the ligature")
 
-    def test_19_notitle_hides_title_line(self):
-        """notitle drops the crossed-into sura's title line; words and basmala are unchanged"""
+    def test_19_notitle_hides_name_keeps_decorated_line(self):
+        """notitle keeps the crossed-into sura's title line and its decorative frame (the
+        sura-start class the border SVG hangs off) but hides the sura name text itself"""
         self.set_attrs(sura=1, aya=7, words="1-13")
         self.assertEqual(self.count(".quran-madina-html-sura-start"), 1,
                          "title decoration shows by default")
         lines_with_title = self.count("quran-madina-html-line")
         shown_with_title = self.visible_words()
+        name = self.db["suras"][1]["name"]
         self.set_attrs(sura=1, aya=7, words="1-13", notitle=True)
-        self.assertEqual(self.count(".quran-madina-html-sura-start"), 0,
-                         f"notitle must drop the title decoration\n{self.dump_log()}")
-        self.assertEqual(self.count("quran-madina-html-line"), lines_with_title - 1,
-                         "the title's dedicated line is removed, not just blanked")
+        self.assertEqual(self.count(".quran-madina-html-sura-start"), 1,
+                         f"the decorated title line must survive notitle\n{self.dump_log()}")
+        self.assertEqual(self.count("quran-madina-html-line"), lines_with_title,
+                         "notitle must not change the line count")
         self.assertEqual(self.visible_words(), shown_with_title,
                          "notitle must not change the selected words")
-        rendered = self.web_driver.execute_script(
-            "return document.querySelector('quran-madina-html').textContent;")
-        self.assertNotIn(self.db["suras"][1]["name"], rendered,
-                         "the crossed-into sura name must not appear anywhere")
+        # The name text is still laid out (it sizes/centers the line) but invisible.
+        title_probe = self.web_driver.execute_script(
+            "var el = document.querySelector('.quran-madina-html-sura-start');"
+            "return {text: el.textContent, visible: el.innerText.trim()};")
+        self.assertIn(name, title_probe["text"], "the name still occupies the line's layout")
+        self.assertEqual(title_probe["visible"], "", "the name must not be visible")
 
     def test_20_tawba_boundary_has_no_basmala(self):
         """Crossing into At-Tawba (no basmala in the real text) inserts no basmala words: the

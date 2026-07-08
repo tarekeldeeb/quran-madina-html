@@ -526,16 +526,17 @@
   // words= render path (spans pages and suras from a start aya)
   // ==========================================================================
 
-  function collectWordParts(sura_start, aya_start, range, notitle){
+  function collectWordParts(sura_start, aya_start, range){
     // Walk ayas in reading order from (sura_start, aya_start), crossing page AND sura
     // boundaries, grouping parts into visual lines keyed by (page, line), until the end word
     // index is covered. The decoration slots (aya index 0 = sura title, 1 = basmala) are only
     // ever entered when the walk crosses into a *following* sura — the start sura's walk begins
     // at a real aya (internal index >= 2, see parseAyaRange). The title stays uncounted
-    // decoration (and is dropped entirely under notitle); the basmala is real Quran text and
-    // counts like any other words (4 in current DBs — matching the Tanzil word indexing that
-    // consumers count against; in pre-0.9 DBs it was the "﷽" ligature, which carries no Arabic
-    // letter and so still counts 0 there).
+    // decoration (under notitle its name text is hidden at render time, keeping the decorated
+    // line — see renderWordsSpan); the basmala is real Quran text and counts like any other
+    // words (4 in current DBs — matching the Tanzil word indexing that consumers count against;
+    // in pre-0.9 DBs it was the "﷽" ligature, which carries no Arabic letter and so still
+    // counts 0 there).
     var groups = [];
     var current = null;
     var counted = 0;
@@ -545,10 +546,6 @@
       var reached = false;
       for(var a = aya_begin; a < ayas.length; a++){
         var countable = (a >= 1); // title (slot 0) never counts; basmala (slot 1) does
-        // notitle: drop the title line entirely. A title always occupies a dedicated line of its
-        // own (never sharing one with real content), so removing its whole group is safe without
-        // touching the spacer / isLineStartPart mid-line logic.
-        if(a === 0 && notitle) continue;
         var aya = ayas[a];
         if(aya === undefined) break; // not-yet-loaded aya (sharded boundary): stop collecting
         for(var pi = 0; pi < aya.r.length; pi++){
@@ -590,7 +587,7 @@
   function renderWordsSpan(tag, sura_start, aya_start, range, headless, noQuotes, inlineOpt, notitle){
     // Dedicated render path for the words= selection. Unlike the page/aya loop it is not bound
     // to a single page or sura, so a word range can span both.
-    var collected = collectWordParts(sura_start, aya_start, range, notitle);
+    var collected = collectWordParts(sura_start, aya_start, range);
     var groups = collected.groups;
     var multiline = applyInlineOverride(inlineOpt, groups.length > 1);
     var counter = collected.counterStart; // running 1-based word index, seeded past any skipped lines
@@ -646,9 +643,17 @@
           } else {
             counter = appendWords(aya_part, item.part.t, range, counter);
           }
+        } else if(notitle && item.ayaIdx === 0){
+          // notitle: keep the title's line and its decorative frame (the sura_border SVG is
+          // painted on the line via :has(.quran-madina-html-sura-start), so the div and its
+          // class must stay) but hide the name text itself. visibility:hidden preserves the
+          // line's height/centering and excludes the name from copy (visibleClone strips it).
+          var hiddenName = document.createElement("span");
+          hiddenName.textContent = item.part.t;
+          hiddenName.style.visibility = "hidden";
+          aya_part.appendChild(hiddenName);
         } else {
-          aya_part.textContent = item.part.t; // sura title: always visible (unless notitle
-                                              // dropped it during collection)
+          aya_part.textContent = item.part.t; // sura title: always visible
         }
         aya_part.style.cssText = 'display:inline';
         line.appendChild(aya_part);
@@ -826,10 +831,10 @@
                 // and writing them re-triggers render(), which used to cascade and duplicate output.
                 var page = this.page;
                 var headless = isTrue(this.headless); // hide header (multiline) / copy button (inline)
-                // notitle: drop the sura-title decoration line when a words= walk crosses into a
-                // new sura. Only wired into the words= path for now — the ordinary page/aya render
-                // reproduces the printed page (a page render without its titles would leave holes),
-                // so it deliberately ignores this attribute; revisit if a consumer needs it there.
+                // notitle: when a words= walk crosses into a new sura, keep the title's decorated
+                // line but hide the sura name text. Only wired into the words= path — the ordinary
+                // page/aya render reproduces the printed page, so it deliberately ignores this
+                // attribute; revisit if a consumer needs it there.
                 var notitle = isTrue(this.notitle);
                 // quotes="no" (or "false") opts out of the inline quote marks; absent/anything else
                 // keeps the default (shown).
