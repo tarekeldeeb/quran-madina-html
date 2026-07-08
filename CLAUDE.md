@@ -70,8 +70,14 @@ begins mid-line is positioned by rendering the preceding text on that line invis
 `lineContext`), so the line's own stretch/centering places it exactly as on the full page. Line
 starts are detected structurally via `isLineStartPart()` (a part is a line start iff the previous
 aya doesn't also sit on that page-line) rather than a stored `o === 0` sentinel. Hindi (Arabic-Indic) aya numbers and
-font-specific text tweaks (Amiri uses `۝`, others use ornate parens; Uthman replaces `ٱ`→`ا`)
-are baked in at build time in `Ayah.__init__`.
+font-specific text tweaks (Amiri uses `۝`, others use ornate parens; Uthman replaces `ٱ`→`ا`, via
+`Ayah.apply_font_tweaks`) are baked in at build time in `Ayah.__init__`. Every sura carries **2
+decoration slots** before its real ayas (index 0 = title, 1 = basmala; real aya A is at index A+1 —
+the invariant `parseAyaRange`/`shard_db.py` depend on). Since 0.9.0 the basmala slot stores the
+**4 real word tokens** from the Tanzil text (built by `Surah.get_basmala()`, same font tweaks as
+ordinary text) rather than the `﷽` ligature, so the runtime can count/select them individually;
+exceptions: Al-Fatiha has inverted `[blank, title]` slots (its basmala IS real aya 1), and At-Tawba's
+slot 1 is blank (no basmala in the real text). Decoration slots are always centered (`s:-1`).
 
 ## Runtime rendering notes (`src/quran-madina-html.js`)
 
@@ -86,8 +92,16 @@ are baked in at build time in `Ayah.__init__`.
   a single page or sura: word indices are counted from the given `sura`/`aya` and may run past it,
   crossing page **and** sura boundaries. `collectWordParts()` walks ayas in reading order, grouping
   parts into visual lines keyed by `(page, line)`, until the end index is covered (`countAyaWords()`
-  does the counting); when it crosses into a new sura, that sura's name/basmala entries (aya indices
-  0/1) are rendered for context but **not** counted as words. Rendering does **not** re-layout: every
+  does the counting); when it crosses into a new sura, that sura's **title** (aya index 0) is rendered
+  for context but never counted, while its **basmala** (index 1) **counts as 4 real, individually
+  selectable words** (since 0.9.0 — matches the flat Tanzil word indexing consumers count against;
+  At-Tawba's blank slot contributes none). Display rule: if **all 4** basmala words fall inside the
+  selection they render as the single `﷽` ligature (`BASMALA_LIGATURE`/`isBasmalaSlot()`, still
+  advancing the counter by 4); a partial overlap renders the individual word spans. Full-`page`
+  renders always show the ligature. The `notitle` boolean attribute drops crossed-into title lines
+  entirely (safe: a title always has a dedicated line) — words= path only; page/aya renders ignore it.
+  Decoration slots stay non-clickable in `wireAyaClick` (deliberate: no quran.com verse to link).
+  Rendering does **not** re-layout: every
   word becomes its own `<span>` and non-selected words get class `quran-madina-html-word-hidden`
   (`visibility:hidden`), so the Madina stretch/offset geometry is preserved and only the chosen words
   are visible. A selection that fits one line renders inline; otherwise it gets the multiline block +

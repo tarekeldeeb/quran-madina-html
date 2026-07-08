@@ -112,12 +112,13 @@ outline marks the hidden remainder of the line
 
 ```html
 <quran-madina-html sura="1" aya="7"
-  words="1-10">
+  words="1-14">
 </quran-madina-html>
 ```
 
-words 1-10 counted from Al-Fatiha's last aya
-spill into Surat Al-Baqara
+words 1-14 counted from Al-Fatiha's last aya
+spill into Surat Al-Baqara — its basmala
+counts as words 10-13
 <br/><br/>
 <img src="demo/img/words-multiline.png" width="260" alt="words attribute, spanning Al-Fatiha into Al-Baqara">
 </td>
@@ -144,15 +145,25 @@ Then in your body, just add the tag.
 
 If the selected aya(s) fit on a single line, the default is to generate an inline ``<span>`` element, otherwise a ``<div>`` is generated.
 
-You can also restrict the output to a specific word sequence with the ``words`` attribute (1-based, inclusive; ``start-end``, ``start:end`` or a single ``index``). Word indices are counted starting from the given ``sura``/``aya`` and may run past it, so the rendered selection can span multiple ayas — and even cross page and sura boundaries (the sura name/basmala are shown for context but not counted as words). The non-selected words are kept in place so the original Madina line layout is preserved — only the chosen words are shown. Aya-number markers are not counted.
+You can also restrict the output to a specific word sequence with the ``words`` attribute (1-based, inclusive; ``start-end``, ``start:end`` or a single ``index``). Word indices are counted starting from the given ``sura``/``aya`` and may run past it, so the rendered selection can span multiple ayas — and even cross page and sura boundaries. When the selection crosses into a new sura, its **basmala counts as 4 real, individually selectable words** — matching the flat Tanzil word indexing most consumers count against (At-Tawba has none; Al-Fatiha's basmala is its real aya 1) — while the **sura title** stays uncounted decoration, shown for context only. Display follows the printed Mushaf: when **all 4** basmala words fall inside the selection (or on a full ``page`` render) they show as the traditional **﷽ ligature**; a partial selection (1–3 of the 4) renders the individual words. Either way the basmala occupies 4 word indices. The non-selected words are kept in place so the original Madina line layout is preserved — only the chosen words are shown. Aya-number markers are not counted.
+
+> **Changed in 0.9.0:** the basmala used to be a *never counted* decoration; a cross-sura ``words``
+> index now lands 4 words later than in 0.8.x.
 
 ```html
 <quran-madina-html sura="1" aya="1" words="1:2"></quran-madina-html>  <!-- first two words only -->
 <quran-madina-html sura="1" aya="1" words="3-10"></quran-madina-html> <!-- words 3..10, spanning ayas 1-3 -->
-<quran-madina-html sura="1" aya="7" words="1-10"></quran-madina-html> <!-- spans Al-Fatiha into Al-Baqara -->
+<quran-madina-html sura="1" aya="7" words="1-14"></quran-madina-html> <!-- spans Al-Fatiha into Al-Baqara:
+                                                                           9 words + 4 basmala words + الٓمٓ -->
 ```
 
 The ``words`` attribute is ignored when rendering a full ``page``.
+
+To embed a selection inside your own chrome (e.g. a quiz that already labels the sura/aya), the ``notitle`` attribute drops the crossed-into sura's title line entirely — the basmala, being real counted words, still renders:
+
+```html
+<quran-madina-html sura="1" aya="7" words="1-14" notitle="true"></quran-madina-html>
+```
 
 Another option exists to render a complete quran page:
 
@@ -160,11 +171,10 @@ Another option exists to render a complete quran page:
 <quran-madina-html page="106"></quran-madina-html>
 ```
 
-By default a header (sura name + copy/translate icons, on a multiline render) or a copy button (on an inline render) is added. Set ``headless="true"`` to drop that chrome and render only the Quran text:
+By default a multiline render gets a header (sura name + copy/translate icons); clicking any aya (inline or multiline) opens a small copy/translate popup scoped to it. Set ``headless="true"`` to drop the header and render only the Quran text:
 
 ```html
 <quran-madina-html sura="2" aya="8-10" headless="true"></quran-madina-html> <!-- no header -->
-<quran-madina-html sura="1" aya="1" headless="true"></quran-madina-html>    <!-- no copy button -->
 ```
 
 ## Dev Setup

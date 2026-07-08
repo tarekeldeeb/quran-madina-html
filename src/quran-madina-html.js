@@ -24,6 +24,19 @@
   // word. The ranges are U+0621-U+064A (basic Arabic letters) and U+0671-U+06D3 (alef-wasla etc.).
   var ARABIC_LETTER = /[\u0621-\u064A\u0671-\u06D3]/;
 
+  // The traditional basmala ligature (U+FDFD). Since 0.9.0 the DB stores each sura's basmala
+  // decoration as its 4 real word tokens so the words= indexing can count and select them
+  // individually - but whenever the *complete* basmala shows (a full page/aya render, or a
+  // words= selection covering all 4 words) the renderer swaps the tokens for this ligature,
+  // matching the ornamental basmala line of the printed Mushaf. A partial selection (1-3 of the
+  // 4 words) renders the individual tokens so the selection stays visible.
+  var BASMALA_LIGATURE = "\uFDFD";
+  function isBasmalaSlot(sura_idx, aya_idx){
+    // Internal aya index 1 is the basmala decoration slot of every sura except Al-Fatiha (whose
+    // slot 1 holds its title; its basmala is real aya 1). At-Tawba's slot exists but is blank.
+    return aya_idx === 1 && sura_idx !== 0;
+  }
+
   // ==========================================================================
   // Small utilities
   // ==========================================================================
@@ -342,7 +355,11 @@
     openAyaPopup = {popup: popup, outsideClick: outsideClick, onEscape: onEscape};
   }
   function wireAyaClick(tag, class_name, sura, aya){
-    if(aya < 1) return; // decoration slot (sura title / basmala): nothing to copy/translate
+    // Decoration slots stay non-clickable, deliberately: the title has nothing to copy or
+    // translate, and the basmala — although it now renders as real, counted word spans — has no
+    // quran.com verse of its own to deep-link (it's only a verse in Al-Fatiha, where it's real
+    // aya 1 and clickable through the normal path anyway).
+    if(aya < 1) return;
     // Scoped to `tag`, not document-wide: the same aya/class can exist in another
     // <quran-madina-html> tag on the page, whose elements must not be rebound to *this* tag/popup.
     Array.from(tag.getElementsByClassName(class_name)).forEach(function(elm){
@@ -509,11 +526,16 @@
   // words= render path (spans pages and suras from a start aya)
   // ==========================================================================
 
-  function collectWordParts(sura_start, aya_start, range){
+  function collectWordParts(sura_start, aya_start, range, notitle){
     // Walk ayas in reading order from (sura_start, aya_start), crossing page AND sura
     // boundaries, grouping parts into visual lines keyed by (page, line), until the end word
-    // index is covered. Aya indices 0/1 of each sura are the name/basmala decoration: rendered
-    // for context but not counted as words (countable=false).
+    // index is covered. The decoration slots (aya index 0 = sura title, 1 = basmala) are only
+    // ever entered when the walk crosses into a *following* sura — the start sura's walk begins
+    // at a real aya (internal index >= 2, see parseAyaRange). The title stays uncounted
+    // decoration (and is dropped entirely under notitle); the basmala is real Quran text and
+    // counts like any other words (4 in current DBs — matching the Tanzil word indexing that
+    // consumers count against; in pre-0.9 DBs it was the "﷽" ligature, which carries no Arabic
+    // letter and so still counts 0 there).
     var groups = [];
     var current = null;
     var counted = 0;
@@ -522,11 +544,18 @@
       var aya_begin = (s === sura_start) ? aya_start : 0;
       var reached = false;
       for(var a = aya_begin; a < ayas.length; a++){
-        var countable = (a >= 2);
+        var countable = (a >= 1); // title (slot 0) never counts; basmala (slot 1) does
+        // notitle: drop the title line entirely. A title always occupies a dedicated line of its
+        // own (never sharing one with real content), so removing its whole group is safe without
+        // touching the spacer / isLineStartPart mid-line logic.
+        if(a === 0 && notitle) continue;
         var aya = ayas[a];
         if(aya === undefined) break; // not-yet-loaded aya (sharded boundary): stop collecting
         for(var pi = 0; pi < aya.r.length; pi++){
           var part = aya.r[pi];
+          // Blank decoration placeholders (Al-Fatiha's slot 0, At-Tawba's basmala-less slot 1)
+          // must not become empty rendered lines.
+          if(part.t === "") continue;
           var key = `${aya.p}:${part.l}`;
           if(!current || current.key !== key){
             current = {key: key, stretch: part.s, parts: []};
@@ -558,10 +587,10 @@
     while(end < groups.length - 1 && groups[end].lastWord < range[1]) end = end + 1;
     return {groups: groups.slice(start, end + 1), counterStart: start > 0 ? groups[start - 1].lastWord : 0};
   }
-  function renderWordsSpan(tag, sura_start, aya_start, range, headless, noQuotes, inlineOpt){
+  function renderWordsSpan(tag, sura_start, aya_start, range, headless, noQuotes, inlineOpt, notitle){
     // Dedicated render path for the words= selection. Unlike the page/aya loop it is not bound
     // to a single page or sura, so a word range can span both.
-    var collected = collectWordParts(sura_start, aya_start, range);
+    var collected = collectWordParts(sura_start, aya_start, range, notitle);
     var groups = collected.groups;
     var multiline = applyInlineOverride(inlineOpt, groups.length > 1);
     var counter = collected.counterStart; // running 1-based word index, seeded past any skipped lines
@@ -603,9 +632,23 @@
         var classes = getAyaClass(item.sura+1, item.ayaIdx-1);
         DOMTokenList.prototype.add.apply(aya_part.classList, classes);
         if(item.countable){
-          counter = appendWords(aya_part, item.part.t, range, counter);
+          var basmalaWords = isBasmalaSlot(item.sura, item.ayaIdx) ? countPartWords(item.part) : 0;
+          if(basmalaWords > 0 && counter + 1 >= range[0] && counter + basmalaWords <= range[1]){
+            // The whole basmala falls inside the selection: render the traditional ligature
+            // instead of its individual tokens (it still advances the word counter by all 4
+            // words, so following word indices are unchanged). A partial overlap falls through
+            // to appendWords so exactly the selected basmala words show.
+            var lig = document.createElement("span");
+            lig.classList.add(`${name}-word`, `${name}-basmala`);
+            lig.textContent = BASMALA_LIGATURE;
+            aya_part.appendChild(lig);
+            counter = counter + basmalaWords;
+          } else {
+            counter = appendWords(aya_part, item.part.t, range, counter);
+          }
         } else {
-          aya_part.textContent = item.part.t; // sura name / basmala: always visible
+          aya_part.textContent = item.part.t; // sura title: always visible (unless notitle
+                                              // dropped it during collection)
         }
         aya_part.style.cssText = 'display:inline';
         line.appendChild(aya_part);
@@ -737,7 +780,7 @@
           const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(resolveUrl(madina_data.font_url))+')');
           myFont.load().then( () => {document.fonts.add(myFont);});
           var accessors = {};
-          ["page", "page_param", "aya", "sura", "words", "headless", "quotes", "inline"]
+          ["page", "page_param", "aya", "sura", "words", "headless", "quotes", "inline", "notitle"]
           .forEach(function(attr){
             accessors[attr] = attrAccessor(attr);
           });
@@ -783,6 +826,11 @@
                 // and writing them re-triggers render(), which used to cascade and duplicate output.
                 var page = this.page;
                 var headless = isTrue(this.headless); // hide header (multiline) / copy button (inline)
+                // notitle: drop the sura-title decoration line when a words= walk crosses into a
+                // new sura. Only wired into the words= path for now — the ordinary page/aya render
+                // reproduces the printed page (a page render without its titles would leave holes),
+                // so it deliberately ignores this attribute; revisit if a consumer needs it there.
+                var notitle = isTrue(this.notitle);
                 // quotes="no" (or "false") opts out of the inline quote marks; absent/anything else
                 // keeps the default (shown).
                 var noQuotes = this.quotes != null && !isTrue(this.quotes);
@@ -829,7 +877,8 @@
                         words_range[1] = words_range[0] + 499;
                       }
                       // words= has its own renderer that spans pages and suras from the start aya.
-                      renderWordsSpan(tag, sura_from, aya_from, words_range, headless, noQuotes, inlineOpt);
+                      renderWordsSpan(tag, sura_from, aya_from, words_range, headless, noQuotes,
+                                      inlineOpt, notitle);
                       return;
                     }
                   }
@@ -884,7 +933,11 @@
                         let aya_part = document.createElement("div");
                         let classes = getAyaClass(sura_current+1, a-1);
                         DOMTokenList.prototype.add.apply(aya_part.classList, classes);
-                        aya_part.textContent = line_match[0].t;
+                        // A page render always shows the complete basmala line, so it gets the
+                        // traditional ligature instead of the DB's 4 word tokens (blank slots,
+                        // e.g. At-Tawba's, stay blank).
+                        aya_part.textContent = (isBasmalaSlot(sura_current, a) && line_match[0].t !== "") ?
+                          BASMALA_LIGATURE : line_match[0].t;
                         aya_part.style.cssText = 'display:inline';
                         line.appendChild(aya_part);
                         hoverByType(classes.slice(-1)[0]);

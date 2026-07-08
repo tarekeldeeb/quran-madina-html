@@ -118,8 +118,9 @@
   ويمكن كذلك عرض تتابع محدد من الكلمات فقط باستخدام الخاصية <code>words</code>، مثل أول كلمتين من الفاتحة بلا علامات تنصيص:
   <quran-madina-html sura="1" aya="1" words="1:2" quotes="no"></quran-madina-html>
   ويستمر عدّ الكلمات ابتداءً من الآية المحددة، بل ويتجاوز حدود الصفحات والسور؛ فمثلاً الكلمات
-  <code>words="1-10"</code> بدءاً من آخر آيات الفاتحة تمتد إلى أول سورة البقرة:
-  <quran-madina-html sura="1" aya="7" words="1-10"></quran-madina-html>
+  <code>words="1-14"</code> بدءاً من آخر آيات الفاتحة تمتد إلى أول سورة البقرة:
+  <quran-madina-html sura="1" aya="7" words="1-14"></quran-madina-html>
+  علماً بأن البسملة تُحتسب أربع كلمات عند عبور بداية سورة، وتُعرض بصيغة ﷽ إذا وقعت كلماتها الأربع كلها ضمن النطاق.
   </p>
 
   <p>
@@ -136,6 +137,7 @@
           <th scope="col" style="border-left: solid 1px #000; ">الصفحة</th>
           <th scope="col">السورة</th>
           <th scope="col">الآية</th>
+          <th scope="col">الكلمات</th>
         </tr>
       </thead>
       <tbody>
@@ -167,8 +169,13 @@
               </tr>
             </table>
           </td>
+          <td>
+            <!-- words= range (e.g. 3 or 1-14): applies with sura/aya, ignored by page renders -->
+            <input id="in_words" value="" placeholder="1-14" style="width:60px;direction:ltr">
+          </td>
         </tr>
         <tr>
+          <td>&nbsp;</td>
           <td>&nbsp;</td>
           <td>&nbsp;</td>
           <td>&nbsp;</td>
@@ -218,20 +225,36 @@
       }
     }
     test = document.getElementById("test");
+    function applyWords(){
+      // words= only makes sense with sura/aya (the library ignores it on page renders)
+      var words = document.getElementById("in_words").value.trim();
+      if (words) test.setAttribute("words", words);
+      else test.removeAttribute("words");
+    }
     document.getElementById("in_page").addEventListener('input', function() {
         test.removeAttribute("sura");
         test.removeAttribute("aya");
+        test.removeAttribute("words");
         test.setAttribute("page", this.value);
       }, false);
     document.getElementById("in_sura").addEventListener('input', function() {
         test.removeAttribute("page");
         test.setAttribute("sura", this.value);
         test.setAttribute("aya", document.getElementById("in_aya").value);
+        applyWords();
       }, false);
     document.getElementById("in_aya").addEventListener('input', function() {
         test.removeAttribute("page");
         test.setAttribute("sura", document.getElementById("in_sura").value);
         test.setAttribute("aya", this.value);
+        applyWords();
+      }, false);
+    document.getElementById("in_words").addEventListener('input', function() {
+        // Typing a words range switches the tag to the sura/aya selection it applies to.
+        test.removeAttribute("page");
+        test.setAttribute("sura", document.getElementById("in_sura").value);
+        test.setAttribute("aya", document.getElementById("in_aya").value);
+        applyWords();
       }, false);
   </script>
 </body>

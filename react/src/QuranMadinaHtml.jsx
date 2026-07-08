@@ -60,6 +60,8 @@ export function loadQuranMadinaHtml(opts = {}) {
  * Drop header/copy chrome:      <QuranMadinaHtml sura={2} aya="8-10" headless />
  * Drop the inline quote marks:  <QuranMadinaHtml sura={1} aya={3} quotes="no" />
  * Force the multiline layout:   <QuranMadinaHtml sura={1} aya={3} inline="no" />
+ * Hide crossed-into sura titles
+ * in a words= selection:        <QuranMadinaHtml sura={1} aya={7} words="1-14" notitle />
  *
  * `page` and `sura`/`aya` are mutually exclusive (page wins if both are passed).
  */
@@ -71,6 +73,7 @@ export default function QuranMadinaHtml({
   headless,
   quotes,
   inline,
+  notitle,
   // loader config (only honored on first mount, see loadQuranMadinaHtml)
   src,
   cdn,
@@ -124,7 +127,8 @@ export default function QuranMadinaHtml({
     set("headless", headless);
     set("quotes", quotes);
     set("inline", inline);
-  }, [ready, page, sura, aya, words, headless, quotes, inline]);
+    set("notitle", notitle);
+  }, [ready, page, sura, aya, words, headless, quotes, inline, notitle]);
 
   // Render as `class` rather than `className`: React < 19 does not map className -> class for
   // custom elements, so passing className would silently drop the class on those versions.

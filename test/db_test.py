@@ -104,5 +104,39 @@ class BasicDBTest(unittest.TestCase):
                             f"Unexpected stretch=-1 in {data['name']} sura {sura_index} "
                             f"page {page} line {line}: {' '.join(p['t'] for p in parts)}")
 
+    def test_6_basmala_decoration_slots(self):
+        """Slot 1 of every sura holds the basmala as 4 real word tokens (individually countable
+        and selectable at render time), not the legacy single-ligature "﷽" - with the same
+        glyphs as ordinary aya text (i.e. identical to the first 4 words of Al-Fatiha's real
+        aya 1 in the same DB, so font tweaks like Uthman's alef-wasla substitution match).
+        Exceptions: Al-Fatiha keeps its inverted [blank, title] slots (its basmala IS real
+        aya 1), and At-Tawba gets a blank placeholder (no basmala in the real text). The 2-slot
+        layout and the centered (stretch=-1) rendering are invariants."""
+        title_prefix = "سورة"
+        for data in self.db:
+            fatiha_aya1 = " ".join(
+                part['t'] for part in data["data"]['suras'][0]['ayas'][2]['r'])
+            for sura_index, sura in enumerate(data["data"]['suras']):
+                slot0 = " ".join(part['t'] for part in sura['ayas'][0]['r']).strip()
+                slot1 = " ".join(part['t'] for part in sura['ayas'][1]['r']).strip()
+                where = f"{data['name']} sura {sura_index}"
+                if sura_index == 0:
+                    self.assertEqual(slot0, "", f"Al-Fatiha slot 0 must be blank ({where})")
+                    self.assertTrue(slot1.startswith(title_prefix),
+                                    f"Al-Fatiha slot 1 must be its title ({where})")
+                    continue
+                self.assertTrue(slot0.startswith(title_prefix),
+                                f"slot 0 must be the sura title ({where})")
+                if sura_index == 8:
+                    self.assertEqual(slot1, "",
+                                     f"At-Tawba must not get a phantom basmala ({where})")
+                    continue
+                self.assertNotIn("﷽", slot1, f"legacy basmala ligature ({where})")
+                self.assertEqual(slot1.split(), fatiha_aya1.split()[0:4],
+                                 f"slot 1 must be the 4-word basmala ({where})")
+                for part in sura['ayas'][1]['r']:
+                    self.assertEqual(part['s'], -1,
+                                     f"basmala line must stay centered ({where})")
+
 if __name__ == '__main__':
     unittest.main()

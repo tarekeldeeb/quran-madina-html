@@ -141,6 +141,13 @@ class Ayah:
             else:
                 joined.append(token)
         return " ".join(joined)
+    @staticmethod
+    def apply_font_tweaks(text):
+        """Font-specific glyph substitutions, shared by ordinary aya text and the basmala
+        decoration built in Surah.get_aya01 (which must match the surrounding glyphs)."""
+        if "Uthman" in DbBuilder.cfg.font_family:
+            text = text.replace("ٱ", "ا")  # alef-wasla -> plain alef
+        return text
     def __init__(self, sura_index, index, text, prev_line_end):
         self.sura_index = sura_index
         self.index = index
@@ -153,8 +160,7 @@ class Ayah:
             self.text = text + f' \u06DD{index}'
         else:
             self.text = text + f' \uFD3F{self.get_hindi_numbers(index)}\uFD3E'
-        if "Uthman" in DbBuilder.cfg.font_family:
-            self.text = self.text.replace("ٱ", "ا")
+        self.text = Ayah.apply_font_tweaks(self.text)
     @classmethod
     def create_centered(cls, text, page, line):
         """Create an Aya Centered Object from 1-line text"""
@@ -241,8 +247,20 @@ class Surah:
             decorated = "▓▓▓▒▒▒░░░ "
             return decorated + sura_name + decorated[::-1]
         return sura_name
+    def get_basmala(self):
+        """The sura's basmala as 4 real word tokens - NOT the single "﷽" ligature, which
+        carries no Arabic letter and so could never split into selectable words at render time.
+        Taken straight from the Tanzil source: aya 1's text opens with the 4-word basmala (the
+        same 4 tokens Ayah.process() strips via skip_words), run through the shared font tweaks
+        so the glyphs match the surrounding aya text exactly."""
+        aya1_text = next(text for number, text in self.lines if number == '1')
+        return Ayah.apply_font_tweaks(" ".join(aya1_text.split()[0:4]))
     def get_aya01(self):
-        """Returns a list of 2 ayas:"""
+        """Returns the sura's 2 decoration slots (internal ayas 0/1, before real aya 1 at
+        index 2): [title, basmala] normally; [blank, title] for Al-Fatiha (its basmala IS its
+        real aya 1); [title, blank] for At-Tawba (no basmala in the real text - mirrors
+        Ayah.process()'s sura_index != 8 skip_words guard). The slot count is a layout
+        invariant (see shard_db.py) and must stay 2."""
         page = DbBuilder.cursor.page
         line = DbBuilder.cursor.line
         title_page = 1 if self.index == 0 else \
@@ -254,11 +272,13 @@ class Surah:
         bsm_line = 1 if title_line==15 else title_line+1
         aya0 = Ayah.create_centered(Surah.get_surah_name(self.index, True),
                                     title_page, title_line)
-        aya1 = Ayah.create_centered("﷽", bsm_page, bsm_line)
         aya_empty = Ayah.create_centered("", title_page, title_line)
 
         if self.index == 0:
             return [aya_empty,aya0]
+        if self.index == 8:
+            return [aya0, aya_empty]
+        aya1 = Ayah.create_centered(self.get_basmala(), bsm_page, bsm_line)
         return [aya0, aya1]
     def process(self):
         """Process the surah to create a json-ready object"""

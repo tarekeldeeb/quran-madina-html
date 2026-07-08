@@ -62,6 +62,18 @@ describe("<QuranMadinaHtml>", () => {
     expect(el.hasAttribute("headless")).toBe(false);
   });
 
+  it("treats notitle as a boolean attribute, toggled on rerender", () => {
+    const { container, rerender } = render(
+      <QuranMadinaHtml sura={1} aya={7} words="1-14" notitle />
+    );
+    const el = tag(container);
+    expect(el.hasAttribute("notitle")).toBe(true);
+    expect(el.getAttribute("notitle")).toBe("");
+
+    rerender(<QuranMadinaHtml sura={1} aya={7} words="1-14" />);
+    expect(el.hasAttribute("notitle")).toBe(false);
+  });
+
   it("sets quotes and inline as plain string attributes, toggled on rerender", () => {
     const { container, rerender } = render(
       <QuranMadinaHtml sura={1} aya={1} quotes="no" inline="no" />
