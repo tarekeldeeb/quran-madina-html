@@ -16,11 +16,11 @@
     // them at runtime requires a full page reload. The chooser below just persists the pick and
     // reloads; this reads it back before the runtime script is injected.
     var FONT_CHOICES = [
+      { value: "Uthman", label: "عثمان طه" },
       { value: "me_quran", label: "خط المصحف" },
       { value: "Hafs", label: "حفص" },
       { value: "Amiri Quran", label: "أميري" },
-      { value: "Amiri Quran Colored", label: "أميري ملون" },
-      { value: "Uthman", label: "عثمان طه" }
+      { value: "Amiri Quran Colored", label: "أميري ملون" }
     ];
     var SIZE_CHOICES = [16, 24];
     var savedFont = localStorage.getItem("quran-madina-html-font") || FONT_CHOICES[0].value;
