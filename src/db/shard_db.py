@@ -39,8 +39,11 @@ def juz_of(sura0, aya_idx):
     return j
 
 
-def shard(src, out_root):
-    """Split the DB JSON at `src` into a manifest + 30 juz' shards under `out_root`/<db-stem>/."""
+def shard(src, out_root, console=None):
+    """Split the DB JSON at `src` into a manifest + 30 juz' shards under `out_root`/<db-stem>/.
+    `console`: a rich.console.Console to print the summary through when called while a Progress
+    display is live elsewhere in the process (a plain print() would corrupt that display);
+    defaults to a plain print() for standalone CLI use."""
     db = json.load(open(src, encoding="utf8"))
     stem = os.path.splitext(os.path.basename(src))[0]
     out = os.path.join(out_root, stem)
@@ -108,7 +111,8 @@ def shard(src, out_root):
         for s0, ai, page, parts in shard["d"]:
             rebuilt[s0]["ayas"][ai] = {"p": page, "r": parts}
     assert rebuilt == db["suras"], "round-trip mismatch!"
-    print(f"{stem}: manifest + 30 shards, reassembles losslessly. total on disk={total} bytes")
+    message = f"{stem}: manifest + 30 shards, reassembles losslessly. total on disk={total} bytes"
+    console.print(message) if console else print(message)
 
 
 def main():

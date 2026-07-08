@@ -16,7 +16,10 @@ import re
 import argparse
 import sqlite3
 import requests
-import tqdm
+from rich.console import Console
+from rich.progress import (Progress, SpinnerColumn, TextColumn, BarColumn,
+                            TaskProgressColumn, MofNCompleteColumn,
+                            TimeElapsedColumn, TimeRemainingColumn)
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -121,6 +124,23 @@ class QuranLine:
 
 class Ayah:
     """Quran Aya"""
+    # Waqf/pause marks (ۖ ۗ ۘ ۙ ۚ ۛ ۜ). Tanzil's text stores each as its own whitespace-separated
+    # token, but in print they sit directly above the word they follow with no gap of their own -
+    # a standalone token with real spaces on both sides made the OCR-driven line splitting treat
+    # them as if they were their own word (also inflating QuranLine._real_word_count(), which
+    # decides whether a line is a short standalone line like Huroof Muqattaat).
+    PAUSE_MARKS = "ۖۗۘۙۚۛۜ"
+    @staticmethod
+    def join_tokens(tokens):
+        """Join word tokens with spaces, attaching a pause mark to the previous word instead of
+        leaving it as its own token."""
+        joined = []
+        for token in tokens:
+            if joined and len(token) == 1 and token in Ayah.PAUSE_MARKS:
+                joined[-1] = joined[-1] + token
+            else:
+                joined.append(token)
+        return " ".join(joined)
     def __init__(self, sura_index, index, text, prev_line_end):
         self.sura_index = sura_index
         self.index = index
@@ -175,7 +195,7 @@ class Ayah:
             DbBuilder.error_logger.add_message(f'Mismatch at {self.sura_index}-{self.index}: '
                   f'Glyphs={len(ayah_data)} for:{self.text}')
         for line_index, line in words_in_lines.items():
-            aya_text_part = " ".join(self.text.split()
+            aya_text_part = self.join_tokens(self.text.split()
                                         [skip_words:skip_words+line])
             if int(line_index) == self.prev_line_end:
                 aya_text_part = " " + aya_text_part # Add a space after prev aya on the same line
@@ -184,7 +204,7 @@ class Ayah:
             skip_words = skip_words + line
         DbBuilder.cursor.page = self.page
         DbBuilder.cursor.line = self.line_end
-        DbBuilder.progress.update(len(self.text.encode('utf-8'))+2)
+        DbBuilder.progress.update(DbBuilder.file_task, advance=len(self.text.encode('utf-8'))+2)
         return self
 
 class Surah:
@@ -362,7 +382,7 @@ class JsonHelper:
         j.update({"suras":suras})
         with open(self.get_json_filename(), 'w', encoding="utf-8") as json_file:
             json.dump(j, json_file, ensure_ascii = False, indent=2)
-        print(f'Saved: {self.get_json_filename()}')
+        DbBuilder.console.print(f'Saved: {self.get_json_filename()}')
 
 class HtmlHelper:
     """A Collection of Html Helper Functions"""
@@ -418,22 +438,34 @@ class ErrorLogger:
     def flush(self):
         """Display all added error messages"""
         if self.logs:
-            print("Errors Encountered while processing:")
+            DbBuilder.console.print("[bold red]Errors Encountered while processing:[/bold red]")
             for index, line in enumerate(self.logs):
-                print(f"| E{index}:\t{line}")
+                DbBuilder.console.print(f"[red]| E{index}:\t{line}[/red]")
             self.logs.clear()
 
 class DbBuilder:
     """Aggregates all needed Helper Classes to run"""
     web_driver = webdriver.Chrome()
     cursor = LineCursor(0,0)
-    progress = tqdm.tqdm()
+    console = Console()
+    progress = None  # rich.progress.Progress, set by run() - either passed in or owned locally
+    file_task = None  # TaskID of the current config's byte-progress task within `progress`
     cfg = argparse.Namespace()
     base_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../..")
     json_helper = JsonHelper(None)
     error_logger = ErrorLogger()
     text = "Uthmani.txt"
     dbg_line_widths = []
+    PROGRESS_COLUMNS = (
+        SpinnerColumn(),
+        TextColumn("[bold blue]{task.description}"),
+        BarColumn(bar_width=40),
+        TaskProgressColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
+        TextColumn("eta"),
+        TimeRemainingColumn(),
+    )
 
     @staticmethod
     def get_test_filename():
@@ -445,17 +477,34 @@ class DbBuilder:
     def print_dbg_widths():
         """Stats for Quran line widths"""
         if DbBuilder.dbg_line_widths:
-            print(f'Non-Stretched Line widths:: '
+            DbBuilder.console.print(
+                  f'Non-Stretched Line widths:: '
                   f'Avg:{sum(DbBuilder.dbg_line_widths)/len(DbBuilder.dbg_line_widths)}, '
                   f'Max:{max(DbBuilder.dbg_line_widths)}, Min:{min(DbBuilder.dbg_line_widths)}')
     @staticmethod
-    def run(cfg):
-        """Entry Point for the build_db module"""
+    def run(cfg, progress=None):
+        """Entry Point for the build_db module. `progress`: an already-started rich Progress to add
+        this run's task to (build_all.py shares one across configs so only one Live display is ever
+        active); if omitted (standalone `python build_db.py` run), a Progress is created and driven
+        locally for the duration of this call."""
         DbBuilder.cfg = cfg
         DbBuilder.cursor = LineCursor(0, 0)
         DbBuilder.json_helper = JsonHelper(cfg)
         DbBuilder.html_helper = HtmlHelper()
         DbBuilder.error_logger = ErrorLogger()
+        owns_progress = progress is None
+        if owns_progress:
+            progress = Progress(*DbBuilder.PROGRESS_COLUMNS, console=DbBuilder.console)
+            progress.start()
+        DbBuilder.progress = progress
+        try:
+            DbBuilder._run(cfg)
+        finally:
+            if owns_progress:
+                progress.stop()
+    @staticmethod
+    def _run(cfg):
+        """The actual build, run under a live `DbBuilder.progress` set up by run()."""
         try:
             os.mkdir(DbReader.TMP)
             # Start with downloading the Glyph DB
@@ -464,7 +513,7 @@ class DbBuilder:
             response = requests.get(url, timeout=500)
             with open(os.path.join(DbReader.TMP,DbReader.DB), "wb") as file_db:
                 file_db.write(response.content)
-            print("Downloaded Quran DataBase")
+            DbBuilder.console.print("Downloaded Quran DataBase")
             #
             # Then download the text from Tanzil.net
             txt_url = "https://tanzil.net/pub/download/index.php?marks=true&sajdah=true"\
@@ -473,9 +522,9 @@ class DbBuilder:
             text = req.content
             with open(os.path.join(DbReader.TMP,DbBuilder.text), "wb") as file_txt:
                 file_txt.write(text)
-            print("Downloaded Quran Text file.")
+            DbBuilder.console.print("Downloaded Quran Text file.")
         except OSError:
-            print("Skipping download ..")
+            DbBuilder.console.print("Skipping download ..")
         DbBuilder.html_helper.make_html_test()
         #
         # Finally Load the Html Template and Driver
@@ -492,17 +541,16 @@ class DbBuilder:
         DbBuilder.web_driver.get(test_url)
         DbBuilder.html_helper.ensure_page_has_loaded(test_url)
         suras = []
-        print("Processing ..")
-        with tqdm.tqdm(total=os.path.getsize(os.path.join(DbReader.TMP,DbBuilder.text)),\
-                       leave=False) as progress_bar:
-            DbBuilder.progress = progress_bar
-            with open(os.path.join(DbReader.TMP, DbBuilder.text), encoding="utf8") as file_txt:
-                suras = Mushaf(DbBuilder.cfg, file_txt).process()
-        print("Closing Chrome ..")
+        file_size = os.path.getsize(os.path.join(DbReader.TMP, DbBuilder.text))
+        DbBuilder.file_task = DbBuilder.progress.add_task(
+            f"{cfg.font_family} {cfg.font_size}px", total=file_size)
+        with open(os.path.join(DbReader.TMP, DbBuilder.text), encoding="utf8") as file_txt:
+            suras = Mushaf(DbBuilder.cfg, file_txt).process()
+        DbBuilder.console.print("Closing Chrome ..")
         DbBuilder.web_driver.close()
         os.remove(DbBuilder.get_test_filename())
         DbBuilder.json_helper.save_json(suras)
-        shard(DbBuilder.json_helper.get_json_filename(), DbReader.DB_OUT)
+        shard(DbBuilder.json_helper.get_json_filename(), DbReader.DB_OUT, console=DbBuilder.console)
         DbBuilder.error_logger.flush()
         DbBuilder.print_dbg_widths()
 
