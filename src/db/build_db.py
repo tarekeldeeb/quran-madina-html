@@ -12,9 +12,12 @@ import os
 import time
 from typing import List
 import json
+import math
 import re
+import unicodedata
 import argparse
 import sqlite3
+import csv
 import requests
 from rich.console import Console
 from rich.progress import (Progress, SpinnerColumn, TextColumn, BarColumn,
@@ -38,7 +41,7 @@ DEFAULTS = {'name':'Madina05', 'published': 1405,
            # self-hosting / offline via the data-cdn override). Made absolute only for the
            # build-time width measurement, see HtmlHelper.make_html_test.
            'font_url':'assets/fonts/Hafs.woff2',
-           'font_size':16, 'line_width':275}
+           'font_size':16, 'line_width':270}
 DECORATE_SURA_NAME = False  # Feature kill-switch: surround sura names with a shaded border
 
 class LineCursor:
@@ -74,6 +77,13 @@ class QuranLine:
     STRETCH_ROUNDING = 3
     MIN_STRETCH = 0.5
     MAX_STRETCH = 2.0
+    KASHIDA_STRETCH_LIMIT = 1.3  # a justified line needing more scaleX than this gets kashidas
+    TATWEEL = 'ـ'  # ـ
+    # Letters that connect to the letter after them (Unicode joining type D, restricted to what
+    # occurs in the Tanzil Uthmani text): a kashida stroke can only be drawn after one of these.
+    # Alef (all forms), dal/thal, reh/zain, waw, teh-marbuta and hamza never join forward.
+    KASHIDA_AFTER = frozenset('بتثجحخسشصضطظعغفقكلمنهيئى')
+    LAM_ALEF_SECOND = frozenset('اأإآٱ')  # ل + any of these = lam-alef ligature: never split it
     SHORT_WORD_LIMIT = 2  # <= this many real words: a standalone short line (e.g. Huroof
                           # Muqattaat like "الٓمٓ"), left un-stretched rather than blown up to fill.
     # An aya's own trailing aya-number ornament (default: "﴿١﴾", Amiri: "۝1") is always its own
@@ -91,6 +101,69 @@ class QuranLine:
                 if not self.AYA_MARKER_PATTERN.match(token):
                     count += 1
         return count
+    @classmethod
+    def _word_kashida_point(cls, token):
+        """The one spot in a word where a kashida looks right: the LAST legal connection, i.e.
+        elongating the word's final joint - the classical justification choice (فَاتَكُمْ ->
+        فَاتَكُـمْ). Legal means: after a forward-joining letter, before the next base letter
+        (harakat/marks stay attached to the letter before them), never splitting a lam-alef
+        ligature, never before a bare hamza (it doesn't join, the stroke would dangle), and
+        never inside a connection that already carries a tatweel - Tanzil uses tatweel as the
+        dagger-alef seat (e.g. لَـٰٓئِكَ) and re-stretching it would slide the mark. That last rule
+        also makes repeated passes fall back to the word's next connection instead of piling
+        onto one. Returns the token index to insert at, or None."""
+        point = None
+        prev_letter, prev_index = None, 0
+        for index, char in enumerate(token):
+            if unicodedata.category(char) != 'Lo':  # not a base letter
+                continue
+            if char != 'ء' and prev_letter in cls.KASHIDA_AFTER \
+                    and not (prev_letter == 'ل' and char in cls.LAM_ALEF_SECOND) \
+                    and cls.TATWEEL not in token[prev_index:index]:
+                point = index
+            prev_letter, prev_index = char, index
+        return point
+
+    def kashidas_needed(self, line_width: int, natural_width: float)->int:
+        """How many tatweels bring this line's stretch down to KASHIDA_STRETCH_LIMIT: the
+        missing pixels over one kashida's measured advance. Targets the limit rather than 1.0
+        so a line just over the threshold gets the minimum insertions - a 1.31 line ends up
+        looking like its 1.29 neighbour (which gets none), not conspicuously kashida-filled."""
+        deficit = line_width / self.KASHIDA_STRETCH_LIMIT - natural_width
+        unit = DbBuilder.kashida_unit_width()
+        return math.ceil(deficit / unit) if deficit > 0 and unit > 0 else 0
+
+    def place_kashidas(self, count: int):
+        """Distribute `count` tatweels so the line reads like print justification, not random
+        padding: every eligible word owns one elongation point (_word_kashida_point), each gets
+        an equal share, and the remainder goes to words spaced evenly across the line. A word's
+        share is inserted as consecutive tatweels = one longer stroke, matching how the printed
+        Mushaf stretches a word once rather than peppering it. Re-measures every modified part
+        so the caller's stretch math uses real rendered widths."""
+        candidates = []  # (part, token_index, insertion_index)
+        for part in self.parts:
+            for token_index, token in enumerate(part.text.split(' ')):
+                if not token or self.AYA_MARKER_PATTERN.match(token):
+                    continue
+                point = self._word_kashida_point(token)
+                if point is not None:
+                    candidates.append((part, token_index, point))
+        if count <= 0 or not candidates:
+            return
+        share, leftover = divmod(count, len(candidates))
+        boosted = {int(i * len(candidates) / leftover) for i in range(leftover)}
+        touched = {}
+        for cand_index, (part, token_index, point) in enumerate(candidates):
+            amount = share + (1 if cand_index in boosted else 0)
+            if amount == 0:
+                continue
+            tokens = touched.setdefault(id(part), (part, part.text.split(' ')))[1]
+            token = tokens[token_index]
+            tokens[token_index] = token[:point] + self.TATWEEL * amount + token[point:]
+        for part, tokens in touched.values():
+            part.text = ' '.join(tokens)
+            part.width = DbBuilder.html_helper.get_width(part.text)
+
     def update_parts(self, line_width: int, is_sura_end: bool = False)->List[Part]:
         """Apply the per-line stretch (scaleX) factor to all line parts. Text that starts mid-line
         is positioned at render time by re-flowing the preceding text invisibly, so no per-part
@@ -107,7 +180,12 @@ class QuranLine:
         e.g. Uthman's ٱ->ا substitution) and even within a single font a normal-length line can
         legitimately need >=1.5x - so ordinary lines were being mistaken for short/final ones and
         left un-stretched, overflowing (page<=2) or looking flat (other pages) instead. The ratio is
-        clamped instead, so it can never desync from what's structurally/textually true."""
+        clamped instead, so it can never desync from what's structurally/textually true.
+
+        A justified line whose ratio exceeds KASHIDA_STRETCH_LIMIT is first widened with real
+        kashidas (kashidas_needed/place_kashidas) - the printed Mushaf stretches such short lines
+        with kashida strokes, not wider glyphs - so scaleX only covers the residual. The MIN/MAX
+        clamp still applies after, e.g. for lines with no eligible connection left."""
         initial_width = 0
         for part in self.parts:
             initial_width = initial_width + part.width
@@ -117,6 +195,17 @@ class QuranLine:
             for part in self.parts:
                 part.stretch = -1
         else:
+            # Two rounds: the second corrects kashidas_needed()'s estimate with the re-measured
+            # widths (a given connection can render wider/narrower than the sampled unit).
+            for _ in range(2):
+                if stretch <= self.KASHIDA_STRETCH_LIMIT:
+                    break
+                self.place_kashidas(self.kashidas_needed(line_width, initial_width))
+                new_width = sum(part.width for part in self.parts)
+                if new_width <= initial_width:  # no eligible words or the font can't stretch
+                    break
+                initial_width = new_width
+                stretch = line_width/initial_width
             stretch = max(self.MIN_STRETCH, min(self.MAX_STRETCH, stretch))
             for part in self.parts:
                 part.stretch = round(stretch, self.STRETCH_ROUNDING)
@@ -254,7 +343,14 @@ class Surah:
         same 4 tokens Ayah.process() strips via skip_words), run through the shared font tweaks
         so the glyphs match the surrounding aya text exactly."""
         aya1_text = next(text for number, text in self.lines if number == '1')
-        return Ayah.apply_font_tweaks(" ".join(aya1_text.split()[0:4]))
+        basmala = " ".join(aya1_text.split()[0:4])
+        # Suras 95 & 97 follow suras that end in ب, so Tanzil marks the basmala's opening ب
+        # with an assimilation (idgham) shadda that only applies when reciting continuously
+        # across the sura boundary. The decoration slot renders standalone: strip it back to
+        # the canonical form, or the slot won't match the other suras' (test_6 checks this).
+        if basmala.startswith("بّ"):
+            basmala = "ب" + basmala[2:]
+        return Ayah.apply_font_tweaks(basmala)
     def get_aya01(self):
         """Returns the sura's 2 decoration slots (internal ayas 0/1, before real aya 1 at
         index 2): [title, basmala] normally; [blank, title] for Al-Fatiha (its basmala IS its
@@ -476,6 +572,7 @@ class DbBuilder:
     error_logger = ErrorLogger()
     text = "Uthmani.txt"
     dbg_line_widths = []
+    _kashida_unit = None
     PROGRESS_COLUMNS = (
         SpinnerColumn(),
         TextColumn("[bold blue]{task.description}"),
@@ -494,6 +591,16 @@ class DbBuilder:
                  f'-{DbBuilder.cfg.font_size}' # type: ignore
         return os.path.join(DbBuilder.base_dir,"src/db/test"+suffix+".html")
     @staticmethod
+    def kashida_unit_width():
+        """Rendered advance one tatweel adds between two joined letters, measured in-context
+        (بـب minus بب) so the font's shaping is included; cached for the whole run. <=0 means
+        the font cannot stretch connections and kashida insertion is skipped."""
+        if DbBuilder._kashida_unit is None:
+            DbBuilder._kashida_unit = (DbBuilder.html_helper.get_width("بـب")
+                                       - DbBuilder.html_helper.get_width("بب"))
+        return DbBuilder._kashida_unit
+
+    @staticmethod
     def print_dbg_widths():
         """Stats for Quran line widths"""
         if DbBuilder.dbg_line_widths:
@@ -501,6 +608,20 @@ class DbBuilder:
                   f'Non-Stretched Line widths:: '
                   f'Avg:{sum(DbBuilder.dbg_line_widths)/len(DbBuilder.dbg_line_widths)}, '
                   f'Max:{max(DbBuilder.dbg_line_widths)}, Min:{min(DbBuilder.dbg_line_widths)}')
+
+    @staticmethod
+    def dump_widths_to_csv(cfg):
+        """Dumps the collected line widths to a CSV file."""
+        if DbBuilder.dbg_line_widths:
+            csv_file_name = f'{cfg.name}-{cfg.font_family.replace(" ","_")}' \
+                            f'-{cfg.font_size}px-line_widths.csv'
+            csv_file_path = os.path.join(DbBuilder.base_dir, csv_file_name)
+            with open(csv_file_path, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(['line_width'])
+                for width in DbBuilder.dbg_line_widths:
+                    writer.writerow([width])
+            DbBuilder.console.print(f"Dumped line widths to {csv_file_path}")
     @staticmethod
     def run(cfg, progress=None):
         """Entry Point for the build_db module. `progress`: an already-started rich Progress to add
@@ -512,6 +633,11 @@ class DbBuilder:
         DbBuilder.json_helper = JsonHelper(cfg)
         DbBuilder.html_helper = HtmlHelper()
         DbBuilder.error_logger = ErrorLogger()
+        # Class-level accumulators: without these resets, sequential configs in one process
+        # (build_all.py) leak widths into every later config's CSV/stats and reuse the
+        # previous font's kashida advance.
+        DbBuilder.dbg_line_widths = []
+        DbBuilder._kashida_unit = None
         owns_progress = progress is None
         if owns_progress:
             progress = Progress(*DbBuilder.PROGRESS_COLUMNS, console=DbBuilder.console)
@@ -573,6 +699,7 @@ class DbBuilder:
         shard(DbBuilder.json_helper.get_json_filename(), DbReader.DB_OUT, console=DbBuilder.console)
         DbBuilder.error_logger.flush()
         DbBuilder.print_dbg_widths()
+        DbBuilder.dump_widths_to_csv(cfg)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Build JSON DB for HTML Quran Rendering.')

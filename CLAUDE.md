@@ -51,7 +51,18 @@ Each run, in `DbBuilder.run()`:
 2. Spins up **headless Chrome via Selenium** and measures the rendered pixel width of every aya part
    in the target font (`HtmlHelper.get_width` against `template/part_width_test.html`).
 3. Computes a per-line `stretch` (scaleX factor, clamped roughly 0.5–2.0) so each line fills
-   `line_width`, then writes `assets/db/Madina05-<font>-<size>px.json`. (No per-part pixel offset is
+   `line_width`, then writes `assets/db/Madina05-<font>-<size>px.json`. A justified line that
+   would need scaleX > 1.3 (`QuranLine.KASHIDA_STRETCH_LIMIT`) is first widened with real
+   kashidas — the print stretches such short lines with kashida strokes, not wider glyphs:
+   `kashidas_needed()` converts the missing pixels into a count via a per-font tatweel advance
+   measured in-context (`DbBuilder.kashida_unit_width()`, cached per run), and `place_kashidas()`
+   gives each eligible word one elongation run at its last legal connection
+   (`_word_kashida_point`: after a forward-joining letter only, never splitting lam-alef, never
+   before a bare hamza, never a connection already carrying Tanzil's dagger-alef tatweel),
+   spreading the count evenly across the line's words; modified parts are re-measured so the
+   residual scaleX is exact. So stored `t` text may contain build-inserted tatweels beyond the
+   dagger-alef carriers Tanzil itself ships (`tatweel=true` download) — the runtime treats both
+   as plain text. (No per-part pixel offset is
    stored — text that starts mid-line is positioned at render time by re-flowing the preceding text
    invisibly; see below.)
 
@@ -75,7 +86,9 @@ font-specific text tweaks (Amiri uses `۝`, others use ornate parens; Uthman rep
 decoration slots** before its real ayas (index 0 = title, 1 = basmala; real aya A is at index A+1 —
 the invariant `parseAyaRange`/`shard_db.py` depend on). Since 0.9.0 the basmala slot stores the
 **4 real word tokens** from the Tanzil text (built by `Surah.get_basmala()`, same font tweaks as
-ordinary text) rather than the `﷽` ligature, so the runtime can count/select them individually;
+ordinary text; it also strips the idgham shadda Tanzil puts on the basmala's ب in suras 95 & 97,
+whose preceding suras end in ب — the slot renders standalone) rather than the `﷽` ligature, so
+the runtime can count/select them individually;
 exceptions: Al-Fatiha has inverted `[blank, title]` slots (its basmala IS real aya 1), and At-Tawba's
 slot 1 is blank (no basmala in the real text). Decoration slots are always centered (`s:-1`).
 

@@ -26,7 +26,7 @@ hafs24['line_width'] = 410
 amiri16 = DEFAULTS.copy()
 amiri16['font_family'] = 'Amiri Quran'
 amiri16['font_url'] = 'assets/fonts/AmiriQuran.woff2'
-amiri16['line_width'] = 320
+amiri16['line_width'] = 270
 
 amiri24 = amiri16.copy()
 amiri24['font_size'] = 24
@@ -35,7 +35,7 @@ amiri24['line_width'] = 410
 amiri_color16 = DEFAULTS.copy()
 amiri_color16['font_family'] = 'Amiri Quran Colored'
 amiri_color16['font_url'] = 'assets/fonts/AmiriQuranColored.woff2'
-amiri_color16['line_width'] = 330
+amiri_color16['line_width'] = 270
 
 
 amiri_color24 = amiri_color16.copy()
@@ -45,20 +45,20 @@ amiri_color24['line_width']=410
 uthman16 = DEFAULTS.copy()
 uthman16['font_family'] = 'Uthman'
 uthman16['font_url'] = "assets/fonts/UthmanTN_v2-0.woff2"
-uthman16['line_width'] = 330
+uthman16['line_width'] = 270
 
 uthman24 = uthman16.copy()
 uthman24['font_size'] = 24
-uthman24['line_width'] = 420
+uthman24['line_width'] = 400
 
 me_quran16 = DEFAULTS.copy()
 me_quran16['font_family'] = 'me_quran'
 me_quran16['font_url'] = "assets/fonts/me_quran-Regular.woff2"
-me_quran16['line_width'] = 330
+me_quran16['line_width'] = 300
 
 me_quran24 = me_quran16.copy()
 me_quran24['font_size'] = 24
-me_quran24['line_width'] = 420
+me_quran24['line_width'] = 450
 
 
 configs = [ DEFAULTS, hafs24, amiri16, amiri24, uthman16, uthman24, amiri_color16, 
