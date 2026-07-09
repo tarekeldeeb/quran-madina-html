@@ -207,7 +207,10 @@
   function getAyaClass(sura, aya){
     const zeroPad = (num, places) => String(num).padStart(places, '0');
     const classes = [`${name}-part`, `${name}-${zeroPad(sura,3)}-${zeroPad(aya,3)}`];
-    if(aya == -1) classes.push("quran-madina-html-sura-start"); // Decorate Sura Name
+    // Decorate Sura Name lines: slot 0 (aya == -1 here) everywhere, plus Al-Fatiha's title,
+    // which lives at slot 1 (== aya 0 here) since its basmala is real aya 1. (1,0) is unique
+    // to that title: Al-Fatiha's slot 0 is a blank placeholder that never renders.
+    if(aya == -1 || (sura == 1 && aya == 0)) classes.push("quran-madina-html-sura-start");
     return classes;
   }
   function getCopyIcon(){

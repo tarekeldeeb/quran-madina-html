@@ -517,7 +517,12 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
             "var el=document.querySelector('.quran-madina-html-001-000');"
             "return el ? {text:el.textContent, visible:el.innerText.trim()} : null;")
         self.assertIsNotNone(probe, "Al-Fatiha's title line must be rendered")
+        # Its title line carries the sura-start decoration despite living at slot 1.
+        self.assertEqual(self.count(".quran-madina-html-001-000.quran-madina-html-sura-start"), 1,
+                         "Al-Fatiha's title must carry the decorated sura-start frame")
         self.set_attrs(sura=114, aya=6, words=f"1-{n + 5}", notitle=True)
+        self.assertEqual(self.count(".quran-madina-html-001-000.quran-madina-html-sura-start"), 1,
+                         f"the decorated frame must survive notitle\n{self.dump_log()}")
         probe = self.web_driver.execute_script(
             "var el=document.querySelector('.quran-madina-html-001-000');"
             "return el ? {text:el.textContent, visible:el.innerText.trim()} : null;")
