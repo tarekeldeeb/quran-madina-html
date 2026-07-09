@@ -77,7 +77,9 @@ class QuranLine:
     STRETCH_ROUNDING = 3
     MIN_STRETCH = 0.5
     MAX_STRETCH = 2.0
-    KASHIDA_STRETCH_LIMIT = 1.3  # a justified line needing more scaleX than this gets kashidas
+    KASHIDA_TARGET_STRETCH = 1.0  # any justified line needing more scaleX than this gets kashidas,
+                                  # aimed at driving the residual scaleX as close to 1.0 as a
+                                  # single size estimate can land it (no distortion at all)
     TATWEEL = 'ـ'  # ـ
     # Letters that connect to the letter after them (Unicode joining type D, restricted to what
     # occurs in the Tanzil Uthmani text): a kashida stroke can only be drawn after one of these.
@@ -125,11 +127,14 @@ class QuranLine:
         return point
 
     def kashidas_needed(self, line_width: int, natural_width: float)->int:
-        """How many tatweels bring this line's stretch down to KASHIDA_STRETCH_LIMIT: the
-        missing pixels over one kashida's measured advance. Targets the limit rather than 1.0
-        so a line just over the threshold gets the minimum insertions - a 1.31 line ends up
-        looking like its 1.29 neighbour (which gets none), not conspicuously kashida-filled."""
-        deficit = line_width / self.KASHIDA_STRETCH_LIMIT - natural_width
+        """Single-pass estimate of how many tatweels bring this line's stretch down to
+        KASHIDA_TARGET_STRETCH (1.0, i.e. minimize the remaining scaleX distortion as far as
+        possible): the missing pixels over one kashida's measured advance, rounded up. This is
+        an estimate, not iteratively corrected - a given connection can render slightly wider or
+        narrower than the sampled unit, so the actual post-insertion stretch may land a little on
+        either side of 1.0. That's accepted: one word-shaped guess per line, not a converging
+        search."""
+        deficit = line_width / self.KASHIDA_TARGET_STRETCH - natural_width
         unit = DbBuilder.kashida_unit_width()
         return math.ceil(deficit / unit) if deficit > 0 and unit > 0 else 0
 
@@ -172,40 +177,47 @@ class QuranLine:
         stretch=-1 (natural width, centered, no scaleX) is reserved for lines that are structurally
         known to be unjustified in the printed Mushaf: Al-Fatiha's page (every line there gets its
         own dedicated, un-stretched line regardless of length - a deliberate page-1-only layout),
-        a surah's actual last line (`is_sura_end`), and standalone short lines like Huroof Muqattaat
-        openers (`_real_word_count() <= SHORT_WORD_LIMIT`, e.g. "الٓمٓ ﴿١﴾" on page 2). Any other line
-        is always justified to `line_width`, even if that requires a large scaleX - the required
-        ratio used to be treated as a proxy for "this must be a short/final line" (and *all* of
-        page<=2 was hardcoded to -1 outright), but magnitude varies by font (glyph metrics differ,
-        e.g. Uthman's ٱ->ا substitution) and even within a single font a normal-length line can
-        legitimately need >=1.5x - so ordinary lines were being mistaken for short/final ones and
-        left un-stretched, overflowing (page<=2) or looking flat (other pages) instead. The ratio is
-        clamped instead, so it can never desync from what's structurally/textually true.
+        a surah's actual last line when it's naturally no wider than `line_width` (`is_sura_end`
+        and `initial_width <= line_width` - see `fits_naturally` below), and standalone short lines
+        like Huroof Muqattaat openers (`_real_word_count() <= SHORT_WORD_LIMIT`, e.g. "الٓمٓ ﴿١﴾"
+        on page 2). Any other line is always justified to `line_width`, even if that requires a
+        large scaleX - the required ratio used to be treated as a proxy for "this must be a
+        short/final line" (and *all* of page<=2 was hardcoded to -1 outright), but magnitude varies
+        by font (glyph metrics differ, e.g. Uthman's ٱ->ا substitution) and even within a single
+        font a normal-length line can legitimately need >=1.5x - so ordinary lines were being
+        mistaken for short/final ones and left un-stretched, overflowing (page<=2) or looking flat
+        (other pages) instead. The ratio is clamped instead, so it can never desync from what's
+        structurally/textually true.
 
-        A justified line whose ratio exceeds KASHIDA_STRETCH_LIMIT is first widened with real
-        kashidas (kashidas_needed/place_kashidas) - the printed Mushaf stretches such short lines
-        with kashida strokes, not wider glyphs - so scaleX only covers the residual. The MIN/MAX
-        clamp still applies after, e.g. for lines with no eligible connection left."""
+        The `fits_naturally` guard on `is_sura_end` exists because a surah's last line isn't
+        always short: ~78% of Hafs-16px's 114 surah-end lines measure *wider* than line_width (a
+        last aya can run long), and leaving those at stretch=-1 (no scaleX at all) let them
+        overflow the frame exactly like the page<=2 bug above - it only ever needs compressing
+        (scaleX<1), never kashida-widening, so it falls through to the normal justify/clamp path
+        below rather than getting its own branch.
+
+        A justified line whose ratio exceeds KASHIDA_TARGET_STRETCH (1.0) is first widened with
+        real kashidas (kashidas_needed/place_kashidas) - the printed Mushaf stretches such lines
+        with kashida strokes, not wider glyphs - so scaleX only covers whatever the single-shot
+        estimate under/overshoots by. The MIN/MAX clamp still applies after, e.g. for lines with
+        no eligible connection left."""
         initial_width = 0
         for part in self.parts:
             initial_width = initial_width + part.width
         stretch = line_width/initial_width
         DbBuilder.dbg_line_widths.append(initial_width)
-        if self.page==1 or is_sura_end or self._real_word_count()<=self.SHORT_WORD_LIMIT:
+        fits_naturally = is_sura_end and initial_width <= line_width
+        if self.page==1 or fits_naturally or self._real_word_count()<=self.SHORT_WORD_LIMIT:
             for part in self.parts:
                 part.stretch = -1
         else:
-            # Two rounds: the second corrects kashidas_needed()'s estimate with the re-measured
-            # widths (a given connection can render wider/narrower than the sampled unit).
-            for _ in range(2):
-                if stretch <= self.KASHIDA_STRETCH_LIMIT:
-                    break
+            if stretch > self.KASHIDA_TARGET_STRETCH:
+                # One estimate, one placement - no re-measure-and-correct loop.
                 self.place_kashidas(self.kashidas_needed(line_width, initial_width))
                 new_width = sum(part.width for part in self.parts)
-                if new_width <= initial_width:  # no eligible words or the font can't stretch
-                    break
-                initial_width = new_width
-                stretch = line_width/initial_width
+                if new_width > initial_width:  # skip if no eligible words / font can't stretch
+                    initial_width = new_width
+                    stretch = line_width/initial_width
             stretch = max(self.MIN_STRETCH, min(self.MAX_STRETCH, stretch))
             for part in self.parts:
                 part.stretch = round(stretch, self.STRETCH_ROUNDING)

@@ -51,20 +51,26 @@ Each run, in `DbBuilder.run()`:
 2. Spins up **headless Chrome via Selenium** and measures the rendered pixel width of every aya part
    in the target font (`HtmlHelper.get_width` against `template/part_width_test.html`).
 3. Computes a per-line `stretch` (scaleX factor, clamped roughly 0.5–2.0) so each line fills
-   `line_width`, then writes `assets/db/Madina05-<font>-<size>px.json`. A justified line that
-   would need scaleX > 1.3 (`QuranLine.KASHIDA_STRETCH_LIMIT`) is first widened with real
-   kashidas — the print stretches such short lines with kashida strokes, not wider glyphs:
+   `line_width`, then writes `assets/db/Madina05-<font>-<size>px.json`. Any justified line that
+   would need scaleX > 1.0 (`QuranLine.KASHIDA_TARGET_STRETCH`) is first widened with real
+   kashidas — the print stretches short lines with kashida strokes, not wider glyphs:
    `kashidas_needed()` converts the missing pixels into a count via a per-font tatweel advance
-   measured in-context (`DbBuilder.kashida_unit_width()`, cached per run), and `place_kashidas()`
-   gives each eligible word one elongation run at its last legal connection
-   (`_word_kashida_point`: after a forward-joining letter only, never splitting lam-alef, never
-   before a bare hamza, never a connection already carrying Tanzil's dagger-alef tatweel),
-   spreading the count evenly across the line's words; modified parts are re-measured so the
-   residual scaleX is exact. So stored `t` text may contain build-inserted tatweels beyond the
+   measured in-context (`DbBuilder.kashida_unit_width()`, cached per run), estimating in a single
+   pass (no iterative remeasure-and-correct loop) how many tatweels bring the line as close to
+   scaleX 1.0 as that one estimate can land it, and `place_kashidas()` gives each eligible word one
+   elongation run at its last legal connection (`_word_kashida_point`: after a forward-joining
+   letter only, never splitting lam-alef, never before a bare hamza, never a connection already
+   carrying Tanzil's dagger-alef tatweel), spreading the count evenly across the line's words;
+   modified parts are re-measured once so the residual scaleX reflects real widths. So stored `t`
+   text may contain build-inserted tatweels beyond the
    dagger-alef carriers Tanzil itself ships (`tatweel=true` download) — the runtime treats both
    as plain text. (No per-part pixel offset is
    stored — text that starts mid-line is positioned at render time by re-flowing the preceding text
-   invisibly; see below.)
+   invisibly; see below.) A surah's actual last line only gets `stretch=-1` (unjustified/centered)
+   when it's naturally no wider than `line_width` — a last aya isn't always short (in Hafs-16px,
+   ~78% of the 114 surah-end lines measure wider than line_width), so unconditionally leaving them
+   unstretched let most of them overflow the frame; a line that's naturally too wide instead falls
+   through to normal compression (`stretch<1`, clamped like any other line).
 
 Class roles: `Mushaf` → `Surah` → `Ayah` → `QuranLine`/`Part` model the document tree.
 `DbReader` reads the OCR SQLite for page/line geometry. `JsonHelper` writes the final JSON
