@@ -35,12 +35,15 @@ def collect_words(suras, sura_start, aya_start, word_end):
     """Mirror of the JS collectWordParts() word walk: reading order from (sura_start, aya_start),
     crossing sura boundaries, until at least `word_end` words have been gathered. The sura title
     (aya index 0) is uncounted decoration; the basmala (index 1) is real Quran text and counts
-    like any other words (At-Tawba's blank slot naturally contributes none)."""
+    like any other words (At-Tawba's blank slot naturally contributes none). A walk anchored at
+    a sura's first real aya (internal index 2) rewinds to its basmala slot so the anchor sura's
+    own basmala is counted too — Al-Fatiha exempt (its slot 1 is its title)."""
     words = []
     sura = sura_start
+    anchor_begin = 1 if (aya_start == 2 and sura_start > 0) else aya_start
     while sura < len(suras):
         ayas = suras[sura]["ayas"]
-        aya = aya_start if sura == sura_start else 0
+        aya = anchor_begin if sura == sura_start else 0
         while aya < len(ayas):
             if aya >= 1:  # 0 is the sura-title decoration, never counted
                 words.extend(aya_word_list(ayas[aya]))
@@ -410,7 +413,53 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertEqual(self.visible_tokens(), ["﷽"],
                          "exactly the ligature must be visible")
 
-    def test_22_page_render_shows_basmala_ligature(self):
+    def test_22_anchor_sura_basmala_counted(self):
+        """A words= walk anchored at a sura's first real aya counts that sura's OWN basmala:
+        words 1-4 are the basmala (complete here, so it renders as the ligature) and word 5 is
+        the first word of real aya 1"""
+        basmala = aya_word_list(self.db["suras"][107]["ayas"][1])  # Al-Kawthar's basmala slot
+        aya1 = aya_word_list(self.db["suras"][107]["ayas"][2])     # Al-Kawthar real aya 1
+        self.assertEqual(len(basmala), 4, "the basmala slot must carry 4 real words")
+        self.set_attrs(sura=108, aya=1, words="1-5")
+        self.assertEqual(self.visible_words(), aya1[0:1],
+                         f"word 5 of an aya-1 anchor must be the aya's first word\n{self.dump_log()}")
+        self.assertIn("﷽", self.visible_tokens(),
+                      "the complete anchor basmala must render as the ligature")
+
+    def test_23_anchor_partial_basmala_regression(self):
+        """Anchored at aya 1, words=4-6 are basmala word 4 + the aya's first two words. This is
+        the quranquiz off-by-4 regression: quranquiz's flat Tanzil word offsets count the anchor
+        sura's basmala, so before the anchor rewind these indices rendered 4 words late
+        (words 4-6 of Al-Kawthar showed aya 2 instead of الرحيم انا اعطينك)"""
+        basmala = aya_word_list(self.db["suras"][107]["ayas"][1])
+        aya1 = aya_word_list(self.db["suras"][107]["ayas"][2])
+        self.set_attrs(sura=108, aya=1, words="4-6")
+        self.assertEqual(self.visible_words(), basmala[3:4] + aya1[0:2],
+                         f"words 4-6 must start at the anchor basmala's 4th word\n{self.dump_log()}")
+        self.assertNotIn("﷽", self.visible_tokens(),
+                         "a partial anchor basmala must not collapse into the ligature")
+
+    def test_24_anchor_past_basmala(self):
+        """An aya-1 anchored selection that starts past the basmala shows exactly the real aya's
+        words (the leading basmala line is dropped, its 4 words carried as counter offset)"""
+        aya1 = aya_word_list(self.db["suras"][107]["ayas"][2])  # 3 words: انا اعطينك الكوثر
+        self.set_attrs(sura=108, aya=1, words=f"5-{4 + len(aya1)}")
+        self.assertEqual(self.visible_words(), aya1,
+                         f"words 5.. of an aya-1 anchor must be real aya 1\n{self.dump_log()}")
+
+    def test_25_anchor_tawba_and_fatiha_exempt(self):
+        """At-Tawba's blank basmala slot adds no words to an aya-1 anchor, and Al-Fatiha's
+        anchor is exempt from the rewind (its slot 1 is its title; its basmala is real aya 1)"""
+        tawba_first = aya_word_list(self.db["suras"][8]["ayas"][2])  # At-Tawba real aya 1
+        self.set_attrs(sura=9, aya=1, words="1-2")
+        self.assertEqual(self.visible_words(), tawba_first[0:2],
+                         f"At-Tawba aya-1 anchor: word 1 is its real aya 1\n{self.dump_log()}")
+        fatiha_basmala = aya_word_list(self.db["suras"][0]["ayas"][2])  # Fatiha's real aya 1
+        self.set_attrs(sura=1, aya=1, words="1-2")
+        self.assertEqual(self.visible_words(), fatiha_basmala[0:2],
+                         f"Al-Fatiha aya-1 anchor: word 1 is بسم, not its title\n{self.dump_log()}")
+
+    def test_26_page_render_shows_basmala_ligature(self):
         """A full page render always shows a complete basmala line, so it gets the ligature
         (never the DB's 4 word tokens)"""
         self.set_page(2)

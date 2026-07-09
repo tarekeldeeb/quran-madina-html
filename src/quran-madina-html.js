@@ -529,20 +529,24 @@
   function collectWordParts(sura_start, aya_start, range){
     // Walk ayas in reading order from (sura_start, aya_start), crossing page AND sura
     // boundaries, grouping parts into visual lines keyed by (page, line), until the end word
-    // index is covered. The decoration slots (aya index 0 = sura title, 1 = basmala) are only
-    // ever entered when the walk crosses into a *following* sura — the start sura's walk begins
-    // at a real aya (internal index >= 2, see parseAyaRange). The title stays uncounted
-    // decoration (under notitle its name text is hidden at render time, keeping the decorated
-    // line — see renderWordsSpan); the basmala is real Quran text and counts like any other
-    // words (4 in current DBs — matching the Tanzil word indexing that consumers count against;
-    // in pre-0.9 DBs it was the "﷽" ligature, which carries no Arabic letter and so still
-    // counts 0 there).
+    // index is covered. The title slot (aya index 0) is only ever entered when the walk crosses
+    // into a *following* sura, and stays uncounted decoration (under notitle its name text is
+    // hidden at render time, keeping the decorated line — see renderWordsSpan). The basmala
+    // slot (index 1) is real Quran text and counts like any other words (4 in current DBs —
+    // matching the flat Tanzil word indexing that consumers count against; in pre-0.9 DBs it
+    // was the "﷽" ligature, which carries no Arabic letter and so still counts 0 there). The
+    // walk enters it both when crossing into a following sura and when anchored at a sura's
+    // first real aya (internal index 2, see parseAyaRange) — word 1 of an aya-1 anchor is بسم,
+    // the same Tanzil indexing as everywhere else. Al-Fatiha is exempt from the anchor rewind:
+    // its slot 1 holds its *title* (its basmala is real aya 1) and titles never count.
     var groups = [];
     var current = null;
     var counted = 0;
+    // Anchor at a sura's first real aya ⇒ rewind to its basmala slot (Al-Fatiha exempt).
+    var anchor_begin = (aya_start === 2 && sura_start > 0) ? 1 : aya_start;
     for(var s = sura_start; s < madina_data.suras.length; s++){
       var ayas = madina_data.suras[s].ayas;
-      var aya_begin = (s === sura_start) ? aya_start : 0;
+      var aya_begin = (s === sura_start) ? anchor_begin : 0;
       var reached = false;
       for(var a = aya_begin; a < ayas.length; a++){
         var countable = (a >= 1); // title (slot 0) never counts; basmala (slot 1) does

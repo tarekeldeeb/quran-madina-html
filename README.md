@@ -145,10 +145,14 @@ Then in your body, just add the tag.
 
 If the selected aya(s) fit on a single line, the default is to generate an inline ``<span>`` element, otherwise a ``<div>`` is generated.
 
-You can also restrict the output to a specific word sequence with the ``words`` attribute (1-based, inclusive; ``start-end``, ``start:end`` or a single ``index``). Word indices are counted starting from the given ``sura``/``aya`` and may run past it, so the rendered selection can span multiple ayas — and even cross page and sura boundaries. When the selection crosses into a new sura, its **basmala counts as 4 real, individually selectable words** — matching the flat Tanzil word indexing most consumers count against (At-Tawba has none; Al-Fatiha's basmala is its real aya 1) — while the **sura title** stays uncounted decoration, shown for context only. Display follows the printed Mushaf: when **all 4** basmala words fall inside the selection (or on a full ``page`` render) they show as the traditional **﷽ ligature**; a partial selection (1–3 of the 4) renders the individual words. Either way the basmala occupies 4 word indices. The non-selected words are kept in place so the original Madina line layout is preserved — only the chosen words are shown. Aya-number markers are not counted.
+You can also restrict the output to a specific word sequence with the ``words`` attribute (1-based, inclusive; ``start-end``, ``start:end`` or a single ``index``). Word indices are counted starting from the given ``sura``/``aya`` and may run past it, so the rendered selection can span multiple ayas — and even cross page and sura boundaries. The **basmala counts as 4 real, individually selectable words** — matching the flat Tanzil word indexing most consumers count against (At-Tawba has none; Al-Fatiha's basmala is its real aya 1). This holds both when the selection crosses into a new sura and when it is **anchored at a sura's aya 1** (word 1 is then بسم and word 5 the aya's first word), while the **sura title** stays uncounted decoration, shown for context only. Display follows the printed Mushaf: when **all 4** basmala words fall inside the selection (or on a full ``page`` render) they show as the traditional **﷽ ligature**; a partial selection (1–3 of the 4) renders the individual words. Either way the basmala occupies 4 word indices. The non-selected words are kept in place so the original Madina line layout is preserved — only the chosen words are shown. Aya-number markers are not counted.
 
 > **Changed in 0.9.0:** the basmala used to be a *never counted* decoration; a cross-sura ``words``
 > index now lands 4 words later than in 0.8.x.
+>
+> **Changed in 0.9.3:** a ``words`` walk anchored at a sura's aya 1 now counts that sura's own
+> basmala too (0.9.0–0.9.2 only counted *crossed-into* basmalas, so aya-1-anchored word indices
+> landed 4 words early relative to the Tanzil flat indexing).
 
 ```html
 <quran-madina-html sura="1" aya="1" words="1:2"></quran-madina-html>  <!-- first two words only -->
