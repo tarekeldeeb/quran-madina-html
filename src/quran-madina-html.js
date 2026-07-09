@@ -537,27 +537,35 @@
   function collectWordParts(sura_start, aya_start, range){
     // Walk ayas in reading order from (sura_start, aya_start), crossing page AND sura
     // boundaries, grouping parts into visual lines keyed by (page, line), until the end word
-    // index is covered. The title slot (aya index 0) is only ever entered when the walk crosses
-    // into a *following* sura, and stays uncounted decoration (under notitle its name text is
-    // hidden at render time, keeping the decorated line — see renderWordsSpan). The basmala
-    // slot (index 1) is real Quran text and counts like any other words (4 in current DBs —
-    // matching the flat Tanzil word indexing that consumers count against; in pre-0.9 DBs it
-    // was the "﷽" ligature, which carries no Arabic letter and so still counts 0 there). The
-    // walk enters it both when crossing into a following sura and when anchored at a sura's
-    // first real aya (internal index 2, see parseAyaRange) — word 1 of an aya-1 anchor is بسم,
-    // the same Tanzil indexing as everywhere else. Al-Fatiha is exempt from the anchor rewind:
-    // its slot 1 holds its *title* (its basmala is real aya 1) and titles never count.
+    // index is covered. Past the end of An-Nas the walk WRAPS AROUND to Al-Fatiha, matching
+    // the flat Tanzil indexing consumers count with modulo the Quran (e.g. quranquiz questions
+    // at the very end whose continuation rotates back to the beginning); the ≤500-word cap
+    // (and the single-cycle bound below) keeps the wrap finite. The title slot (aya index 0)
+    // is only ever entered when the walk crosses into another sura, and stays uncounted
+    // decoration (under notitle its name text is hidden at render time, keeping the decorated
+    // line — see renderWordsSpan). The basmala slot (index 1) is real Quran text and counts
+    // like any other words (4 in current DBs — matching the flat Tanzil word indexing that
+    // consumers count against; in pre-0.9 DBs it was the "﷽" ligature, which carries no Arabic
+    // letter and so still counts 0 there). The walk enters it both when crossing into another
+    // sura and when anchored at a sura's first real aya (internal index 2, see parseAyaRange) —
+    // word 1 of an aya-1 anchor is بسم, the same Tanzil indexing as everywhere else. Al-Fatiha
+    // is exempt from the anchor rewind AND from basmala counting when wrapped into: its slot 1
+    // holds its *title* (its basmala is real aya 1) and titles never count.
     var groups = [];
     var current = null;
     var counted = 0;
+    var sura_count = madina_data.suras.length;
     // Anchor at a sura's first real aya ⇒ rewind to its basmala slot (Al-Fatiha exempt).
     var anchor_begin = (aya_start === 2 && sura_start > 0) ? 1 : aya_start;
-    for(var s = sura_start; s < madina_data.suras.length; s++){
+    for(var si = 0; si < sura_count; si++){
+      var s = (sura_start + si) % sura_count; // wraps An-Nas → Al-Fatiha
       var ayas = madina_data.suras[s].ayas;
-      var aya_begin = (s === sura_start) ? anchor_begin : 0;
+      var aya_begin = (si === 0) ? anchor_begin : 0;
       var reached = false;
       for(var a = aya_begin; a < ayas.length; a++){
-        var countable = (a >= 1); // title (slot 0) never counts; basmala (slot 1) does
+        // Title slots never count: index 0 everywhere, and Al-Fatiha's title lives at index 1
+        // (where every other sura keeps its counted basmala).
+        var countable = (a >= (s === 0 ? 2 : 1));
         var aya = ayas[a];
         if(aya === undefined) break; // not-yet-loaded aya (sharded boundary): stop collecting
         for(var pi = 0; pi < aya.r.length; pi++){
@@ -656,11 +664,13 @@
           } else {
             counter = appendWords(aya_part, item.part.t, range, counter);
           }
-        } else if(notitle && item.ayaIdx === 0){
+        } else if(notitle && (item.ayaIdx === 0 || (item.sura === 0 && item.ayaIdx === 1))){
           // notitle: keep the title's line and its decorative frame (the sura_border SVG is
           // painted on the line via :has(.quran-madina-html-sura-start), so the div and its
           // class must stay) but hide the name text itself. visibility:hidden preserves the
           // line's height/centering and excludes the name from copy (visibleClone strips it).
+          // The sura===0 arm: Al-Fatiha keeps its title at slot 1 (reached when a words= walk
+          // wraps around from An-Nas), where every other sura keeps its basmala.
           var hiddenName = document.createElement("span");
           hiddenName.textContent = item.part.t;
           hiddenName.style.visibility = "hidden";
@@ -767,7 +777,10 @@
       var sura0 = parseSuraRange(el.getAttribute("sura"))[0];
       var ar = parseAyaRange(el.getAttribute("aya")); // [from,to] internal indices
       if(el.getAttribute("words") != null){
-        var j = suraAyaToJuz(sura0, ar[0]); return [j, j + 1]; // words spill forward < one juz'
+        // words spill forward < one juz'; from the last juz' they wrap around to Al-Fatiha's
+        // (see collectWordParts), so the successor juz' is taken modulo the juz' count.
+        var j = suraAyaToJuz(sura0, ar[0]);
+        return [j, (j + 1) % madina_data.juz.length];
       }
       for(k = suraAyaToJuz(sura0, ar[0]); k <= suraAyaToJuz(sura0, ar[1]); k++) out.push(k);
       return out;

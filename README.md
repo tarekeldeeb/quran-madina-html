@@ -153,6 +153,11 @@ You can also restrict the output to a specific word sequence with the ``words`` 
 > **Changed in 0.9.3:** a ``words`` walk anchored at a sura's aya 1 now counts that sura's own
 > basmala too (0.9.0–0.9.2 only counted *crossed-into* basmalas, so aya-1-anchored word indices
 > landed 4 words early relative to the Tanzil flat indexing).
+>
+> **Changed in 0.9.5:** a ``words`` walk that runs past the end of An-Nas now **wraps around to
+> Al-Fatiha** and keeps counting (previously it stopped, silently truncating the selection);
+> Al-Fatiha's title stays uncounted decoration, and its basmala — being its real aya 1 —
+> renders as normal aya words.
 
 ```html
 <quran-madina-html sura="1" aya="1" words="1:2"></quran-madina-html>  <!-- first two words only -->

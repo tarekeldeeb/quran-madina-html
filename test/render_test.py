@@ -33,24 +33,24 @@ def aya_word_list(aya):
 
 def collect_words(suras, sura_start, aya_start, word_end):
     """Mirror of the JS collectWordParts() word walk: reading order from (sura_start, aya_start),
-    crossing sura boundaries, until at least `word_end` words have been gathered. The sura title
-    (aya index 0) is uncounted decoration; the basmala (index 1) is real Quran text and counts
-    like any other words (At-Tawba's blank slot naturally contributes none). A walk anchored at
-    a sura's first real aya (internal index 2) rewinds to its basmala slot so the anchor sura's
-    own basmala is counted too — Al-Fatiha exempt (its slot 1 is its title)."""
+    crossing sura boundaries — and wrapping around from An-Nas to Al-Fatiha — until at least
+    `word_end` words have been gathered. Sura titles are uncounted decoration (slot 0 everywhere,
+    plus Al-Fatiha's slot 1); the basmala is real Quran text and counts like any other words
+    (At-Tawba's blank slot naturally contributes none). A walk anchored at a sura's first real
+    aya (internal index 2) rewinds to its basmala slot so the anchor sura's own basmala is
+    counted too — Al-Fatiha exempt (its slot 1 is its title)."""
     words = []
-    sura = sura_start
     anchor_begin = 1 if (aya_start == 2 and sura_start > 0) else aya_start
-    while sura < len(suras):
+    for si in range(len(suras)):
+        sura = (sura_start + si) % len(suras)
         ayas = suras[sura]["ayas"]
-        aya = anchor_begin if sura == sura_start else 0
+        aya = anchor_begin if si == 0 else 0
         while aya < len(ayas):
-            if aya >= 1:  # 0 is the sura-title decoration, never counted
+            if aya >= (2 if sura == 0 else 1):  # skip title slots (0; Al-Fatiha's is slot 1)
                 words.extend(aya_word_list(ayas[aya]))
                 if len(words) >= word_end:
                     return words
             aya += 1
-        sura += 1
     return words
 
 class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
@@ -489,7 +489,43 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertLess(abs(probe["left"] - max(4, probe["ayaLeft"])), 10,
                         "popup left must align with the aya's left edge")
 
-    def test_27_page_render_shows_basmala_ligature(self):
+    def test_27_words_wrap_around_to_fatiha(self):
+        """A words= walk anchored at the end of An-Nas wraps around to Al-Fatiha: after An-Nas's
+        last aya come Al-Fatiha's basmala (its real aya 1 — 4 counted words, ligature when
+        complete) and then الحمد. Al-Fatiha's title (slot 1) stays uncounted decoration, and
+        notitle hides its name text like any crossed-into title"""
+        nas_last = aya_word_list(self.db["suras"][113]["ayas"][7])   # An-Nas aya 6
+        fatiha_basmala = aya_word_list(self.db["suras"][0]["ayas"][2])  # Fatiha real aya 1
+        fatiha_aya2 = aya_word_list(self.db["suras"][0]["ayas"][3])     # الحمد لله رب العالمين
+        fatiha_name = self.db["suras"][0]["name"]
+        n = len(nas_last)
+        self.assertEqual(len(fatiha_basmala), 4, "Al-Fatiha's aya 1 is the 4-word basmala")
+        expected = collect_words(self.db["suras"], 113, 7, n + 5)[0:n + 5]
+        self.assertEqual(expected, nas_last + fatiha_basmala + fatiha_aya2[0:1],
+                         "the word walk mirror must wrap An-Nas → Al-Fatiha")
+        self.set_attrs(sura=114, aya=6, words=f"1-{n + 5}")
+        # Al-Fatiha's basmala is its REAL aya 1 (it carries the ﴿١﴾ marker in the Mushaf), so
+        # unlike other suras' basmala slots it renders as word tokens, never the ligature.
+        self.assertEqual(self.visible_words(), nas_last + fatiha_basmala + fatiha_aya2[0:1],
+                         f"words must continue into Al-Fatiha after An-Nas\n{self.dump_log()}")
+        self.assertNotIn("﷽", self.visible_tokens(),
+                         "Al-Fatiha's basmala is a real aya, not an ornamental ligature")
+        self.assertNotIn(fatiha_name, self.visible_words(),
+                         "Al-Fatiha's title must stay uncounted decoration")
+        # notitle hides the wrapped-into Fatiha's name text (slot 1, unlike other suras' slot 0).
+        probe = self.web_driver.execute_script(
+            "var el=document.querySelector('.quran-madina-html-001-000');"
+            "return el ? {text:el.textContent, visible:el.innerText.trim()} : null;")
+        self.assertIsNotNone(probe, "Al-Fatiha's title line must be rendered")
+        self.set_attrs(sura=114, aya=6, words=f"1-{n + 5}", notitle=True)
+        probe = self.web_driver.execute_script(
+            "var el=document.querySelector('.quran-madina-html-001-000');"
+            "return el ? {text:el.textContent, visible:el.innerText.trim()} : null;")
+        self.assertIsNotNone(probe, f"the title line must survive notitle\n{self.dump_log()}")
+        self.assertIn(fatiha_name, probe["text"], "the name still occupies the line's layout")
+        self.assertEqual(probe["visible"], "", "the name must not be visible under notitle")
+
+    def test_28_page_render_shows_basmala_ligature(self):
         """A full page render always shows a complete basmala line, so it gets the ligature
         (never the DB's 4 word tokens)"""
         self.set_page(2)
