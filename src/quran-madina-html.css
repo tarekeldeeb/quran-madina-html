@@ -70,6 +70,8 @@ svg.quran-madina-html-icon path {
 quran-madina-html-aya-popup {
   display: none;
   position: fixed;
+  /* Lives on document.body (see getOrCreateAyaPopup), so RTL is not inherited from the tag */
+  direction: rtl;
   z-index: 1000;
   align-items: center;
   gap: 2px;

@@ -459,7 +459,37 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertEqual(self.visible_words(), fatiha_basmala[0:2],
                          f"Al-Fatiha aya-1 anchor: word 1 is بسم, not its title\n{self.dump_log()}")
 
-    def test_26_page_render_shows_basmala_ligature(self):
+    def test_26_popup_escapes_transformed_ancestor(self):
+        """The aya popup must land next to the clicked aya even when the host tag sits under a
+        CSS-transformed ancestor (e.g. an app's card-flip rotateY): a transformed ancestor
+        becomes the containing block of position:fixed children, re-basing their viewport
+        coordinates and clipping them under app chrome — so the popup lives on document.body"""
+        self.set_attrs(sura=1, aya=1)
+        self.web_driver.execute_script(
+            "var tag=document.querySelector('quran-madina-html');"
+            "var wrap=document.createElement('div');"
+            "wrap.style.transform='rotateY(360deg)';wrap.style.marginTop='150px';"
+            "tag.parentNode.insertBefore(wrap,tag);wrap.appendChild(tag);"
+            "document.querySelector('.quran-madina-html-001-001')"
+            ".dispatchEvent(new MouseEvent('click',{bubbles:true}));")
+        probe = self.web_driver.execute_script(
+            "var p=document.querySelector('quran-madina-html-aya-popup.quran-madina-html-open');"
+            "if(!p) return null;"
+            "var a=document.querySelector('.quran-madina-html-001-001');"
+            "return {onBody:p.parentNode===document.body,"
+            "top:p.getBoundingClientRect().top,left:p.getBoundingClientRect().left,"
+            "ayaTop:a.getBoundingClientRect().top,ayaBottom:a.getBoundingClientRect().bottom,"
+            "ayaLeft:a.getBoundingClientRect().left};")
+        self.assertIsNotNone(probe, f"the aya popup must open\n{self.dump_log()}")
+        self.assertTrue(probe["onBody"], "the popup must be a direct child of document.body")
+        # positionAyaPopup hugs the aya: ~40px above it, or 6px below if there is no room above.
+        self.assertTrue(probe["ayaTop"] - 60 <= probe["top"] <= probe["ayaBottom"] + 20,
+                        f"popup top {probe['top']} must hug the aya "
+                        f"({probe['ayaTop']}..{probe['ayaBottom']})\n{self.dump_log()}")
+        self.assertLess(abs(probe["left"] - max(4, probe["ayaLeft"])), 10,
+                        "popup left must align with the aya's left edge")
+
+    def test_27_page_render_shows_basmala_ligature(self):
         """A full page render always shows a complete basmala line, so it gets the ligature
         (never the DB's 4 word tokens)"""
         self.set_page(2)

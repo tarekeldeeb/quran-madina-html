@@ -299,17 +299,25 @@
     openAyaPopup = null;
   }
   function getOrCreateAyaPopup(tag){
-    // One popup per host tag, lazily created and reused across clicks; tag.innerHTML="" at the
-    // start of each render already discards it along with everything else, so it's recreated on
-    // the next click after a re-render. Appended as a direct child of `tag` (never inside a
-    // quran-madina-html-line, which may carry its own scaleX transform and would turn this
-    // position:fixed popup into one relative to that transformed line instead of the viewport).
-    var popup = tag.querySelector(`${name}-aya-popup`);
-    if(popup) return popup;
-    popup = document.createElement(`${name}-aya-popup`);
-    popup.appendChild(getCopyIcon());
-    popup.appendChild(getTranslateIcon());
-    tag.appendChild(popup);
+    // One popup for the whole document, lazily created and reused across clicks and host tags
+    // (only one is ever open — see openAyaPopup). It must live on document.body, NOT inside the
+    // host tag: it is position:fixed, and ANY transformed ancestor — a line's own scaleX, or a
+    // host-app wrapper with transform/perspective/filter (e.g. quranquiz's card-flip rotateY) —
+    // would become its containing block, re-basing the viewport coordinates positionAyaPopup
+    // computes and trapping it under the ancestor's overflow clipping and stacking context.
+    // Renders call closeAyaPopup() since tag.innerHTML="" no longer discards it.
+    var popup = document.querySelector(`body > ${name}-aya-popup`);
+    if(!popup){
+      popup = document.createElement(`${name}-aya-popup`);
+      popup.appendChild(getCopyIcon());
+      popup.appendChild(getTranslateIcon());
+      document.body.appendChild(popup);
+    }
+    // The --qmh-* theme vars are scoped to the quran-madina-html tag; copy the host tag's
+    // resolved values so the body-level popup keeps the tag's (possibly customized) theme.
+    ["--qmh-header", "--qmh-background"].forEach(function(prop){
+      popup.style.setProperty(prop, getComputedStyle(tag).getPropertyValue(prop));
+    });
     return popup;
   }
   function ayaFragmentsText(tag, class_name){
@@ -595,6 +603,7 @@
     var groups = collected.groups;
     var multiline = applyInlineOverride(inlineOpt, groups.length > 1);
     var counter = collected.counterStart; // running 1-based word index, seeded past any skipped lines
+    closeAyaPopup(); // the body-level popup outlives tag.innerHTML="", so re-renders must close it
     tag.innerHTML = "";
     tag.removeAttribute('style');
     // Inline (single-line) renders get quote marks around the verse instead of any chrome (see the
@@ -892,6 +901,7 @@
                     }
                   }
                 }
+                closeAyaPopup(); // the body-level popup outlives tag.innerHTML="", close on re-render
                 tag.innerHTML = ""; //Remove all pre-existing elements
                 tag.removeAttribute('style'); // and styles.
                 line_from = madina_data.suras[sura_from].ayas[aya_from].r[0].l;
