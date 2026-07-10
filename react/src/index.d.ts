@@ -9,7 +9,10 @@ export interface QuranMadinaHtmlLoaderOptions {
   font?: string;
   /** data-name (default "Madina05"). */
   name?: string;
-  /** data-font-size in px (default 16). */
+  /**
+   * data-font-size in px (default 16). Any size from 6 to 100 works: 16 and 24 have pre-built
+   * databases, every other size is fitted at load time by linear interpolation between them.
+   */
   fontSize?: number | string;
 }
 

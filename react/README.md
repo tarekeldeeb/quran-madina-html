@@ -61,7 +61,7 @@ export default function App() {
 | `inline`    | string              | `"no"` forces the multiline/header layout even for a selection that fits one line. `"auto"` (default) is fit-based. `"yes"` (force a single line for an overflowing selection) is not implemented yet. |
 | `font`      | string              | `Hafs`, `Uthman`, `Amiri Quran`, `Amiri Quran Colored`, `me_quran`. |
 | `name`      | string              | DB name, default `Madina05`. |
-| `fontSize`  | number \| string    | px, default 16. |
+| `fontSize`  | number \| string    | px, default 16. Any size 6–100: 16 and 24 have pre-built DBs, every other size is interpolated between them at load time. |
 | `src`       | string              | Library script URL. Default: unpkg latest. |
 | `cdn`       | string              | Base URL for CSS + JSON assets. Default: unpkg package root. |
 

@@ -20,7 +20,8 @@ let loaderPromise = null;
  * @param {string} [opts.cdn]      Base URL for the CSS + JSON assets (default: unpkg package root).
  * @param {string} [opts.font]     data-font: Hafs | Uthman | "Amiri Quran" | "Amiri Quran Colored" | me_quran.
  * @param {string} [opts.name]     data-name (default Madina05).
- * @param {number|string} [opts.fontSize] data-font-size in px (default 16).
+ * @param {number|string} [opts.fontSize] data-font-size in px (default 16). Any size 6-100 works:
+ *                                  16/24 have pre-built DBs, others are interpolated between them.
  * @returns {Promise<void>}
  */
 export function loadQuranMadinaHtml(opts = {}) {
