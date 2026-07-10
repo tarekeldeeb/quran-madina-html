@@ -402,8 +402,11 @@
   }
   function applyLineStyle(line, stretch){
     // A stretch >= 0 is a scaleX factor filling the line; -1 means center this line instead.
+    // stretch_scale (1 unless the font-size is interpolated, see bootInterpolated) corrects the
+    // anchor DB's factors: glyph widths grow proportionally with font-size but the fitted
+    // line_width does not, so every justified line needs the same small scaleX adjustment.
     if(stretch >= 0){
-      line.style.setProperty("transform", `scaleX(${stretch})`, "");
+      line.style.setProperty("transform", `scaleX(${stretch * (madina_data.stretch_scale || 1)})`, "");
     } else {
       line.style.setProperty("text-align", "center", "");
     }
@@ -701,10 +704,19 @@
   // ==========================================================================
 
   var DEFAULT_FONT_SIZE = 16;
+  // Every font ships a pre-built DB at exactly these sizes (see src/db/build_all.py). Any other
+  // requested size gets no DB of its own: it is served by interpolating between the two anchors
+  // (see bootInterpolated below), so data-font-size accepts any value in FONT_SIZE_RANGE.
+  var ANCHOR_SIZES = [16, 24];
+  var FONT_SIZE_RANGE = [6, 100];
   var this_script = document.currentScript || document.querySelector(`script[src*="${name}"]`);
   var doc_name    = this_script.getAttribute('data-name') || "Madina05";
   var doc_font    = (this_script.getAttribute('data-font') || "me_quran").replaceAll(" ","_");
-  var doc_font_sz = parseInt(this_script.getAttribute('data-font-size'), 10) || DEFAULT_FONT_SIZE;
+  var doc_font_sz = parseFloat(this_script.getAttribute('data-font-size')) || DEFAULT_FONT_SIZE;
+  if(doc_font_sz < FONT_SIZE_RANGE[0] || doc_font_sz > FONT_SIZE_RANGE[1]){
+    print(`font-size ${doc_font_sz} outside ${FONT_SIZE_RANGE[0]}..${FONT_SIZE_RANGE[1]}, using ${DEFAULT_FONT_SIZE}`);
+    doc_font_sz = DEFAULT_FONT_SIZE;
+  }
   var doc_cdn     = this_script.getAttribute('data-cdn');
   if (doc_cdn) cdn = doc_cdn.replace(/\/?$/, "/"); // honor explicit base, ensure trailing slash
   print(`${doc_name} with font: ${doc_font} size: ${doc_font_sz}`);
@@ -737,6 +749,16 @@
     shardBase = `${cdn}assets/db/${dbstem}/`;
   }
   setFontSize(doc_font_sz);
+  // Set by bootInterpolated for a non-anchor font-size: the DB loaded is the nearest anchor's,
+  // and these header overrides re-target it to the requested size. Applied by both boot paths
+  // right before initTag, and null for anchor sizes (the DB is then used as-is).
+  var sizeOverrides = null; // {font_size, line_width, stretch_scale}
+  function applySizeOverrides(){
+    if(!sizeOverrides) return;
+    madina_data.font_size = sizeOverrides.font_size;
+    madina_data.line_width = sizeOverrides.line_width;
+    madina_data.stretch_scale = sizeOverrides.stretch_scale;
+  }
   var loadedJuz = {}; // juz' index (0..29) -> true once its shard is merged into madina_data
   function suraAyaToJuz(sura0, aya_idx){
     // Last juz' whose (startSura, startAya) <= (sura0, aya). Decoration slots (idx 0/1) use aya 1's
@@ -1001,8 +1023,10 @@
   }
 
   // ==========================================================================
-  // Boot: prefer the sharded manifest, fall back to the monolithic DB, fall back to the default
-  // font-size's DB if no DB was ever built for the requested size (e.g. a font only shipped at 16px).
+  // Boot: an anchor font-size (16/24) loads its own DB - sharded manifest preferred, monolithic
+  // fallback. Any other size boots through bootInterpolated (both anchors' headers -> interpolated
+  // line_width + stretch_scale over the nearest anchor's DB). Last resort stays the default
+  // size's DB if no DB was ever built for the requested/anchor size.
   // ==========================================================================
 
   function bootFromManifest(){
@@ -1026,6 +1050,7 @@
           suras: m.suras.map(function(e){ return {name: e[0], ayas: new Array(e[1])}; }),
           juz: m.juz, pages: m.pages
         };
+        applySizeOverrides();
         initTag();
       },
       bootMonolith,
@@ -1034,10 +1059,11 @@
   }
   function bootMonolith(){
     loadJSON(`${cdn}assets/db/${dbstem}.json`,
-      function(data){ madina_data = data; initTag(); },
+      function(data){ madina_data = data; applySizeOverrides(); initTag(); },
       function(xhr){
         if(doc_font_sz != DEFAULT_FONT_SIZE){
           print(`no DB for font: ${doc_font} size: ${doc_font_sz}, falling back to size: ${DEFAULT_FONT_SIZE}`);
+          sizeOverrides = null; // any pending overrides were fitted to the size that just failed
           setFontSize(DEFAULT_FONT_SIZE);
           bootFromManifest();
         } else {
@@ -1045,6 +1071,51 @@
         }
       });
   }
-  bootFromManifest();
+  function dbHeader(size, success, error){
+    // Header fields (line_width in particular) of one anchor size's DB: the small sharded
+    // manifest when available, else the monolithic DB (large, but it lands in the same JSON
+    // cache the render will read from anyway).
+    var stem = `${doc_name}-${doc_font}-${size}px`;
+    loadJSON(`${cdn}assets/db/${stem}/manifest.json`, success,
+             function(){ loadJSON(`${cdn}assets/db/${stem}.json`, success, error); });
+  }
+  function bootInterpolated(){
+    // The requested font-size has no pre-built DB. The per-size line_widths are hand-tuned, NOT
+    // proportional to the size (e.g. Hafs is 270px@16 but 410px@24, where proportional would be
+    // 405), so the width for size S is read off the line fitted through the two anchor points.
+    // Render data (text incl. build-inserted kashidas, stretch factors) comes from the nearest
+    // anchor's DB, whose scaleX factors are corrected by a single stretch_scale: glyph widths DO
+    // grow proportionally with font-size while the fitted line_width does not, so
+    //   natural width at S  = natural(anchor) * S/anchor
+    //   needed stretch at S = lw(S)/natural(S) = stored_stretch * lw(S)*anchor / (lw(anchor)*S)
+    var S = doc_font_sz, lo = ANCHOR_SIZES[0], hi = ANCHOR_SIZES[1];
+    var nearest = (S - lo <= hi - S) ? lo : hi;
+    var headers = {}, failed = false;
+    var fail = function(xhr){
+      if(failed) return; // both anchors missing: only the first error boots the fallback
+      failed = true;
+      console.error(`${name}> missing anchor DB for font-size interpolation`, xhr);
+      print(`falling back to size: ${DEFAULT_FONT_SIZE}`);
+      setFontSize(DEFAULT_FONT_SIZE);
+      bootFromManifest();
+    };
+    var done = function(){
+      if(failed || !(lo in headers) || !(hi in headers)) return;
+      var lw = Math.round(headers[lo].line_width +
+        (headers[hi].line_width - headers[lo].line_width) * (S - lo) / (hi - lo));
+      sizeOverrides = {
+        font_size: S,
+        line_width: lw,
+        stretch_scale: (lw * nearest) / (headers[nearest].line_width * S)
+      };
+      print(`font-size ${S}px interpolated from ${lo}px/${hi}px anchors: line_width ${lw}, render data from ${nearest}px`);
+      setFontSize(nearest);
+      bootFromManifest();
+    };
+    ANCHOR_SIZES.forEach(function(sz){
+      dbHeader(sz, function(h){ headers[sz] = h; done(); }, fail);
+    });
+  }
+  if(ANCHOR_SIZES.indexOf(doc_font_sz) >= 0){ bootFromManifest(); } else { bootInterpolated(); }
 
 })();

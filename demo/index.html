@@ -22,9 +22,10 @@
       { value: "Amiri Quran", label: "أميري" },
       { value: "Amiri Quran Colored", label: "أميري ملون" }
     ];
-    var SIZE_CHOICES = [16, 24];
+    // 16 and 24 have pre-built DBs; every other size is interpolated between them at load time.
+    var SIZE_CHOICES = [12, 14, 16, 18, 20, 22, 24, 28, 32];
     var savedFont = localStorage.getItem("quran-madina-html-font") || FONT_CHOICES[0].value;
-    var savedSize = localStorage.getItem("quran-madina-html-font-size") || String(SIZE_CHOICES[0]);
+    var savedSize = localStorage.getItem("quran-madina-html-font-size") || "16";
 
     var script = document.createElement("script");
     if (/localhost/.test(document.location.hostname)) {

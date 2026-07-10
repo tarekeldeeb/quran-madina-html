@@ -135,7 +135,10 @@ In your Html header, add this script:
 
 * Supported ``data-name`` parameters are: Madina05 (default), others are under development (Shemerly, Qaloon, Newer Madina)
 * Supported ``data-font`` parameters are: Hafs (default), Uthman, Amiri Quran, Amiri Quran Colored
-* Other options include: ``data-font-size`` which defaults to 16 (px)
+* Other options include: ``data-font-size`` which defaults to 16 (px). Any size from 6 to 100 works:
+  16 and 24 have pre-built databases, and every other size is fitted at load time by linear
+  interpolation between those two anchors (page/line width interpolated, letter stretching
+  re-scaled accordingly)
 
 Then in your body, just add the tag.
 

@@ -540,5 +540,105 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         basmala = aya_word_list(self.db["suras"][1]["ayas"][1])
         self.assertNotIn(basmala[0], text, "the basmala's first token must not render on a page")
 
+class InterpolatedFontSizeTest(unittest.TestCase):
+    """data-font-size values without a pre-built DB (anything besides the 16/24 anchors) boot
+    through bootInterpolated(): line_width is read off the line fitted through the two anchor
+    sizes' hand-tuned widths (they are NOT proportional to the size - Hafs is 270@16 / 410@24),
+    render data comes from the nearest anchor's DB, and every justified line's scaleX is
+    corrected by the single factor stretch_scale = lw(S)*anchor / (lw(anchor)*S)."""
+
+    test_file = os.path.join("template", "render_test.html")
+    test_url = "http://localhost:8000/" + test_file
+    PAGE = 25  # the template's default page: deep inside Al-Baqara, all 15 lines justified
+
+    @classmethod
+    def setUpClass(cls):
+        chrome_options = Options()
+        for option in ["--headless", "--disable-gpu", "--ignore-certificate-errors",
+                       "--disable-extensions", "--no-sandbox", "--disable-dev-shm-usage"]:
+            chrome_options.add_argument(option)
+        cls.web_driver = webdriver.Chrome(options=chrome_options)
+        with open(cls.test_file, encoding="utf8") as tpl:
+            cls.original_template = tpl.read()
+        with open(os.path.join("assets", "db", "Madina05-Hafs-16px.json"), encoding="utf8") as db:
+            cls.db16 = json.load(db)
+        with open(os.path.join("assets", "db", "Madina05-Hafs-24px.json"), encoding="utf8") as db:
+            cls.db24 = json.load(db)
+
+    @classmethod
+    def tearDownClass(cls):
+        with open(cls.test_file, "w", encoding="utf8") as tpl:
+            tpl.write(cls.original_template)
+        cls.web_driver.quit()
+
+    def load_with_font_size(self, size):
+        """Point the template's loader <script> at Hafs at `size`px and (re)load the page."""
+        soup = BeautifulSoup(self.original_template, 'html.parser')
+        script = soup.find("script")
+        script["data-font"] = "Hafs"  # type: ignore
+        script["data-font-size"] = str(size)  # type: ignore
+        with open(self.test_file, "w", encoding="utf8") as file:
+            file.write(str(soup))
+        self.web_driver.get(self.test_url)
+        WebDriverWait(self.web_driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "quran-madina-html-line")))
+
+    def page_stretches(self, db):
+        """line number -> stored stretch on self.PAGE (parts sharing a line share their s)."""
+        stretches = {}
+        for sura in db["suras"]:
+            for aya in sura["ayas"]:
+                if aya["p"] == self.PAGE:
+                    for part in aya["r"]:
+                        stretches[part["l"]] = part["s"]
+        return stretches
+
+    def dom_scale_x(self):
+        """scaleX of each rendered line in order (None for untransformed/centered lines)."""
+        return self.web_driver.execute_script(
+            "return Array.from(document.querySelectorAll('quran-madina-html-line')).map("
+            "function(l){var t=getComputedStyle(l).transform;"
+            "return t==='none'?null:parseFloat(t.slice(t.indexOf('(')+1));});")
+
+    def assert_geometry(self, size, expected_lw, source_db, scale):
+        """The tag must be sized for expected_lw at `size`px, with each line's scaleX being the
+        source DB's stored stretch times `scale` (1.0 for anchor sizes)."""
+        tag_probe = self.web_driver.execute_script(
+            "var t=document.querySelector('quran-madina-html');"
+            "return {width:t.style.width, fontSize:getComputedStyle(t).fontSize};")
+        self.assertEqual(tag_probe["width"], f"{expected_lw + 10}px",
+                         f"@{size}px the page width must be line_width+10")
+        self.assertEqual(tag_probe["fontSize"], f"{size}px",
+                         f"the tag must render at the requested {size}px")
+        expected = self.page_stretches(source_db)
+        rendered = self.dom_scale_x()
+        self.assertEqual(len(rendered), 15, f"page {self.PAGE} renders 15 lines")
+        for i, actual in enumerate(rendered):
+            stored = expected[i + 1]
+            if stored < 0:
+                self.assertIsNone(actual, f"line {i + 1} is centered, must not be stretched")
+            else:
+                self.assertIsNotNone(actual, f"line {i + 1} must carry a scaleX transform")
+                self.assertAlmostEqual(actual, stored * scale, delta=0.002,
+                                       msg=f"@{size}px line {i + 1}: scaleX {actual} should be "
+                                           f"stored {stored} * {scale}")
+
+    def test_0_interpolated_size_20(self):
+        """Hafs@20 (no pre-built DB): width fitted between the anchors, stretch re-scaled"""
+        lw16 = self.db16["line_width"]
+        lw24 = self.db24["line_width"]
+        lw20 = int(lw16 + (lw24 - lw16) * (20 - 16) / (24 - 16) + 0.5)  # mirrors JS Math.round
+        # 20 is equidistant from both anchors; the runtime ties to the LOWER one (16px), so the
+        # rendered text/stretch comes from the 16px DB corrected by stretch_scale.
+        scale = (lw20 * 16) / (lw16 * 20)
+        self.load_with_font_size(20)
+        self.assert_geometry(20, lw20, self.db16, scale)
+
+    def test_1_anchor_size_stays_exact(self):
+        """Hafs@24 has its own DB: no interpolation, stored stretch applied untouched"""
+        self.load_with_font_size(24)
+        self.assert_geometry(24, self.db24["line_width"], self.db24, 1.0)
+
+
 if __name__ == '__main__':
     unittest.main()
