@@ -189,6 +189,26 @@ By default a multiline render gets a header (sura name + copy/translate icons); 
 <quran-madina-html sura="2" aya="8-10" headless="true"></quran-madina-html> <!-- no header -->
 ```
 
+## React wrapper
+
+For React apps (web, or mobile via a Capacitor WebView), use
+[`@tarekeldeeb/quran-madina-react`](https://www.npmjs.com/package/@tarekeldeeb/quran-madina-react),
+a thin component wrapping the `<quran-madina-html>` tag — lives in this repo's [`react/`](react)
+folder and is released in lockstep with this package.
+
+```bash
+npm install @tarekeldeeb/quran-madina-react react
+```
+
+```jsx
+import QuranMadinaHtml from "@tarekeldeeb/quran-madina-react";
+
+<QuranMadinaHtml page={106} font="Hafs" />
+```
+
+See [`react/README.md`](react/README.md) for the full prop reference and the Capacitor
+(iOS/Android) packaging guide.
+
 ## Dev Setup
 
 The project is published on npm ``npm install quran-madina-html``, with sources, assets and distributables.
