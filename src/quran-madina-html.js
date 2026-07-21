@@ -125,6 +125,20 @@
     if(/^(https?:)?\/\//.test(url)) return url;
     return cdn + String(url).replace(/^\//, "");
   }
+  function relativeLuminance(rgbString){
+    // WCAG relative luminance of a getComputedStyle "rgb(r, g, b)"/"rgba(...)" string.
+    var m = rgbString && rgbString.match(/[\d.]+/g);
+    if(!m) return 1; // unparseable: assume light text (safer default is the dark-pair path)
+    function lin(c){ c = c / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+    return 0.2126 * lin(+m[0]) + 0.7152 * lin(+m[1]) + 0.0722 * lin(+m[2]);
+  }
+  function applyMarkTextScheme(tag){
+    // highlight=/error= need a bg+text pair that contrasts with whatever the host page's actual
+    // ambient text color is. Reading the real computed color (rather than guessing from
+    // prefers-color-scheme) works regardless of how/whether the host implements dark mode.
+    var lum = relativeLuminance(getComputedStyle(tag).color);
+    tag.setAttribute("data-qmh-text-scheme", lum > 0.5 ? "dark" : "light");
+  }
 
   // ==========================================================================
   // Attribute range parsing
@@ -689,6 +703,7 @@
                             highlight_range, error_range){
     // Dedicated render path for the words= selection. Unlike the page/aya loop it is not bound
     // to a single page or sura, so a word range can span both.
+    if(highlight_range || error_range) applyMarkTextScheme(tag);
     var collected = collectWordParts(sura_start, aya_start, range);
     var groups = collected.groups;
     var multiline = applyInlineOverride(inlineOpt, groups.length > 1);
@@ -1043,6 +1058,7 @@
                 highlight_range = clampedOrNull("highlight", highlight_range, [1, display_total]);
                 error_range = clampedOrNull("error", error_range, [1, display_total]);
                 var wordMarkMode = (highlight_range != null || error_range != null);
+                if(wordMarkMode) applyMarkTextScheme(tag);
                 closeAyaPopup(); // the body-level popup outlives tag.innerHTML="", close on re-render
                 tag.innerHTML = ""; //Remove all pre-existing elements
                 tag.removeAttribute('style'); // and styles.

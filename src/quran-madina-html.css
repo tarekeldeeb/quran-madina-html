@@ -3,17 +3,30 @@ quran-madina-html {
   --qmh-header: black; /* #dimgrey; */
   --qmh-highlight: #fff3b0; /* soft yellow */
   --qmh-error: #f5c6cb; /* soft red */
+  --qmh-highlight-text: #1a1a1a;
+  --qmh-error-text: #1a1a1a;
   display: inline-flex;
   direction: rtl;
   background-color:color-mix(in srgb, var(--qmh-background) 10%, transparent);
   border-radius: 5px;
   overflow: hidden;
 }
+/* highlight=/error= need a bg+text pair that contrasts with whatever the host page's actual
+   (ambient, inherited) text color is - not a guess based on prefers-color-scheme, which may not
+   correlate with how a host implements its own dark/light mode (e.g. a manual class toggle).
+   applyMarkTextScheme() in the JS reads the real computed color and sets this attribute. */
+quran-madina-html[data-qmh-text-scheme="dark"] {
+  --qmh-highlight: #5c4600;
+  --qmh-error: #6b1a24;
+  --qmh-highlight-text: #ffffff;
+  --qmh-error-text: #ffffff;
+}
 quran-madina-html-header {
   background-color: color-mix(in srgb, var(--qmh-header) 20%, transparent);
   font-size: smaller;
   display: block;
-  padding: 0 5px 0 10px;
+  padding: 5px 5px 5px 10px;
+  margin-bottom: 5px;
   color: color-mix(in srgb, currentColor 60%, transparent);
   height: 25px;
   line-height: 25px;
@@ -52,19 +65,44 @@ quran-madina-html.quran-madina-html-inline quran-madina-html-line::after {
    --qmh-highlight/--qmh-error custom properties or these rules directly. */
 .quran-madina-html-word-highlight{
   background-color: var(--qmh-highlight);
+  color: var(--qmh-highlight-text, currentColor);
 }
 .quran-madina-html-word-error{
   background-color: var(--qmh-error);
+  color: var(--qmh-error-text, currentColor);
 }
+/* The decorative frame is a static SVG asset referenced by URL, so plain CSS (fill,
+   currentColor, custom properties) cannot recolor it directly. mask-image instead uses the SVG
+   purely as a shape stencil, painted with background-color - here currentColor, so the frame
+   automatically follows the ambient text color (dark host page -> light text -> light frame,
+   and vice versa) with no media query needed. The SVG's paths are opaque black on a transparent
+   canvas; default CSS mask compositing is luminance-based (visibility = luminance * alpha),
+   under which black (luminance ~0) and transparent (alpha 0) would composite to the same
+   near-zero value and the frame would render blank - mask-mode: alpha fixes this by keying
+   visibility off opacity alone, not color. The mask lives on a ::before layer rather than on
+   the line element itself: mask-image clips an element's ENTIRE rendered output, background
+   *and* descendants, so putting it directly on quran-madina-html-line would also mask away the
+   sura-name text rendered inside it. The pseudo-element paints first (behind the real DOM
+   content, per normal paint order - no z-index needed), so the frame renders as a backdrop
+   without touching the name text's own visibility. */
 quran-madina-html-line:has(.quran-madina-html-sura-start){
-  background-image: url(../assets/img/sura_border_sym4.svg);
-  background-size: 95% 100%;
-  background-position: center;
-  background-repeat:no-repeat;
-  /*background-color: currentColor;
-  mask-image:url(../assets/img/sura_border_sym4.svg);
+  position: relative;
+}
+quran-madina-html-line:has(.quran-madina-html-sura-start)::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  -webkit-mask-image: url(../assets/img/sura_border_sym4.svg);
+  mask-image: url(../assets/img/sura_border_sym4.svg);
+  -webkit-mask-size: 95% 100%;
   mask-size: 95% 100%;
-  mask-position: center; */
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  mask-mode: alpha;
+  pointer-events: none;
 }
 svg.quran-madina-html-icon {
   float:left; 
