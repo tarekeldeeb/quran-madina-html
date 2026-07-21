@@ -449,9 +449,10 @@
   // Line layout helpers (stretch/center, spacers, structural line starts)
   // ==========================================================================
 
-  function styleMultilineTag(tag, page){
+  function styleMultilineTag(tag, page, headless){
     // Apply the shared block-level chrome to the host tag for a multiline render: font, page-fitting
-    // width, and the inset "gutter" shadow whose side depends on the page parity (odd = right page).
+    // width, and (unless headless) the inset "gutter" shadow whose side depends on the page parity
+    // (odd = right page) - headless means no chrome at all, not just no header.
     tag.style = "display:block;";
     tag.style.setProperty('font-family', madina_data.font_family, '');
     tag.style.setProperty('font-size', madina_data.font_size+"px", '');
@@ -459,7 +460,9 @@
       tag.style.setProperty('line-height', madina_data.font_size*2+"px", '');
     }
     tag.style.width = (madina_data.line_width+10)+"px";
-    tag.style.setProperty('box-shadow', 'inset '+(page%2==1?"":"-")+'8px 0 7px -7px #333', '');
+    if(!headless){
+      tag.style.setProperty('box-shadow', 'inset '+(page%2==1?"":"-")+'8px 0 7px -7px #333', '');
+    }
   }
   function applyLineStyle(line, stretch){
     // A stretch >= 0 is a scaleX factor filling the line; -1 means center this line instead.
@@ -718,7 +721,7 @@
     tag.classList.toggle(`${name}-inline`, !multiline && !noQuotes);
     if(multiline){
       let start_page = parseInt(groups[0].key.split(':')[0], 10); // page of the first visible line
-      styleMultilineTag(tag, start_page);
+      styleMultilineTag(tag, start_page, headless);
       if(!headless){
         tag.appendChild(buildHeader(madina_data.suras[groups[0].parts[0].sura].name));
       }
@@ -1072,7 +1075,7 @@
                 // popup covers them too). quotes="no" opts out of this.
                 tag.classList.toggle(`${name}-inline`, !multiline && !noQuotes);
                 if(multiline){
-                  styleMultilineTag(tag, page);
+                  styleMultilineTag(tag, page, headless);
                   if(!headless){
                     tag.appendChild(buildHeader(madina_data.suras[sura_from].name));
                   }

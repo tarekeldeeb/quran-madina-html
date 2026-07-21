@@ -35,7 +35,7 @@ Page 106, rendered by the library next to a scan of the actual printed page:
 <table>
 <tr>
 <td align="center"><img src="demo/img/p106-image.JPG" width="190" alt="Scanned Madina Mushaf page 106"><br/>Printed Madina Mushaf</td>
-<td align="center"><img src="demo/img/p106-hafs.png" width="190" alt="quran-madina-html rendering of page 106"><br/><code>&lt;quran-madina-html page="106"&gt;</code></td>
+<td align="center"><img src="demo/img/p106-hafs.png" width="190" alt="quran-madina-html rendering of page 106"><br/><code>&lt;quran-madina-html page="106" headless="true"&gt;</code></td>
 </tr>
 </table>
 
@@ -126,6 +126,18 @@ counts as words 10-13
 </td>
 </tr>
 </table>
+
+### Highlighting words
+
+`highlight` (soft yellow) and `error` (soft red) mark a word range — same 1-based, inclusive
+format as `words` — on top of whatever is being shown. Unlike `words`, they work with or without
+a `words` selection, and even on a full `page` render:
+
+```html
+<quran-madina-html sura="1" aya="1" highlight="2-3"></quran-madina-html>
+```
+
+<img src="demo/img/highlight.png" width="260" alt="highlight attribute marking words 2-3 of Al-Fatiha's first aya">
 
 ## Getting Started
 
