@@ -98,7 +98,8 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         with open(self.test_file, "r", encoding="utf8") as template:
             soup = BeautifulSoup(template.read(), 'html.parser')
         tag = soup.find("quran-madina-html")
-        for key in ("sura", "aya", "words", "headless", "notitle"):  # ensure a clean page-only render
+        for key in ("sura", "aya", "words", "highlight", "error", "headless", "notitle"):
+            # ensure a clean page-only render
             if key in tag.attrs:  # type: ignore
                 del tag[key]  # type: ignore
         tag["page"] = page  # type: ignore
@@ -136,7 +137,8 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         with open(self.test_file, "r", encoding="utf8") as template:
             soup = BeautifulSoup(template.read(), 'html.parser')
         tag = soup.find("quran-madina-html")
-        for key in ("page", "sura", "aya", "words", "headless", "notitle", "quotes", "inline"):
+        for key in ("page", "sura", "aya", "words", "highlight", "error", "headless", "notitle",
+                    "quotes", "inline"):
             if key in tag.attrs:  # type: ignore
                 del tag[key]  # type: ignore
         for key, value in attrs.items():
@@ -164,6 +166,18 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         unit the words= indexing counts - markers/ornaments ride along with their word and are
         excluded here so expectations can be built from aya_word_list/collect_words."""
         return [token for token in self.visible_tokens() if ARABIC_LETTER.search(token)]
+
+    def visible_word_marks(self):
+        """visible_words(), but for every visible real word: whether it also carries the
+        highlight/error classes (see appendWords). A word hidden by a words= selection is
+        excluded here just like in visible_words()/visible_tokens()."""
+        raw = self.web_driver.execute_script(
+            "return Array.from(document.querySelectorAll('span.quran-madina-html-word'))"
+            ".filter(w => !w.classList.contains('quran-madina-html-word-hidden')).map("
+            "function(w){return {text:w.textContent,"
+            "highlight:w.classList.contains('quran-madina-html-word-highlight'),"
+            "error:w.classList.contains('quran-madina-html-word-error')};});")
+        return [m for m in raw if ARABIC_LETTER.search(m["text"])]
 
     def count(self, selector):
         """Count DOM elements matching a CSS selector"""
@@ -539,6 +553,121 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertIn("﷽", text, f"page 2 must open with the basmala ligature\n{self.dump_log()}")
         basmala = aya_word_list(self.db["suras"][1]["ayas"][1])
         self.assertNotIn(basmala[0], text, "the basmala's first token must not render on a page")
+
+    def test_29_highlight_marks_words_in_words_selection(self):
+        """highlight= marks a sub-range of words within an existing words= selection"""
+        self.set_attrs(sura=1, aya=1, words="1-5", highlight="2-3")
+        expected = collect_words(self.db["suras"], 0, 2, 5)[0:5]
+        marks = self.visible_word_marks()
+        self.assertEqual([m["text"] for m in marks], expected,
+                         f"words=1-5 should show exactly those 5 words\n{self.dump_log()}")
+        self.assertEqual([m["highlight"] for m in marks], [False, True, True, False, False],
+                         f"only words 2-3 should carry the highlight class\n{self.dump_log()}")
+        self.assertFalse(any(m["error"] for m in marks), "no error class expected")
+
+    def test_30_error_marks_words_in_words_selection(self):
+        """error= marks a sub-range of words within an existing words= selection"""
+        self.set_attrs(sura=1, aya=1, words="1-5", error="4-5")
+        marks = self.visible_word_marks()
+        self.assertEqual([m["error"] for m in marks], [False, False, False, True, True],
+                         f"only words 4-5 should carry the error class\n{self.dump_log()}")
+        self.assertFalse(any(m["highlight"] for m in marks), "no highlight class expected")
+
+    def test_31_highlight_error_overlap_error_wins(self):
+        """When highlight= and error= overlap on a word, error wins for that word"""
+        self.set_attrs(sura=1, aya=1, words="1-5", highlight="2-4", error="3-4")
+        marks = self.visible_word_marks()
+        self.assertEqual([m["highlight"] for m in marks], [False, True, False, False, False],
+                         f"only word 2 should stay highlighted\n{self.dump_log()}")
+        self.assertEqual([m["error"] for m in marks], [False, False, True, True, False],
+                         f"words 3-4 should be error (overlap with highlight)\n{self.dump_log()}")
+
+    def test_32_highlight_error_invalid_range_ignored(self):
+        """A malformed (reversed/zero) or out-of-bounds highlight=/error= is ignored (warning
+        only); the words= selection itself must still render normally"""
+        for bad in ("3-1", "0", "6-8"):  # reversed/zero (malformed), 6-8 out of the 5 shown
+            self.set_attrs(sura=1, aya=1, words="1-5", highlight=bad, error=bad)
+            marks = self.visible_word_marks()
+            self.assertEqual(len(marks), 5, f"highlight/error={bad} must not affect words=1-5")
+            self.assertFalse(any(m["highlight"] or m["error"] for m in marks),
+                             f"highlight/error={bad} should be ignored\n{self.dump_log()}")
+
+    def test_33_highlight_error_plain_verse_no_words(self):
+        """highlight=/error= work on a plain verse render with no words= selection at all"""
+        self.set_attrs(sura=1, aya=1, highlight="2-2", error="3-4")
+        marks = self.visible_word_marks()
+        expected = aya_word_list(self.db["suras"][0]["ayas"][2])  # Al-Fatiha aya 1: 4 words
+        self.assertEqual([m["text"] for m in marks], expected, "plain verse render shows every word")
+        self.assertEqual([m["highlight"] for m in marks], [False, True, False, False],
+                         f"only word 2 should be highlighted\n{self.dump_log()}")
+        self.assertEqual([m["error"] for m in marks], [False, False, True, True],
+                         f"words 3-4 should be error\n{self.dump_log()}")
+
+    def test_34_highlight_out_of_range_plain_verse_ignored(self):
+        """A highlight= range beyond a plain verse's word count is ignored: with no valid
+        highlight/error left, the verse falls back to the plain (non-word-span) render path,
+        same as an invalid words= (test_12)"""
+        self.set_attrs(sura=1, aya=1, highlight="5-6")
+        self.assertEqual(self.count("span.quran-madina-html-word"), 0,
+                         "an out-of-range highlight must fall back to the plain render path")
+        text = self.web_driver.execute_script(
+            "return document.querySelector('quran-madina-html-line').textContent;")
+        self.assertIn(aya_word_list(self.db["suras"][0]["ayas"][2])[0], text,
+                     f"the verse must still render its text\n{self.dump_log()}")
+
+    def test_35_page_mode_highlight_anchors_first_aya(self):
+        """On a page render, highlight= counts from the page's first (real) aya - here
+        Al-Baqara's basmala, which opens page 2 - and a partial overlap forces individual
+        tokens instead of the ligature"""
+        self.set_attrs(page=2, highlight="1-2")
+        self.assertNotIn("﷽", self.visible_tokens(),
+                         "a highlight cutting into only part of the basmala must not use the ligature")
+        marks = self.visible_word_marks()
+        basmala = aya_word_list(self.db["suras"][1]["ayas"][1])
+        self.assertEqual([m["text"] for m in marks[0:4]], basmala,
+                         "page 2 opens with Al-Baqara's basmala tokens")
+        self.assertEqual([m["highlight"] for m in marks[0:4]], [True, True, False, False],
+                         f"only the first two basmala words should be highlighted\n{self.dump_log()}")
+
+    def test_36_page_mode_highlight_full_basmala_keeps_ligature(self):
+        """A highlight= covering the complete basmala on a page render keeps the ligature,
+        with the highlight class on the ligature span itself"""
+        self.set_attrs(page=2, highlight="1-4")
+        self.assertIn("﷽", self.visible_tokens(),
+                     "a fully-highlighted basmala still renders as the ligature")
+        lig_highlighted = self.web_driver.execute_script(
+            "var s=document.querySelector('span.quran-madina-html-basmala');"
+            "return !!s && s.classList.contains('quran-madina-html-word-highlight');")
+        self.assertTrue(lig_highlighted,
+                        f"the ligature span should carry the highlight class\n{self.dump_log()}")
+
+    def test_37_words_highlight_partial_basmala_forces_tokens(self):
+        """Within a words= selection that fully covers the basmala, a highlight cutting into
+        only some of its words forces the individual tokens instead of the ligature"""
+        fatiha_last = aya_word_list(self.db["suras"][0]["ayas"][8])
+        basmala = aya_word_list(self.db["suras"][1]["ayas"][1])
+        end = len(fatiha_last) + 4
+        start_word = len(fatiha_last) + 1
+        self.set_attrs(sura=1, aya=7, words=f"1-{end}", highlight=f"{start_word}-{start_word + 1}")
+        tokens = self.visible_tokens()
+        self.assertNotIn("﷽", tokens, "partial highlight must force individual basmala tokens")
+        self.assertIn(basmala[0], tokens)
+        self.assertIn(basmala[1], tokens)
+
+    def test_38_words_highlight_full_basmala_keeps_ligature_class(self):
+        """A highlight= covering the complete basmala within a words= selection keeps the
+        ligature, with the highlight class applied to it"""
+        fatiha_last = aya_word_list(self.db["suras"][0]["ayas"][8])
+        end = len(fatiha_last) + 4
+        start_word = len(fatiha_last) + 1
+        self.set_attrs(sura=1, aya=7, words=f"1-{end}", highlight=f"{start_word}-{start_word + 3}")
+        tokens = self.visible_tokens()
+        self.assertIn("﷽", tokens, "a fully-highlighted basmala still renders as the ligature")
+        lig_highlighted = self.web_driver.execute_script(
+            "var s=document.querySelector('span.quran-madina-html-basmala');"
+            "return !!s && s.classList.contains('quran-madina-html-word-highlight');")
+        self.assertTrue(lig_highlighted,
+                        f"the ligature span should carry the highlight class\n{self.dump_log()}")
 
 class InterpolatedFontSizeTest(unittest.TestCase):
     """data-font-size values without a pre-built DB (anything besides the 16/24 anchors) boot

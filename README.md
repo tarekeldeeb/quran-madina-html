@@ -1,5 +1,7 @@
 # Quran Madina Html (no-images)
 
+[![npm version](https://img.shields.io/npm/v/quran-madina-html.svg)](https://www.npmjs.com/package/quran-madina-html)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 [![CodeQL](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/github-code-scanning/codeql)
 [![pylint](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/pylint.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/pylint.yml)
 [![py_test](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/py_test.yml/badge.svg)](https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/py_test.yml)
@@ -127,7 +129,15 @@ counts as words 10-13
 
 ## Getting Started
 
-In your Html header, add this script:
+### Installation
+
+Install via **npm**:
+
+```bash
+npm install quran-madina-html
+```
+
+Or include directly via **CDN script tag** in your HTML `<head>`:
 
 ```html
 <script type="text/javascript" src="https://unpkg.com/quran-madina-html"></script>
@@ -177,6 +187,30 @@ To embed a selection inside your own chrome (e.g. a quiz that already labels the
 <quran-madina-html sura="1" aya="7" words="1-14" notitle="true"></quran-madina-html>
 ```
 
+#### Highlighting and marking words
+
+Two more range attributes lay a visual mark over a sub-range of whatever is being shown —
+``highlight`` (soft yellow) and ``error`` (soft red) — using the same 1-based, inclusive range
+format as ``words`` (``start-end``, ``start:end``, or a single index). Unlike ``words``, they
+work in **every** render mode: alongside a ``words`` selection, on a plain ``sura``/``aya`` verse
+(counted from that aya's first word), and even on a full ``page`` render (counted from the
+page's first aya — a page never starts mid-aya, so this is always well-defined). A range must
+fall entirely within whatever is actually displayed (the ``words`` selection if one is set,
+otherwise the whole verse/page); an out-of-range or malformed value is ignored with a console
+warning rather than breaking the render. When ``highlight`` and ``error`` overlap on the same
+word, ``error`` wins.
+
+```html
+<quran-madina-html sura="1" aya="7" words="1-14" highlight="10-13" error="1-2"></quran-madina-html>
+<quran-madina-html sura="2" aya="255" highlight="5-8"></quran-madina-html> <!-- no words needed -->
+<quran-madina-html page="2" error="1-4"></quran-madina-html> <!-- counted from the page's first aya -->
+```
+
+Colors come from the ``--qmh-highlight``/``--qmh-error`` CSS custom properties on
+``quran-madina-html`` (defaults: soft yellow/soft red) — override them, or the
+``.quran-madina-html-word-highlight``/``.quran-madina-html-word-error`` classes directly, from
+your own stylesheet.
+
 Another option exists to render a complete quran page:
 
 ```html
@@ -188,6 +222,22 @@ By default a multiline render gets a header (sura name + copy/translate icons); 
 ```html
 <quran-madina-html sura="2" aya="8-10" headless="true"></quran-madina-html> <!-- no header -->
 ```
+
+### Attributes Reference
+
+| Attribute | Type | Default | Description |
+|---|---|---|---|
+| `sura` | `number \| string` | - | Sura number (1–114). Required when using `aya`. |
+| `aya` | `number \| string` | - | Single aya or verse range (e.g., `255`, `"8-10"`). |
+| `page` | `number \| string` | - | Full Mushaf page number (1–604). Mutually exclusive with `sura`/`aya`. |
+| `words` | `string` | - | 1-based word index or range (e.g., `"1:2"`, `"3-10"`, or single index `"5"`). |
+| `highlight` | `string` | - | 1-based word range to mark soft yellow (same format as `words`). Works with or without `words`, and with `page` too. |
+| `error` | `string` | - | 1-based word range to mark soft red (same format as `words`). Wins over `highlight` on overlap. |
+| `headless` | `boolean \| string` | `false` | Set to `"true"` to remove top sura header chrome and copy/translate icons. |
+| `notitle` | `boolean \| string` | `false` | Set to `"true"` to hide sura name text while retaining title frame decoration. |
+| `data-font` | `string` | `"Hafs"` | Font family: `Hafs`, `Uthman`, `Amiri Quran`, `Amiri Quran Colored`, `me_quran`. |
+| `data-name` | `string` | `"Madina05"` | Layout database dataset name. |
+| `data-font-size` | `number \| string` | `16` | Font size in px (6–100; interpolated between 16 and 24). |
 
 ## React wrapper
 

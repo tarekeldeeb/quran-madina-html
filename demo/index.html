@@ -125,6 +125,13 @@
   </p>
 
   <p>
+  ويمكن كذلك تظليل نطاق من الكلمات بنفس صيغة <code>words</code> باستخدام الخاصيتين <code>highlight</code>
+  (تظليل أصفر فاتح) و<code>error</code> (تظليل أحمر فاتح)، وتعملان في كل أوضاع العرض - حتى بدون <code>words</code>
+  أو مع <code>page</code>:
+  <quran-madina-html sura="1" aya="1" highlight="2-3" quotes="no"></quran-madina-html>
+  </p>
+
+  <p>
   وباستخدام الخاصية <code>headless="true"</code> يُخفى رأس الإطار (اسم السورة وأزرار النسخ والترجمة)،
   فيُعرض نص الآيات فقط كما في نفس المثال السابق:
   <quran-madina-html sura="2" aya="13-14" headless="true"></quran-madina-html>
@@ -139,6 +146,8 @@
           <th scope="col">السورة</th>
           <th scope="col">الآية</th>
           <th scope="col">الكلمات</th>
+          <th scope="col">تظليل</th>
+          <th scope="col">خطأ</th>
         </tr>
       </thead>
       <tbody>
@@ -174,8 +183,18 @@
             <!-- words= range (e.g. 3 or 1-14): applies with sura/aya, ignored by page renders -->
             <input id="in_words" value="" placeholder="1-14" style="width:60px;direction:ltr">
           </td>
+          <td>
+            <!-- highlight= range: works in every mode (words=, sura/aya, or page) -->
+            <input id="in_highlight" value="" placeholder="1-2" style="width:60px;direction:ltr">
+          </td>
+          <td>
+            <!-- error= range: same format/scope as highlight=, wins on overlap -->
+            <input id="in_error" value="" placeholder="1-2" style="width:60px;direction:ltr">
+          </td>
         </tr>
         <tr>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
           <td>&nbsp;</td>
           <td>&nbsp;</td>
           <td>&nbsp;</td>
@@ -256,6 +275,16 @@
         test.setAttribute("sura", document.getElementById("in_sura").value);
         test.setAttribute("aya", document.getElementById("in_aya").value);
         applyWords();
+      }, false);
+    // highlight=/error= work in every render mode, so unlike words= they don't need to touch
+    // page/sura/aya - just mirror the input onto the tag's attribute.
+    document.getElementById("in_highlight").addEventListener('input', function() {
+        if (this.value.trim()) test.setAttribute("highlight", this.value.trim());
+        else test.removeAttribute("highlight");
+      }, false);
+    document.getElementById("in_error").addEventListener('input', function() {
+        if (this.value.trim()) test.setAttribute("error", this.value.trim());
+        else test.removeAttribute("error");
       }, false);
   </script>
 </body>

@@ -1,6 +1,8 @@
 quran-madina-html {
   --qmh-background: #F5F5DC; /*#beige; */
   --qmh-header: black; /* #dimgrey; */
+  --qmh-highlight: #fff3b0; /* soft yellow */
+  --qmh-error: #f5c6cb; /* soft red */
   display: inline-flex;
   direction: rtl;
   background-color:color-mix(in srgb, var(--qmh-background) 10%, transparent);
@@ -42,6 +44,17 @@ quran-madina-html.quran-madina-html-inline quran-madina-html-line::after {
    innerText, so copy-to-clipboard yields only the selected words. */
 .quran-madina-html-word-hidden{
   visibility: hidden;
+}
+/* highlight=/error=: mark a sub-range of words (see appendWords/basmalaRenderMode in the
+   JS). background-color only - no padding/margin/border, since every word span's exact
+   measured width feeds the line's pre-computed stretch/kashida geometry (see CLAUDE.md);
+   adding box size here would visibly distort line justification. Override via the
+   --qmh-highlight/--qmh-error custom properties or these rules directly. */
+.quran-madina-html-word-highlight{
+  background-color: var(--qmh-highlight);
+}
+.quran-madina-html-word-error{
+  background-color: var(--qmh-error);
 }
 quran-madina-html-line:has(.quran-madina-html-sura-start){
   background-image: url(../assets/img/sura_border_sym4.svg);

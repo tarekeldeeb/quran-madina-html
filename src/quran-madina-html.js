@@ -148,6 +148,18 @@
     if(parts[0] < 1 || parts[1] < parts[0]) return null; // 1-based; start must not exceed end
     return parts;
   }
+  function clampedOrNull(label, range, bounds){
+    // Validates a highlight=/error= range against the words actually being displayed
+    // (bounds = [min,max], 1-based inclusive). Malformed (range already null) or
+    // out-of-bounds -> warn and skip (return null) rather than aborting the whole
+    // render, unlike a malformed words= (which falls back to the normal verse render).
+    if(range == null) return null;
+    if(range[0] < bounds[0] || range[1] > bounds[1]){
+      print(`${label} range ${range[0]}-${range[1]} outside displayed words ${bounds[0]}-${bounds[1]}, ignoring`);
+      return null;
+    }
+    return range;
+  }
   function applyInlineOverride(inlineOpt, multiline){
     // inline="no": force the multiline/header layout even for a selection that would fit one line.
     // inline="yes": force a single inline line even for a selection that overflows it - NOT
@@ -168,6 +180,12 @@
   // ==========================================================================
 
   function isWordToken(token){ return ARABIC_LETTER.test(token); }
+  function isCountableAya(sura_idx, aya_idx){
+    // Title slots never count as words: index 0 everywhere, and Al-Fatiha's title lives
+    // at index 1 (where every other sura keeps its counted basmala) since its own
+    // basmala is real aya 1 - see collectWordParts.
+    return aya_idx >= (sura_idx === 0 ? 2 : 1);
+  }
   function countPartWords(part){
     // Selectable words in a single render part: whitespace-separated tokens that carry a letter
     // (markers, pause marks and ornaments are excluded by isWordToken).
@@ -181,6 +199,35 @@
     // Number of selectable words in an aya, summed over its render parts.
     var n = 0;
     aya.r.forEach(function(part){ n = n + countPartWords(part); });
+    return n;
+  }
+  // Pre-render bounds for validating highlight=/error= (see clampedOrNull): the total
+  // count of countable words in whatever is about to be rendered, so a range can be
+  // checked against what's actually displayed *before* the render pass builds it. Not
+  // used for the render pass itself - words= mode already has its bound (words_range).
+  function countVerseRangeWords(sura_idx, aya_from, aya_to){
+    // Verse mode is always single-sura (parseSuraRange forces sura_to = sura_from).
+    var ayas = madina_data.suras[sura_idx].ayas, n = 0;
+    for(var a = aya_from; a <= aya_to; a++){
+      if(isCountableAya(sura_idx, a)) n = n + countAyaWords(ayas[a]);
+    }
+    return n;
+  }
+  function countPageWords(sura_from, aya_from, sura_to, aya_to, page){
+    // Flat counting pass over a page's real ayas - deliberately not reusing the main
+    // render loop's line-grouping/sura-jump bookkeeping (doRender), since that exists
+    // only to build line-keyed DOM groups and isn't needed for a total.
+    var n = 0;
+    for(var s = sura_from; s <= sura_to; s++){
+      var ayas = madina_data.suras[s].ayas;
+      var from = (s === sura_from) ? aya_from : 0;
+      var to = (s === sura_to) ? aya_to : ayas.length - 1;
+      for(var a = from; a <= to; a++){
+        var aya = ayas[a];
+        if(aya === undefined || aya.p !== page) continue;
+        if(isCountableAya(s, a)) n = n + countAyaWords(aya);
+      }
+    }
     return n;
   }
 
@@ -411,10 +458,21 @@
       line.style.setProperty("text-align", "center", "");
     }
   }
-  function appendWords(parent, text, range, counter){
+  function applyMarkClass(span, counter, highlightRange, errorRange){
+    // highlight=/error= mark a word span in addition to (independent of) the words=
+    // show/hide handling above. Error wins when the two ranges overlap on a word.
+    if(errorRange && counter >= errorRange[0] && counter <= errorRange[1]){
+      span.classList.add(`${name}-word-error`);
+    } else if(highlightRange && counter >= highlightRange[0] && counter <= highlightRange[1]){
+      span.classList.add(`${name}-word-highlight`);
+    }
+  }
+  function appendWords(parent, text, range, counter, highlightRange, errorRange){
     // Render each whitespace-separated word as its own span so non-selected words can be
     // hidden in place (visibility:hidden) while keeping the original Madina line geometry.
     // `counter` is the running 1-based word index across the whole selection (spans ayas).
+    // `range` is optional: null means nothing is hidden (used by the plain render path,
+    // which has no words= selection to restrict to - see doRender).
     text.split(/(\s+)/).forEach(function(token){
       if(token === "") return;
       if(/^\s+$/.test(token)){ parent.appendChild(document.createTextNode(token)); return; }
@@ -424,15 +482,34 @@
       if(!isWordToken(token)){
         // Marker/pause/ornament: never counted as a word itself, but it attaches to the word it
         // follows (e.g. the aya-end marker is appended to that aya's last word at build time), so
-        // show it exactly when that preceding word is visible.
-        if(counter < range[0] || counter > range[1]) span.classList.add(`${name}-word-hidden`);
+        // show/mark it exactly like that preceding word.
+        if(range && (counter < range[0] || counter > range[1])) span.classList.add(`${name}-word-hidden`);
+        applyMarkClass(span, counter, highlightRange, errorRange);
       } else {
         counter = counter + 1;
-        if(counter < range[0] || counter > range[1]) span.classList.add(`${name}-word-hidden`);
+        if(range && (counter < range[0] || counter > range[1])) span.classList.add(`${name}-word-hidden`);
+        applyMarkClass(span, counter, highlightRange, errorRange);
       }
       parent.appendChild(span);
     });
     return counter;
+  }
+  function basmalaRenderMode(counter, basmalaWords, displayRange, highlightRange, errorRange){
+    // Decides whether a fully-displayed basmala renders as the single ligature glyph or
+    // as its 4 individual word tokens. displayRange is the words= selection (null in the
+    // plain render path, which has no selection and always shows the full basmala).
+    function fullyIn(rng){ return !rng || (counter + 1 >= rng[0] && counter + basmalaWords <= rng[1]); }
+    function partiallyIn(rng){
+      return !!rng && !fullyIn(rng) && counter + basmalaWords >= rng[0] && counter + 1 <= rng[1];
+    }
+    if(!fullyIn(displayRange)) return {ligature: false};
+    // A highlight/error range that cuts into only some of the basmala's words forces the
+    // individual tokens so the partial mark is actually visible.
+    if(partiallyIn(highlightRange) || partiallyIn(errorRange)) return {ligature: false};
+    var cls = null;
+    if(errorRange && fullyIn(errorRange)) cls = "error";
+    else if(highlightRange && fullyIn(highlightRange)) cls = "highlight";
+    return {ligature: true, cls: cls};
   }
   function partOnLine(aya, line_no){
     // The aya's render part that falls on the given page-line, or null.
@@ -569,9 +646,7 @@
       var aya_begin = (si === 0) ? anchor_begin : 0;
       var reached = false;
       for(var a = aya_begin; a < ayas.length; a++){
-        // Title slots never count: index 0 everywhere, and Al-Fatiha's title lives at index 1
-        // (where every other sura keeps its counted basmala).
-        var countable = (a >= (s === 0 ? 2 : 1));
+        var countable = isCountableAya(s, a);
         var aya = ayas[a];
         if(aya === undefined) break; // not-yet-loaded aya (sharded boundary): stop collecting
         for(var pi = 0; pi < aya.r.length; pi++){
@@ -610,7 +685,8 @@
     while(end < groups.length - 1 && groups[end].lastWord < range[1]) end = end + 1;
     return {groups: groups.slice(start, end + 1), counterStart: start > 0 ? groups[start - 1].lastWord : 0};
   }
-  function renderWordsSpan(tag, sura_start, aya_start, range, headless, noQuotes, inlineOpt, notitle){
+  function renderWordsSpan(tag, sura_start, aya_start, range, headless, noQuotes, inlineOpt, notitle,
+                            highlight_range, error_range){
     // Dedicated render path for the words= selection. Unlike the page/aya loop it is not bound
     // to a single page or sura, so a word range can span both.
     var collected = collectWordParts(sura_start, aya_start, range);
@@ -657,18 +733,23 @@
         DOMTokenList.prototype.add.apply(aya_part.classList, classes);
         if(item.countable){
           var basmalaWords = isBasmalaSlot(item.sura, item.ayaIdx) ? countPartWords(item.part) : 0;
-          if(basmalaWords > 0 && counter + 1 >= range[0] && counter + basmalaWords <= range[1]){
-            // The whole basmala falls inside the selection: render the traditional ligature
-            // instead of its individual tokens (it still advances the word counter by all 4
-            // words, so following word indices are unchanged). A partial overlap falls through
-            // to appendWords so exactly the selected basmala words show.
+          var mode = (basmalaWords > 0) ?
+            basmalaRenderMode(counter, basmalaWords, range, highlight_range, error_range) : {ligature: false};
+          if(mode.ligature){
+            // The whole basmala falls inside the selection (and no highlight/error cuts into
+            // only part of it): render the traditional ligature instead of its individual
+            // tokens (it still advances the word counter by all 4 words, so following word
+            // indices are unchanged).
             var lig = document.createElement("span");
             lig.classList.add(`${name}-word`, `${name}-basmala`);
+            if(mode.cls) lig.classList.add(`${name}-word-${mode.cls}`);
             lig.textContent = BASMALA_LIGATURE;
             aya_part.appendChild(lig);
             counter = counter + basmalaWords;
           } else {
-            counter = appendWords(aya_part, item.part.t, range, counter);
+            // A partial words= overlap, or a highlight/error range cutting into only some of
+            // the basmala's words, falls through to appendWords so the right words show/mark.
+            counter = appendWords(aya_part, item.part.t, range, counter, highlight_range, error_range);
           }
         } else if(notitle && (item.ayaIdx === 0 || (item.sura === 0 && item.ayaIdx === 1))){
           // notitle: keep the title's line and its decorative frame (the sura_border SVG is
@@ -836,7 +917,8 @@
           const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(resolveUrl(madina_data.font_url))+')');
           myFont.load().then( () => {document.fonts.add(myFont);});
           var accessors = {};
-          ["page", "page_param", "aya", "sura", "words", "headless", "quotes", "inline", "notitle"]
+          ["page", "page_param", "aya", "sura", "words", "highlight", "error", "headless", "quotes",
+           "inline", "notitle"]
           .forEach(function(attr){
             accessors[attr] = attrAccessor(attr);
           });
@@ -877,6 +959,17 @@
                 var sura_from, sura_to, aya_from, aya_to, line_from, line_to;
                 var multiline;
                 var words_range = null;
+                // highlight=/error= use the same 1-based range format as words= (parseWordsRange),
+                // and are validated below against whatever ends up being displayed - the words=
+                // selection if present, otherwise the full verse/page (see clampedOrNull calls).
+                var highlight_range = (this.highlight != null) ? parseWordsRange(this.highlight) : null;
+                if(this.highlight != null && highlight_range == null){
+                  print(`Bad highlight parameter: ${this.highlight}`);
+                }
+                var error_range = (this.error != null) ? parseWordsRange(this.error) : null;
+                if(this.error != null && error_range == null){
+                  print(`Bad error parameter: ${this.error}`);
+                }
                 // `page` is the page to render, derived locally. We deliberately never write derived
                 // state (sura/aya/page) back onto the element: those are x-tag accessor attributes,
                 // and writing them re-triggers render(), which used to cascade and duplicate output.
@@ -932,13 +1025,24 @@
                         print("words selection capped at 500 words");
                         words_range[1] = words_range[0] + 499;
                       }
+                      highlight_range = clampedOrNull("highlight", highlight_range, words_range);
+                      error_range = clampedOrNull("error", error_range, words_range);
                       // words= has its own renderer that spans pages and suras from the start aya.
                       renderWordsSpan(tag, sura_from, aya_from, words_range, headless, noQuotes,
-                                      inlineOpt, notitle);
+                                      inlineOpt, notitle, highlight_range, error_range);
                       return;
                     }
                   }
                 }
+                // No words= selection (absent, ignored with page=, or malformed and falling back
+                // here): highlight=/error= are validated against the full verse/page instead, with
+                // word 1 = first word of aya_from (verse mode) or of the page's first aya (page
+                // mode never starts mid-aya, so this is always well-defined).
+                var display_total = verse_mode ? countVerseRangeWords(sura_from, aya_from, aya_to)
+                  : countPageWords(sura_from, aya_from, sura_to, aya_to, parseInt(page, 10));
+                highlight_range = clampedOrNull("highlight", highlight_range, [1, display_total]);
+                error_range = clampedOrNull("error", error_range, [1, display_total]);
+                var wordMarkMode = (highlight_range != null || error_range != null);
                 closeAyaPopup(); // the body-level popup outlives tag.innerHTML="", close on re-render
                 tag.innerHTML = ""; //Remove all pre-existing elements
                 tag.removeAttribute('style'); // and styles.
@@ -960,6 +1064,7 @@
                 /** Loop on Ayas, lines, parts */
                 var aya_current = aya_from;
                 var sura_current = sura_from;
+                var word_counter = 0; // only advanced/used when wordMarkMode is true
                 for(let l = line_from; l <= line_to; l++) {
                   const ll = l; //Const for inner loops to refer
                   let line = document.createElement("quran-madina-html-line");
@@ -990,11 +1095,33 @@
                         let aya_part = document.createElement("div");
                         let classes = getAyaClass(sura_current+1, a-1);
                         DOMTokenList.prototype.add.apply(aya_part.classList, classes);
-                        // A page render always shows the complete basmala line, so it gets the
-                        // traditional ligature instead of the DB's 4 word tokens (blank slots,
-                        // e.g. At-Tawba's, stay blank).
-                        aya_part.textContent = (isBasmalaSlot(sura_current, a) && line_match[0].t !== "") ?
-                          BASMALA_LIGATURE : line_match[0].t;
+                        if(wordMarkMode && isCountableAya(sura_current, a)){
+                          // highlight=/error= is set: break this (countable) part into word spans
+                          // instead of the plain text/ligature blob below, so individual words can
+                          // be marked. Title parts (never countable) always keep the plain path -
+                          // they're never selectable/markable, same as in the words= render path.
+                          let basmalaWords = isBasmalaSlot(sura_current, a) ? countPartWords(line_match[0]) : 0;
+                          let mode = (basmalaWords > 0) ?
+                            basmalaRenderMode(word_counter, basmalaWords, null, highlight_range, error_range) :
+                            {ligature: false};
+                          if(mode.ligature){
+                            let lig = document.createElement("span");
+                            lig.classList.add(`${name}-word`, `${name}-basmala`);
+                            if(mode.cls) lig.classList.add(`${name}-word-${mode.cls}`);
+                            lig.textContent = BASMALA_LIGATURE;
+                            aya_part.appendChild(lig);
+                            word_counter = word_counter + basmalaWords;
+                          } else {
+                            word_counter = appendWords(aya_part, line_match[0].t, null, word_counter,
+                                                        highlight_range, error_range);
+                          }
+                        } else {
+                          // A page render always shows the complete basmala line, so it gets the
+                          // traditional ligature instead of the DB's 4 word tokens (blank slots,
+                          // e.g. At-Tawba's, stay blank).
+                          aya_part.textContent = (isBasmalaSlot(sura_current, a) && line_match[0].t !== "") ?
+                            BASMALA_LIGATURE : line_match[0].t;
+                        }
                         aya_part.style.cssText = 'display:inline';
                         line.appendChild(aya_part);
                         hoverByType(classes.slice(-1)[0]);

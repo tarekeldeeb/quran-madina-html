@@ -139,6 +139,26 @@ slot 1 is blank (no basmala in the real text). Decoration slots are always cente
   end (only the start aya seeds the walk) and logs a warning. The copy button (`copyToClipboard()` via
   `visibleClone()`) copies only visible text — it strips the header, `quran-madina-html-word-hidden`
   spans, and `visibility:hidden` spacers from a detached clone rather than trusting `innerText`.
+- `highlight`/`error` (same 1-based range format as `words`, parsed by the same `parseWordsRange()`)
+  overlay a visual mark — `quran-madina-html-word-highlight` (soft yellow) / `-word-error` (soft red,
+  wins on overlap) — on top of whatever is being shown, applied per-word in `appendWords()` via
+  `applyMarkClass()`. Unlike `words`, they work in **every** render mode, not just alongside a
+  `words` selection: a plain `sura`+`aya` verse with no `words` at all, and even a full `page` (a
+  page never starts mid-aya, so "word 1" is always its first real aya's first word — see
+  `countVerseRangeWords()`/`countPageWords()`). When neither is set, `doRender()`'s plain page/aya
+  loop keeps its original single `textContent` assignment untouched (`wordMarkMode` gate); when
+  either is set, that loop instead calls `appendWords()` per part (skipping title parts, which are
+  never countable/markable) the same way `renderWordsSpan()` already does, threading a running
+  `word_counter` across the whole loop. Each range is validated against whatever is actually
+  displayed — the (possibly 500-capped) `words` range if one is active, otherwise the full
+  verse/page word count — via `clampedOrNull()`; a malformed or out-of-bounds range is dropped
+  (console warning) rather than aborting the render, unlike a malformed `words`. A fully-in-selection
+  basmala normally collapses to the `﷽` ligature; `basmalaRenderMode()` forces the 4 individual
+  tokens instead whenever a `highlight`/`error` range cuts into only *some* of its 4 words (a range
+  that covers all 4, or none, still gets the ligature — with the mark class on that single span).
+  CSS custom properties `--qmh-highlight`/`--qmh-error` set the colors; the two class rules carry
+  `background-color` only (no padding/margin/border), since every word span's measured width feeds
+  the line's pre-computed stretch/kashida geometry.
 - A range that fits on one line renders as an inline `<span>`; otherwise a multiline `<div>` with a
   header (sura name + copy/translate icons). Generated child tags: `<quran-madina-html-line>`,
   `<quran-madina-html-header>`, and per-aya `<div>`s classed `quran-madina-html-NNN-NNN` for hover
