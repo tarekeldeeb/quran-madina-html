@@ -290,6 +290,3 @@ npm run release // build the dist with dependencies
 
 Don't forget to see the page source!
 
-## Links
-
-[X-Tags Docs](http://x-tags.org/docs)

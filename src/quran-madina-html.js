@@ -84,8 +84,8 @@
     // rebuilt/updated DB on every load rather than only once per session.
     var cached = !forceFresh && readJSONCache(path);
     // Deferred even on a cache hit: callers (the module boot sequence in particular) rely on
-    // loadJSON always resolving asynchronously, since x-tag is concatenated after this file and
-    // only becomes available once the current synchronous script execution finishes.
+    // loadJSON always resolving asynchronously, so a cache hit can't race ahead of a cache miss
+    // and complete synchronously while another caller's fetch is still pending.
     if(cached){ if(success) setTimeout(function(){ success(cached); }, 0); return; }
     if(pendingRequests[path]){ pendingRequests[path].push({success: success, error: error}); return; }
     pendingRequests[path] = [{success: success, error: error}];
@@ -922,250 +922,279 @@
   // Custom-element registration & the render loop
   // ==========================================================================
 
-  function attrAccessor(attr){
-    // Every public attribute is a plain string mirror: reads pull straight from the DOM attribute,
-    // writes stash into xtag.data. Generated for each name below to kill the boilerplate.
-    return {
-      attribute: {},
-      set: function(value){ this.xtag.data[attr] = value; },
-      get: function(){ return this.getAttribute(attr); }
-    };
-  }
   function initTag(){
-          const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(resolveUrl(madina_data.font_url))+')');
-          myFont.load().then( () => {document.fonts.add(myFont);});
-          var accessors = {};
-          ["page", "page_param", "aya", "sura", "words", "highlight", "error", "headless", "quotes",
-           "inline", "notitle"]
-          .forEach(function(attr){
-            accessors[attr] = attrAccessor(attr);
-          });
-          xtag.register(name, {
-            lifecycle: {
-              created: function() {
-                this.render(this);
-              },
-              inserted: function() {},
-              removed: function() {},
-              attributeChanged: function() {
-                this.render(this);
+    const myFont = new FontFace(madina_data.font_family, 'url('+encodeURI(resolveUrl(madina_data.font_url))+')');
+    myFont.load().then( () => {document.fonts.add(myFont);});
+
+    class QuranMadinaHtml extends HTMLElement {
+      static get observedAttributes() {
+        return [
+          "page", "page_param", "aya", "sura", "words", "highlight", "error", "headless", "quotes",
+          "inline", "notitle"
+        ];
+      }
+
+      constructor() {
+        super();
+        this._data = {};
+      }
+
+      connectedCallback() {
+        this.render();
+      }
+
+      attributeChangedCallback() {
+        this.render();
+      }
+
+      get page() { return this.getAttribute("page"); }
+      set page(value) { this._data.page = value; }
+
+      get page_param() { return this.getAttribute("page_param"); }
+      set page_param(value) { this._data.page_param = value; }
+
+      get aya() { return this.getAttribute("aya"); }
+      set aya(value) { this._data.aya = value; }
+
+      get sura() { return this.getAttribute("sura"); }
+      set sura(value) { this._data.sura = value; }
+
+      get words() { return this.getAttribute("words"); }
+      set words(value) { this._data.words = value; }
+
+      get highlight() { return this.getAttribute("highlight"); }
+      set highlight(value) { this._data.highlight = value; }
+
+      get error() { return this.getAttribute("error"); }
+      set error(value) { this._data.error = value; }
+
+      get headless() { return this.getAttribute("headless"); }
+      set headless(value) { this._data.headless = value; }
+
+      get quotes() { return this.getAttribute("quotes"); }
+      set quotes(value) { this._data.quotes = value; }
+
+      get inline() { return this.getAttribute("inline"); }
+      set inline(value) { this._data.inline = value; }
+
+      get notitle() { return this.getAttribute("notitle"); }
+      set notitle(value) { this._data.notitle = value; }
+
+      render(tag = this) {
+        // Re-entrancy guard. Kept from the pre-native-Custom-Elements version, where the platform
+        // watched every attribute mutation (including the `style`/class churn this build performs
+        // mid-render) and could re-enter render() before the current build finished. observedAttributes
+        // now scopes attributeChangedCallback to just the 11 public attrs, so that particular re-entrancy
+        // source is gone - but the guard stays cheap insurance against any other overlapping render call.
+        if(this._data.rendering){ return; }
+        var self = this;
+        // Sharded DB: ensure the juz' shard(s) this render will read are loaded, then render
+        // synchronously. Monolith mode: ensureJuz invokes the callback immediately.
+        ensureJuz(neededJuz(this), function(){
+          if(self._data.rendering){ return; }
+          self._data.rendering = true;
+          try {
+            self.doRender(tag);
+          } finally {
+            self._data.rendering = false;
+          }
+        });
+      }
+
+      doRender(tag){
+        var sura_from, sura_to, aya_from, aya_to, line_from, line_to;
+        var multiline;
+        var words_range = null;
+        // highlight=/error= use the same 1-based range format as words= (parseWordsRange),
+        // and are validated below against whatever ends up being displayed - the words=
+        // selection if present, otherwise the full verse/page (see clampedOrNull calls).
+        var highlight_range = (this.highlight != null) ? parseWordsRange(this.highlight) : null;
+        if(this.highlight != null && highlight_range == null){
+          print(`Bad highlight parameter: ${this.highlight}`);
+        }
+        var error_range = (this.error != null) ? parseWordsRange(this.error) : null;
+        if(this.error != null && error_range == null){
+          print(`Bad error parameter: ${this.error}`);
+        }
+        // `page` is the page to render, derived locally. We deliberately never write derived
+        // state (sura/aya/page) back onto the element: those are attribute-backed accessors,
+        // and writing them re-triggers render(), which used to cascade and duplicate output.
+        var page = this.page;
+        var headless = isTrue(this.headless); // hide header (multiline) / copy button (inline)
+        // notitle: when a words= walk crosses into a new sura, keep the title's decorated
+        // line but hide the sura name text. Only wired into the words= path — the ordinary
+        // page/aya render reproduces the printed page, so it deliberately ignores this
+        // attribute; revisit if a consumer needs it there.
+        var notitle = isTrue(this.notitle);
+        // quotes="no" (or "false") opts out of the inline quote marks; absent/anything else
+        // keeps the default (shown).
+        var noQuotes = this.quotes != null && !isTrue(this.quotes);
+        var inlineOpt = this.inline; // "no" | "auto" (default) | "yes" (not implemented yet)
+        var verse_mode = (this.sura != null && this.aya != null);
+        if(verse_mode){
+          sura_from = parseSuraRange(this.sura)[0];
+          sura_to = sura_from;
+          multiline = false;
+          [aya_from,aya_to] = parseAyaRange(this.aya);
+          if(this.page != null) print("Ignoring page parameter!");
+          page = madina_data.suras[sura_from].ayas[aya_from].p;
+        } else if(this.page != null){
+          if(madina_data.pages){ // sharded: page -> [sura_from,aya_from,sura_to,aya_to]
+            var pb = madina_data.pages[page - 1];
+            sura_from = pb[0]; aya_from = pb[1]; sura_to = pb[2]; aya_to = pb[3];
+          } else { // monolith: derive by scanning aya pages
+            sura_from = 0; sura_to = 0; aya_from=0; aya_to=0;
+            while(madina_data.suras[sura_from].ayas.slice(-1)[0].p < page) sura_from = sura_from + 1;
+            sura_to = sura_from;
+            while(sura_to < 114 && madina_data.suras[sura_to].ayas[0].p <= page) sura_to = sura_to + 1;
+            sura_to = sura_to -1;
+            while(madina_data.suras[sura_from].ayas[aya_from].p < page) aya_from = aya_from + 1;
+            aya_to = madina_data.suras[sura_to].ayas.length-1;
+            while (madina_data.suras[sura_to].ayas[aya_to].p > page) aya_to = aya_to - 1;
+          }
+          multiline = true;
+          if(this.inline != null) print("Ignoring inline parameter with page!");
+        } else{
+          console.error(`${name}> Bad arguments: Not rendering!`);
+          return 1;
+        }
+        if(this.words != null){
+          if(!verse_mode){
+            print("Ignoring words parameter with page!");
+          } else {
+            words_range = parseWordsRange(this.words);
+            if(words_range == null){
+              print(`Bad words parameter: ${this.words}`);
+            } else {
+              if(aya_to !== aya_from) print("Ignoring aya range end with words parameter!");
+              if(words_range[1] - words_range[0] + 1 > 500){
+                print("words selection capped at 500 words");
+                words_range[1] = words_range[0] + 499;
               }
-            },
-            events: {},
-            accessors: accessors,
-            methods: {
-               render: function(tag){
-                // Re-entrancy guard. While building we mutate the element's style attribute, and
-                // x-tag re-invokes render() on any attribute change — that nested render would clear
-                // and rebuild mid-build, duplicating the output. The guard drops such re-entrant
-                // calls; genuine user-driven renders run when no render is in progress.
-                if(this.xtag.data.rendering){ return; }
-                var self = this;
-                // Sharded DB: ensure the juz' shard(s) this render will read are loaded, then render
-                // synchronously. Monolith mode: ensureJuz invokes the callback immediately.
-                ensureJuz(neededJuz(this), function(){
-                  if(self.xtag.data.rendering){ return; }
-                  self.xtag.data.rendering = true;
-                  try {
-                    self.doRender(tag);
-                  } finally {
-                    self.xtag.data.rendering = false;
-                  }
-                });
-               },
-               doRender: function(tag){
-                var sura_from, sura_to, aya_from, aya_to, line_from, line_to;
-                var multiline;
-                var words_range = null;
-                // highlight=/error= use the same 1-based range format as words= (parseWordsRange),
-                // and are validated below against whatever ends up being displayed - the words=
-                // selection if present, otherwise the full verse/page (see clampedOrNull calls).
-                var highlight_range = (this.highlight != null) ? parseWordsRange(this.highlight) : null;
-                if(this.highlight != null && highlight_range == null){
-                  print(`Bad highlight parameter: ${this.highlight}`);
-                }
-                var error_range = (this.error != null) ? parseWordsRange(this.error) : null;
-                if(this.error != null && error_range == null){
-                  print(`Bad error parameter: ${this.error}`);
-                }
-                // `page` is the page to render, derived locally. We deliberately never write derived
-                // state (sura/aya/page) back onto the element: those are x-tag accessor attributes,
-                // and writing them re-triggers render(), which used to cascade and duplicate output.
-                var page = this.page;
-                var headless = isTrue(this.headless); // hide header (multiline) / copy button (inline)
-                // notitle: when a words= walk crosses into a new sura, keep the title's decorated
-                // line but hide the sura name text. Only wired into the words= path — the ordinary
-                // page/aya render reproduces the printed page, so it deliberately ignores this
-                // attribute; revisit if a consumer needs it there.
-                var notitle = isTrue(this.notitle);
-                // quotes="no" (or "false") opts out of the inline quote marks; absent/anything else
-                // keeps the default (shown).
-                var noQuotes = this.quotes != null && !isTrue(this.quotes);
-                var inlineOpt = this.inline; // "no" | "auto" (default) | "yes" (not implemented yet)
-                var verse_mode = (this.sura != null && this.aya != null);
-                if(verse_mode){
-                  sura_from = parseSuraRange(this.sura)[0];
-                  sura_to = sura_from;
-                  multiline = false;
-                  [aya_from,aya_to] = parseAyaRange(this.aya);
-                  if(this.page != null) print("Ignoring page parameter!");
-                  page = madina_data.suras[sura_from].ayas[aya_from].p;
-                } else if(this.page != null){
-                  if(madina_data.pages){ // sharded: page -> [sura_from,aya_from,sura_to,aya_to]
-                    var pb = madina_data.pages[page - 1];
-                    sura_from = pb[0]; aya_from = pb[1]; sura_to = pb[2]; aya_to = pb[3];
-                  } else { // monolith: derive by scanning aya pages
-                    sura_from = 0; sura_to = 0; aya_from=0; aya_to=0;
-                    while(madina_data.suras[sura_from].ayas.slice(-1)[0].p < page) sura_from = sura_from + 1;
-                    sura_to = sura_from;
-                    while(sura_to < 114 && madina_data.suras[sura_to].ayas[0].p <= page) sura_to = sura_to + 1;
-                    sura_to = sura_to -1;
-                    while(madina_data.suras[sura_from].ayas[aya_from].p < page) aya_from = aya_from + 1;
-                    aya_to = madina_data.suras[sura_to].ayas.length-1;
-                    while (madina_data.suras[sura_to].ayas[aya_to].p > page) aya_to = aya_to - 1;
-                  }
-                  multiline = true;
-                  if(this.inline != null) print("Ignoring inline parameter with page!");
-                } else{
-                  console.error(`${name}> Bad arguments: Not rendering!`);
-                  return 1;
-                }
-                if(this.words != null){
-                  if(!verse_mode){
-                    print("Ignoring words parameter with page!");
-                  } else {
-                    words_range = parseWordsRange(this.words);
-                    if(words_range == null){
-                      print(`Bad words parameter: ${this.words}`);
-                    } else {
-                      if(aya_to !== aya_from) print("Ignoring aya range end with words parameter!");
-                      if(words_range[1] - words_range[0] + 1 > 500){
-                        print("words selection capped at 500 words");
-                        words_range[1] = words_range[0] + 499;
-                      }
-                      highlight_range = clampedOrNull("highlight", highlight_range, words_range);
-                      error_range = clampedOrNull("error", error_range, words_range);
-                      // words= has its own renderer that spans pages and suras from the start aya.
-                      renderWordsSpan(tag, sura_from, aya_from, words_range, headless, noQuotes,
-                                      inlineOpt, notitle, highlight_range, error_range);
-                      return;
-                    }
-                  }
-                }
-                // No words= selection (absent, ignored with page=, or malformed and falling back
-                // here): highlight=/error= are validated against the full verse/page instead, with
-                // word 1 = first word of aya_from (verse mode) or of the page's first aya (page
-                // mode never starts mid-aya, so this is always well-defined).
-                var display_total = verse_mode ? countVerseRangeWords(sura_from, aya_from, aya_to)
-                  : countPageWords(sura_from, aya_from, sura_to, aya_to, parseInt(page, 10));
-                highlight_range = clampedOrNull("highlight", highlight_range, [1, display_total]);
-                error_range = clampedOrNull("error", error_range, [1, display_total]);
-                var wordMarkMode = (highlight_range != null || error_range != null);
-                if(wordMarkMode) applyMarkTextScheme(tag);
-                closeAyaPopup(); // the body-level popup outlives tag.innerHTML="", close on re-render
-                tag.innerHTML = ""; //Remove all pre-existing elements
-                tag.removeAttribute('style'); // and styles.
-                line_from = madina_data.suras[sura_from].ayas[aya_from].r[0].l;
-                line_to = madina_data.suras[sura_to].ayas[aya_to].r.slice(-1)[0].l;
-                if(line_from != line_to) multiline = true;
-                multiline = applyInlineOverride(inlineOpt, multiline);
-                // Inline (single-line) renders get quote marks around the verse instead of any chrome
-                // (see the -inline CSS rule) - their only visual cue that this is a quoted excerpt,
-                // now that they have no header and no lone copy button (removed; the per-aya click
-                // popup covers them too). quotes="no" opts out of this.
-                tag.classList.toggle(`${name}-inline`, !multiline && !noQuotes);
+              highlight_range = clampedOrNull("highlight", highlight_range, words_range);
+              error_range = clampedOrNull("error", error_range, words_range);
+              // words= has its own renderer that spans pages and suras from the start aya.
+              renderWordsSpan(tag, sura_from, aya_from, words_range, headless, noQuotes,
+                              inlineOpt, notitle, highlight_range, error_range);
+              return;
+            }
+          }
+        }
+        // No words= selection (absent, ignored with page=, or malformed and falling back
+        // here): highlight=/error= are validated against the full verse/page instead, with
+        // word 1 = first word of aya_from (verse mode) or of the page's first aya (page
+        // mode never starts mid-aya, so this is always well-defined).
+        var display_total = verse_mode ? countVerseRangeWords(sura_from, aya_from, aya_to)
+          : countPageWords(sura_from, aya_from, sura_to, aya_to, parseInt(page, 10));
+        highlight_range = clampedOrNull("highlight", highlight_range, [1, display_total]);
+        error_range = clampedOrNull("error", error_range, [1, display_total]);
+        var wordMarkMode = (highlight_range != null || error_range != null);
+        if(wordMarkMode) applyMarkTextScheme(tag);
+        closeAyaPopup(); // the body-level popup outlives tag.innerHTML="", close on re-render
+        tag.innerHTML = ""; //Remove all pre-existing elements
+        tag.removeAttribute('style'); // and styles.
+        line_from = madina_data.suras[sura_from].ayas[aya_from].r[0].l;
+        line_to = madina_data.suras[sura_to].ayas[aya_to].r.slice(-1)[0].l;
+        if(line_from != line_to) multiline = true;
+        multiline = applyInlineOverride(inlineOpt, multiline);
+        // Inline (single-line) renders get quote marks around the verse instead of any chrome
+        // (see the -inline CSS rule) - their only visual cue that this is a quoted excerpt,
+        // now that they have no header and no lone copy button (removed; the per-aya click
+        // popup covers them too). quotes="no" opts out of this.
+        tag.classList.toggle(`${name}-inline`, !multiline && !noQuotes);
+        if(multiline){
+          styleMultilineTag(tag, page, headless);
+          if(!headless){
+            tag.appendChild(buildHeader(madina_data.suras[sura_from].name));
+          }
+        }
+        /** Loop on Ayas, lines, parts */
+        var aya_current = aya_from;
+        var sura_current = sura_from;
+        var word_counter = 0; // only advanced/used when wordMarkMode is true
+        for(let l = line_from; l <= line_to; l++) {
+          const ll = l; //Const for inner loops to refer
+          let line = document.createElement("quran-madina-html-line");
+          tag.appendChild(line);
+          if(multiline){
+            line.style.setProperty('display','block','');
+          } else {
+            line.style.setProperty('font-family', madina_data.font_family, '');
+            line.style.setProperty('font-size', madina_data.font_size+"px", '');
+          }
+          if(multiline && verse_mode && l === line_from){
+            appendSpacers(line, lineContext(sura_from, page, line_from, aya_from, -1));
+          }
+          let look_ahead = (sura_from == sura_to)? aya_to: madina_data.suras[sura_current].ayas.length-1;
+          for(let a = aya_current; a <= Math.min(aya_current+5, look_ahead) ; a++) {
+            // Sharded DB: the +5 look-ahead (and the sura-jump peek below) can probe an aya
+            // that belongs to a not-yet-loaded juz' — but any such aya is necessarily off
+            // this page (every on-page aya lives in a loaded shard), so treat undefined as
+            // "not on this page". In monolith mode all ayas are present, so these guards are
+            // inert.
+            let aya_a = madina_data.suras[sura_current].ayas[a];
+            if(aya_a !== undefined && aya_a.p == page){
+              let line_match = aya_a.r.filter(rr => rr.l == ll);
+              if (line_match.length){
                 if(multiline){
-                  styleMultilineTag(tag, page, headless);
-                  if(!headless){
-                    tag.appendChild(buildHeader(madina_data.suras[sura_from].name));
-                  }
+                  applyLineStyle(line, line_match[0].s);
                 }
-                /** Loop on Ayas, lines, parts */
-                var aya_current = aya_from;
-                var sura_current = sura_from;
-                var word_counter = 0; // only advanced/used when wordMarkMode is true
-                for(let l = line_from; l <= line_to; l++) {
-                  const ll = l; //Const for inner loops to refer
-                  let line = document.createElement("quran-madina-html-line");
-                  tag.appendChild(line);
-                  if(multiline){
-                    line.style.setProperty('display','block','');
+                let aya_part = document.createElement("div");
+                let classes = getAyaClass(sura_current+1, a-1);
+                DOMTokenList.prototype.add.apply(aya_part.classList, classes);
+                if(wordMarkMode && isCountableAya(sura_current, a)){
+                  // highlight=/error= is set: break this (countable) part into word spans
+                  // instead of the plain text/ligature blob below, so individual words can
+                  // be marked. Title parts (never countable) always keep the plain path -
+                  // they're never selectable/markable, same as in the words= render path.
+                  let basmalaWords = isBasmalaSlot(sura_current, a) ? countPartWords(line_match[0]) : 0;
+                  let mode = (basmalaWords > 0) ?
+                    basmalaRenderMode(word_counter, basmalaWords, null, highlight_range, error_range) :
+                    {ligature: false};
+                  if(mode.ligature){
+                    let lig = document.createElement("span");
+                    lig.classList.add(`${name}-word`, `${name}-basmala`);
+                    if(mode.cls) lig.classList.add(`${name}-word-${mode.cls}`);
+                    lig.textContent = BASMALA_LIGATURE;
+                    aya_part.appendChild(lig);
+                    word_counter = word_counter + basmalaWords;
                   } else {
-                    line.style.setProperty('font-family', madina_data.font_family, '');
-                    line.style.setProperty('font-size', madina_data.font_size+"px", '');
+                    word_counter = appendWords(aya_part, line_match[0].t, null, word_counter,
+                                                highlight_range, error_range);
                   }
-                  if(multiline && verse_mode && l === line_from){
-                    appendSpacers(line, lineContext(sura_from, page, line_from, aya_from, -1));
-                  }
-                  let look_ahead = (sura_from == sura_to)? aya_to: madina_data.suras[sura_current].ayas.length-1;
-                  for(let a = aya_current; a <= Math.min(aya_current+5, look_ahead) ; a++) {
-                    // Sharded DB: the +5 look-ahead (and the sura-jump peek below) can probe an aya
-                    // that belongs to a not-yet-loaded juz' — but any such aya is necessarily off
-                    // this page (every on-page aya lives in a loaded shard), so treat undefined as
-                    // "not on this page". In monolith mode all ayas are present, so these guards are
-                    // inert.
-                    let aya_a = madina_data.suras[sura_current].ayas[a];
-                    if(aya_a !== undefined && aya_a.p == page){
-                      let line_match = aya_a.r.filter(rr => rr.l == ll);
-                      if (line_match.length){
-                        if(multiline){
-                          applyLineStyle(line, line_match[0].s);
-                        }
-                        let aya_part = document.createElement("div");
-                        let classes = getAyaClass(sura_current+1, a-1);
-                        DOMTokenList.prototype.add.apply(aya_part.classList, classes);
-                        if(wordMarkMode && isCountableAya(sura_current, a)){
-                          // highlight=/error= is set: break this (countable) part into word spans
-                          // instead of the plain text/ligature blob below, so individual words can
-                          // be marked. Title parts (never countable) always keep the plain path -
-                          // they're never selectable/markable, same as in the words= render path.
-                          let basmalaWords = isBasmalaSlot(sura_current, a) ? countPartWords(line_match[0]) : 0;
-                          let mode = (basmalaWords > 0) ?
-                            basmalaRenderMode(word_counter, basmalaWords, null, highlight_range, error_range) :
-                            {ligature: false};
-                          if(mode.ligature){
-                            let lig = document.createElement("span");
-                            lig.classList.add(`${name}-word`, `${name}-basmala`);
-                            if(mode.cls) lig.classList.add(`${name}-word-${mode.cls}`);
-                            lig.textContent = BASMALA_LIGATURE;
-                            aya_part.appendChild(lig);
-                            word_counter = word_counter + basmalaWords;
-                          } else {
-                            word_counter = appendWords(aya_part, line_match[0].t, null, word_counter,
-                                                        highlight_range, error_range);
-                          }
-                        } else {
-                          // A page render always shows the complete basmala line, so it gets the
-                          // traditional ligature instead of the DB's 4 word tokens (blank slots,
-                          // e.g. At-Tawba's, stay blank).
-                          aya_part.textContent = (isBasmalaSlot(sura_current, a) && line_match[0].t !== "") ?
-                            BASMALA_LIGATURE : line_match[0].t;
-                        }
-                        aya_part.style.cssText = 'display:inline';
-                        line.appendChild(aya_part);
-                        hoverByType(classes.slice(-1)[0]);
-                        wireAyaClick(tag, classes.slice(-1)[0], sura_current+1, a-1);
-                        aya_current = a;
-                        let next_sura_aya0 = (sura_current < 113) ?
-                          madina_data.suras[sura_current+1].ayas[0] : undefined;
-                        if(aya_current >= look_ahead &&
-                          next_sura_aya0 !== undefined &&
-                          next_sura_aya0.p == page &&
-                          next_sura_aya0.r[0].l == ll+1) {
-                          //Jump to next Sura
-                          sura_current = sura_current + 1;
-                          aya_current = 0;
-                        }
-                      }
-                    }
-                  }
-                  if(multiline && verse_mode && l === line_to){
-                    appendSpacers(line, lineContext(sura_to, page, line_to, aya_to, 1));
-                  }
+                } else {
+                  // A page render always shows the complete basmala line, so it gets the
+                  // traditional ligature instead of the DB's 4 word tokens (blank slots,
+                  // e.g. At-Tawba's, stay blank).
+                  aya_part.textContent = (isBasmalaSlot(sura_current, a) && line_match[0].t !== "") ?
+                    BASMALA_LIGATURE : line_match[0].t;
+                }
+                aya_part.style.cssText = 'display:inline';
+                line.appendChild(aya_part);
+                hoverByType(classes.slice(-1)[0]);
+                wireAyaClick(tag, classes.slice(-1)[0], sura_current+1, a-1);
+                aya_current = a;
+                let next_sura_aya0 = (sura_current < 113) ?
+                  madina_data.suras[sura_current+1].ayas[0] : undefined;
+                if(aya_current >= look_ahead &&
+                  next_sura_aya0 !== undefined &&
+                  next_sura_aya0.p == page &&
+                  next_sura_aya0.r[0].l == ll+1) {
+                  //Jump to next Sura
+                  sura_current = sura_current + 1;
+                  aya_current = 0;
                 }
               }
             }
-          });
+          }
+          if(multiline && verse_mode && l === line_to){
+            appendSpacers(line, lineContext(sura_to, page, line_to, aya_to, 1));
+          }
+        }
+      }
+    }
+
+    customElements.define(name, QuranMadinaHtml);
   }
 
   // ==========================================================================

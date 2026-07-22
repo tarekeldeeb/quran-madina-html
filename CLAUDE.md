@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A browser library that renders Quran pages visually similar to the printed Madina Mushaf
 **without images** — pure HTML/CSS driven by pre-computed JSON databases. It ships as a custom
-element (`<quran-madina-html>`) built on the X-Tag library, published to npm and served via unpkg.
+element (`<quran-madina-html>`) built on the native Custom Elements v1 browser API, published to
+npm and served via unpkg.
 
 There are two distinct halves:
 
@@ -25,7 +26,7 @@ npm install              # install JS deps + the python deps are separate (see b
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 # thereafter run pytest as: .venv/bin/python -m pytest ...
 
-npm run build            # grunt: jshint, clean, concat (src + x-tag) into dist/, uglify, cssmin, json-minify
+npm run build            # grunt: jshint, clean, concat, uglify, cssmin, json-minify
 npm run build-db         # regenerate ALL assets/db/*.json (slow: downloads + headless Chrome). See below.
 npm run start            # http-server on localhost:8000 (required for render tests + demo)
 npm test                 # python -m pytest (runs both test/db_test.py and test/render_test.py)
@@ -169,10 +170,10 @@ slot 1 is blank (no basmala in the real text). Decoration slots are always cente
   which have no header of their own. Inline renders also get opening/closing quote marks (CSS
   `::before`/`::after` on `quran-madina-html-line`, gated by a `quran-madina-html-inline` class the
   render loop toggles) as their only visual cue that the text is a quoted excerpt; the optional
-  `quotes="no"` attribute opts a tag out of this. (Note: an attribute name used as an x-tag accessor
-  key must not contain a hyphen — `this['no-quotes']`-style hyphenated keys silently fail to register,
-  leaving the accessor permanently `undefined`; read hyphenated attributes via `getAttribute()`
-  directly instead, or avoid the hyphen as done here.)
+  `quotes="no"` attribute opts a tag out of this. (Note: a hyphenated attribute name can't be a
+  plain JS identifier/property name for a class getter/setter, so hyphenated attributes are read
+  via `getAttribute()` directly instead of via a same-named class getter, or avoid the hyphen as
+  done here.)
 - Stretch is applied as a CSS `scaleX()` transform on the line. There is no stored offset; a
   selection/line that starts mid-line reflows the preceding text invisibly (spacers) so the line's
   own stretch/centering positions the first visible word.

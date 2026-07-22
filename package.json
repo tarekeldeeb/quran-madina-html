@@ -34,7 +34,6 @@
   "keywords": [
     "quran",
     "html",
-    "x-tag",
     "madina"
   ],
   "author": "Tarek Eldeeb",
@@ -59,9 +58,6 @@
         "node scripts/publish-wrapper.mjs ${version}"
       ]
     }
-  },
-  "dependencies": {
-    "x-tag": "^1.5.11"
   },
   "overrides": {
     "minimatch": "3.1.5",
