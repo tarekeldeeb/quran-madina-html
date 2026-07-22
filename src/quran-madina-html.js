@@ -84,8 +84,8 @@
     // rebuilt/updated DB on every load rather than only once per session.
     var cached = !forceFresh && readJSONCache(path);
     // Deferred even on a cache hit: callers (the module boot sequence in particular) rely on
-    // loadJSON always resolving asynchronously, since x-tag is concatenated after this file and
-    // only becomes available once the current synchronous script execution finishes.
+    // loadJSON always resolving asynchronously, so a cache hit can't race ahead of a cache miss
+    // and complete synchronously while another caller's fetch is still pending.
     if(cached){ if(success) setTimeout(function(){ success(cached); }, 0); return; }
     if(pendingRequests[path]){ pendingRequests[path].push({success: success, error: error}); return; }
     pendingRequests[path] = [{success: success, error: error}];
@@ -1017,7 +1017,7 @@
           print(`Bad error parameter: ${this.error}`);
         }
         // `page` is the page to render, derived locally. We deliberately never write derived
-        // state (sura/aya/page) back onto the element: those are x-tag accessor attributes,
+        // state (sura/aya/page) back onto the element: those are attribute-backed accessors,
         // and writing them re-triggers render(), which used to cascade and duplicate output.
         var page = this.page;
         var headless = isTrue(this.headless); // hide header (multiline) / copy button (inline)
