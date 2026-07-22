@@ -67,6 +67,8 @@
     "minimatch": "3.1.5",
     "undici": "7.28.0",
     "lodash": "4.18.1",
-    "js-yaml": "^3.15.0"
+    "js-yaml": "^3.15.0",
+    "websocket-driver": "0.7.5",
+    "brace-expansion": "1.1.16"
   }
 }

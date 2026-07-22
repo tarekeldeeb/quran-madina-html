@@ -1,5 +1,5 @@
 beautifulsoup4==4.15.0
-requests==2.32.4
+requests==2.33.0
 selenium==4.45.0
 rich==15.0.0
 ruff==0.15.17
