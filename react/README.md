@@ -35,6 +35,9 @@ export default function App() {
       {/* a word subsequence (1-based, inclusive) */}
       <QuranMadinaHtml sura={1} aya={1} words="1:2" />
 
+      {/* highlight an error range */}
+      <QuranMadinaHtml sura={1} aya={1} words="1-14" error="10-13" />
+
       {/* no header / copy chrome */}
       <QuranMadinaHtml sura={2} aya="13-14" headless />
 
@@ -56,6 +59,7 @@ export default function App() {
 | `sura`      | number \| string    | Sura 1–114, with `aya`. |
 | `aya`       | number \| string    | Aya or range, e.g. `"8-10"`. |
 | `words`     | string              | 1-based word range: `"1:2"`, `"3-10"`, or a single index. |
+| `error`     | string              | 1-based word range to mark with built-in "error" highlight styling, e.g. `"10-13"`. |
 | `headless`  | boolean             | Drop the header/copy chrome. |
 | `quotes`    | string              | `"no"` (or `"false"`) drops the quote marks shown around inline (single-line) renders. |
 | `inline`    | string              | `"no"` forces the multiline/header layout even for a selection that fits one line. `"auto"` (default) is fit-based. `"yes"` (force a single line for an overflowing selection) is not implemented yet. |

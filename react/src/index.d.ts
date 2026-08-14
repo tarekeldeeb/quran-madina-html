@@ -27,6 +27,11 @@ export interface QuranMadinaHtmlProps
   aya?: number | string;
   /** Restrict to a 1-based word range, e.g. "1:2", "3-10", or a single index. */
   words?: string;
+  /**
+   * 1-based inclusive word range (same syntax as `words`) marking a sub-range that should
+   * render with the library's built-in "error" highlight styling.
+   */
+  error?: string;
   /** Drop the header / copy chrome and render only the Quran text. */
   headless?: boolean;
   /**

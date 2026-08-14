@@ -71,6 +71,7 @@ export default function QuranMadinaHtml({
   sura,
   aya,
   words,
+  error,
   headless,
   quotes,
   inline,
@@ -125,11 +126,12 @@ export default function QuranMadinaHtml({
       set("aya", aya);
     }
     set("words", words);
+    set("error", error);
     set("headless", headless);
     set("quotes", quotes);
     set("inline", inline);
     set("notitle", notitle);
-  }, [ready, page, sura, aya, words, headless, quotes, inline, notitle]);
+  }, [ready, page, sura, aya, words, error, headless, quotes, inline, notitle]);
 
   // Render as `class` rather than `className`: React < 19 does not map className -> class for
   // custom elements, so passing className would silently drop the class on those versions.

@@ -44,6 +44,17 @@ describe("<QuranMadinaHtml>", () => {
     expect(el.hasAttribute("page")).toBe(false);
   });
 
+  it("sets error as a plain string attribute, toggled on rerender", () => {
+    const { container, rerender } = render(
+      <QuranMadinaHtml sura={1} aya={1} words="1-14" error="10-13" />
+    );
+    const el = tag(container);
+    expect(el.getAttribute("error")).toBe("10-13");
+
+    rerender(<QuranMadinaHtml sura={1} aya={1} words="1-14" />);
+    expect(el.hasAttribute("error")).toBe(false);
+  });
+
   it("lets page win when both page and sura/aya are provided", () => {
     const { container } = render(<QuranMadinaHtml page={5} sura={2} aya="8-10" />);
     const el = tag(container);
