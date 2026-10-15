@@ -86,6 +86,11 @@ class JustResult:
     word_features: dict = field(default_factory=dict)
 
 
+# Base width of the spaces around an aya number, in normal spaces. The ۝ ornament
+# fills its whole advance, so a plain space makes it look glued to its neighbours.
+AYA_SPACE = 1.5
+
+
 def is_aya_space(text, i):
     prev_c = text[i - 1] if i > 0 else ""
     next_c = text[i + 1] if i + 1 < len(text) else ""
@@ -361,10 +366,12 @@ def justify_line(font, text, desired_width, stretch_letters=True, space_stretch=
     line = analyze_line(text)
     space_w = width(font, " ")
     # measured word by word, as the DOM shapes one span per word
-    natural = sum(width(font, w.text) for w in line.words) + space_w * len(line.spaces)
+    n_aya_spaces = sum(1 for t in line.spaces.values() if t == "aya")
+    natural = (sum(width(font, w.text) for w in line.words)
+               + space_w * (len(line.spaces) - n_aya_spaces) + space_w * AYA_SPACE * n_aya_spaces)
     n_simple = sum(1 for t in line.spaces.values() if t == "simple")
     n_aya = len(line.spaces) - n_simple
-    simple = aya = space_w
+    simple, aya = space_w, space_w * AYA_SPACE
     features = {}
     current = natural
     if desired_width > natural:
@@ -407,7 +414,8 @@ def justify_words(font, text, desired_width, space_stretch=0.5):
     word_w = [width(font, w.text) for w in line.words]
     # words are shaped separately in the DOM (one span each), so measure the
     # same way; whole-line shaping can differ slightly across spaces
-    natural = sum(word_w) + space_w * len(line.spaces)
+    n_aya_spaces = sum(1 for t in line.spaces.values() if t == "aya")
+    natural = sum(word_w) + space_w * (len(line.spaces) - n_aya_spaces) + space_w * AYA_SPACE * n_aya_spaces
     if desired_width <= natural:
         res = _shrink(font, line, natural, desired_width, space_w)
         res.features, res.word_features = res.word_features, {}
@@ -418,7 +426,7 @@ def justify_words(font, text, desired_width, space_stretch=0.5):
     max_stretch = max_simple * n_simple + max_aya * n_aya
     stretch = min(desired_width - natural, max_stretch)
     ratio = stretch / max_stretch if max_stretch else 0
-    simple, aya = space_w + ratio * max_simple, space_w + ratio * max_aya
+    simple, aya = space_w + ratio * max_simple, space_w * AYA_SPACE + ratio * max_aya
     current = natural + stretch
     word_feats = [{} for _ in line.words]
     done = False
@@ -449,37 +457,52 @@ def word_to_char_features(text, word_features):
             for i in range(words[wi].start, words[wi].end + 1)}
 
 
-SHRINK_FEATURES = ("shr1", "shrr")   # the fonts' own tightening features
+# The fonts' tightening features: shr1 (narrower alternates, rarely applies) and
+# shrr (GPOS: tucks letters into their neighbours, ~4.5% per line). shrr is never
+# applied next to an aya number, whose ornament fills its advance edge to edge.
+SHRINK_FEATURES = ("shr1", "shrr")
 MIN_SPACE_RATIO = 0.6                # spaces may tighten to 60% of normal
 
 
 def _shrink(font, line, natural, desired, space_w):
-    """Not in the reference algorithm (it only x-scales): tighten spaces, then
-    apply the fonts' shrink features word by word (last word first), and only
-    then fall back to a horizontal scale for what is left."""
-    n_spaces = len(line.spaces)
-    space = space_w
+    """Not in the reference algorithm (it only x-scales): tighten the spaces
+    between words, then apply the fonts' shrink features word by word (last
+    word first), and only then fall back to a horizontal scale for what is left.
+    Spaces around aya numbers keep their normal width (the marker would touch
+    the next word, as in print they never tighten)."""
+    n_simple = sum(1 for t in line.spaces.values() if t == "simple")
+    simple = space_w
     current = natural
-    if n_spaces:
-        space = max(space_w * MIN_SPACE_RATIO, space_w - (natural - desired) / n_spaces)
-        current -= (space_w - space) * n_spaces
+    if n_simple:
+        simple = max(space_w * MIN_SPACE_RATIO, space_w - (natural - desired) / n_simple)
+        current -= (space_w - simple) * n_simple
     word_features = {}
     shrink = {tag: 1 for tag in SHRINK_FEATURES}
+    def near_marker(wi):
+        return any(0 <= k < len(line.words) and line.words[k].text.startswith("\u06DD")
+                   for k in (wi - 1, wi, wi + 1))
+
     for wi in range(len(line.words) - 1, -1, -1):
         if current <= desired:
             break
         word = line.words[wi]
+        if near_marker(wi):
+            continue
         before = width(font, word.text)
         after = width(font, word.text, shrink)
         if after >= before:
             continue
         word_features[wi] = dict(shrink)
         current -= before - after
-    if current < desired and n_spaces:        # overshot: give it back to spaces
-        space += (desired - current) / n_spaces
+    aya = space_w * AYA_SPACE
+    if current < desired and line.spaces:       # overshot: give it back to the spaces
+        if n_simple:
+            simple += (desired - current) / n_simple
+        else:
+            aya += (desired - current) / len(line.spaces)
         current = desired
     x_scale = min(1.0, desired / current)
-    return JustResult({}, space, space, x_scale, natural, current * x_scale, word_features)
+    return JustResult({}, simple, aya, x_scale, natural, current * x_scale, word_features)
 
 
 def line_glyphs(font, text, result):

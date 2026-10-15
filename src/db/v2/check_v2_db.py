@@ -86,7 +86,7 @@ def main():
         diff = abs(total - row["w"] * 1000)
         worst = max(worst, diff)
         checked += 1
-        if diff > 1:
+        if diff > 2:     # spaces are stored to 1e-4 em (0.1 font unit each)
             errors.append(f"p{page} l{line}: width {total:.1f} vs {row['w'] * 1000:.1f}")
     print(f"{a.db}: {checked} justified lines checked, worst width error {worst:.2f} font units")
     for e in errors[:20]:
