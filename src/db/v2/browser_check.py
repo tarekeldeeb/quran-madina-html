@@ -22,6 +22,7 @@ import uharfbuzz as hb
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, os.path.dirname(__file__))
+import font_patch
 import justify
 
 FONT_PX = 40
@@ -124,9 +125,13 @@ def main():
     ap.add_argument("page", type=int)
     ap.add_argument("out_dir")
     ap.add_argument("--browser", default="chromium")
-    ap.add_argument("--mode", choices=("char", "zwj", "word"), default="char",
-                    help="char: per-letter cvNN spans; zwj: same, joined with ZWJ; "
-                         "word: per-word jt/dc/kt (Old Madina only)")
+    ap.add_argument("--mode", choices=("jp", "char", "zwj", "word"), default="jp",
+                    help="jp: per-letter stretch replayed by the patched font's jpNN "
+                         "position features (font_patch.py); char: per-letter cvNN "
+                         "spans; zwj: same, joined with ZWJ; word: per-word jt/dc/kt "
+                         "(Old Madina only)")
+    ap.add_argument("--line-width", type=int, default=LINE_WIDTH,
+                    help="font units (1405H Old Madina: 16400, 1441H New Madina: 16200)")
     a = ap.parse_args()
 
     with open(a.font, "rb") as fh:
@@ -137,22 +142,44 @@ def main():
     texts = re.findall(r"'([^']*)'", pages[a.page - 1])
 
     lines, results, expected = [], [], []
+    table, positions = font_patch.AlternateTable(), 1
     for text in texts:
         line = justify.analyze_line(text)
         if a.mode == "word":
-            res = justify.justify_words(font, text, LINE_WIDTH)
+            res = justify.justify_words(font, text, a.line_width)
             char_feats = justify.word_to_char_features(text, res.features)
         else:
-            res = justify.justify_line(font, text, LINE_WIDTH, space_stretch=0.5,
+            res = justify.justify_line(font, text, a.line_width, space_stretch=0.5,
                                        exhaustive=True)
-            char_feats = res.features
-        lines.append(line_html(line, res, a.mode))
+            char_feats = dict(res.features)
+            for wi, wf in res.word_features.items():
+                for idx in range(line.words[wi].start, line.words[wi].end + 1):
+                    char_feats[idx] = {**char_feats.get(idx, {}), **wf}
+        html_mode = a.mode
+        if a.mode == "jp":
+            per_word = {}
+            for wi, word in enumerate(line.words):
+                css = dict(res.word_features.get(wi, {}))
+                feats = justify.to_hb_features(res.features, word.start, word.start, word.end)
+                reps = font_patch.word_replacements(font, word.text, feats) if feats else []
+                if reps:
+                    css.update(font_patch.css_for(reps, table))
+                    positions = max(positions, max(p for p, _, _ in reps) + 1)
+                if css:
+                    per_word[wi] = css
+            res = justify.JustResult(per_word, res.simple_spacing, res.aya_spacing,
+                                     res.x_scale, res.natural_width, res.final_width)
+            html_mode = "word"
+        lines.append(line_html(line, res, html_mode))
         results.append(res)
         expected.append([justify.width(font, w.text, justify.to_hb_features(
             char_feats, w.start, w.start, w.end)) * FONT_PX / 1000 for w in line.words])
 
     os.makedirs(a.out_dir, exist_ok=True)
-    shutil.copy(a.font, os.path.join(a.out_dir, "font.otf"))
+    if a.mode == "jp":
+        font_patch.patch_font(a.font, os.path.join(a.out_dir, "font.otf"), table, positions)
+    else:
+        shutil.copy(a.font, os.path.join(a.out_dir, "font.otf"))
     page_path = os.path.join(a.out_dir, "check.html")
     with open(page_path, "w", encoding="utf-8") as fh:
         fh.write(build_page("font.otf", lines))
@@ -176,7 +203,7 @@ def main():
         diffs = [abs(b - e) for b, e in zip(m["words"], exp)]
         worst = max(worst, max(diffs))
         report.append({"line": n, "browser_px": round(m["width"], 2),
-                       "harfbuzz_px": round(res.final_width * FONT_PX / 1000, 2),
+                       "harfbuzz_px": round(res.final_width * res.x_scale * FONT_PX / 1000, 2),
                        "max_word_diff_px": round(max(diffs), 3),
                        "stretched": len(res.features)})
     print(json.dumps(report, indent=1, ensure_ascii=False))

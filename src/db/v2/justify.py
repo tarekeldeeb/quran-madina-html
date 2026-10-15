@@ -81,6 +81,9 @@ class JustResult:
     x_scale: float = 1.0
     natural_width: float = 0.0
     final_width: float = 0.0
+    # whole-word features by word index (e.g. shrinking), applied to the
+    # word's span as-is; `features` holds per-character stretch features
+    word_features: dict = field(default_factory=dict)
 
 
 def is_aya_space(text, i):
@@ -357,7 +360,8 @@ def justify_line(font, text, desired_width, stretch_letters=True, space_stretch=
     exhaustive: see _Justifier."""
     line = analyze_line(text)
     space_w = width(font, " ")
-    natural = width(font, text)
+    # measured word by word, as the DOM shapes one span per word
+    natural = sum(width(font, w.text) for w in line.words) + space_w * len(line.spaces)
     n_simple = sum(1 for t in line.spaces.values() if t == "simple")
     n_aya = len(line.spaces) - n_simple
     simple = aya = space_w
@@ -406,8 +410,7 @@ def justify_words(font, text, desired_width, space_stretch=0.5):
     natural = sum(word_w) + space_w * len(line.spaces)
     if desired_width <= natural:
         res = _shrink(font, line, natural, desired_width, space_w)
-        res.features = {wi: res.features[w.start] for wi, w in enumerate(line.words)
-                        if w.start in res.features}
+        res.features, res.word_features = res.word_features, {}
         return res
     n_simple = sum(1 for t in line.spaces.values() if t == "simple")
     n_aya = len(line.spaces) - n_simple
@@ -460,29 +463,35 @@ def _shrink(font, line, natural, desired, space_w):
     if n_spaces:
         space = max(space_w * MIN_SPACE_RATIO, space_w - (natural - desired) / n_spaces)
         current -= (space_w - space) * n_spaces
-    features = {}
-    for word in reversed(line.words):
+    word_features = {}
+    shrink = {tag: 1 for tag in SHRINK_FEATURES}
+    for wi in range(len(line.words) - 1, -1, -1):
         if current <= desired:
             break
+        word = line.words[wi]
         before = width(font, word.text)
-        after = width(font, word.text, {tag: 1 for tag in SHRINK_FEATURES})
+        after = width(font, word.text, shrink)
         if after >= before:
             continue
-        for idx in range(word.start, word.end + 1):
-            features.setdefault(idx, {}).update({tag: 1 for tag in SHRINK_FEATURES})
+        word_features[wi] = dict(shrink)
         current -= before - after
     if current < desired and n_spaces:        # overshot: give it back to spaces
         space += (desired - current) / n_spaces
         current = desired
     x_scale = min(1.0, desired / current)
-    return JustResult(features, space, space, x_scale, natural, current * x_scale)
+    return JustResult({}, space, space, x_scale, natural, current * x_scale, word_features)
 
 
 def line_glyphs(font, text, result):
     """Shape a justified line; return [(glyph_id, x, y)] left-to-right in font
     units plus total width. Spaces take the justified advances."""
-    spaces = analyze_line(text).spaces
-    buf = shape(font, text, to_hb_features(result.features))
+    line = analyze_line(text)
+    spaces = line.spaces
+    feats = {k: dict(v) for k, v in result.features.items()}
+    for wi, wf in result.word_features.items():
+        for idx in range(line.words[wi].start, line.words[wi].end + 1):
+            feats.setdefault(idx, {}).update(wf)
+    buf = shape(font, text, to_hb_features(feats))
     out, x = [], 0.0
     for info, pos in zip(buf.glyph_infos, buf.glyph_positions):
         kind = spaces.get(info.cluster)
