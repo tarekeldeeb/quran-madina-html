@@ -16,9 +16,24 @@ have the same word count).
 
 Tanzil stays the authoritative text. The DigitalKhatt texts are used **only
 for line breaks**. Tanzil words are converted at build time to the encoding the
-fonts expect (decomposed hamza with U+034F, no tatweel before dagger alef,
-`۝` + digits for aya numbers, open tanween ࣰ ࣱ ࣲ derived from the next letter,
-etc. — 55 patterns over the whole text, see the converter).
+fonts expect (`src/db/v2/tanzil_encoding.py`): decomposed hamza with U+034F,
+no tatweel before dagger alef, ى → ي where it carries a vowel or follows kasra,
+`۝` + digits for aya numbers, ۞/۩ attached to their word, and the open tanween
+ࣰ ࣱ ࣲ derived by the tajweed rule (open before idgham/ikhfa letters, stacked
+before throat letters and hamzat wasl, plain vowel before the iqlab meem).
+
+Checked over the whole Quran (`src/db/v2/validate_encoding.py`):
+
+| Reference | Identical tokens | Pause marks only | Other |
+|---|---|---|---|
+| 1405H text | 84,112 / 84,116 | 1 | 3 (DigitalKhatt spacing quirks around ۞ ۩, v1 bug below) |
+| 1441H text | 83,764 / 84,116 | **352** | 1 (v1 bug below) |
+
+- Every *letter* of Tanzil matches both prints. The 1441H print revised 352
+  **pause marks (waqf)**; Tanzil keeps the earlier ones. **Open question:** in
+  the 1441H layout, show Tanzil's marks or the 1441H print's?
+- **v1 bug found:** page 254 (13:37) — the v1 DB has no ﴿٣٧﴾ marker and puts
+  "مَا" on line 7 instead of line 6.
 
 ## Stretching letters in browser text: position features in the font
 
