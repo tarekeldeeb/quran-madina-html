@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import sys
+import unicodedata
 
 import uharfbuzz as hb
 from playwright.sync_api import sync_playwright
@@ -31,6 +32,42 @@ def css_features(feats):
     return ", ".join(f'"{tag}" {value}' for tag, value in sorted(feats.items()))
 
 
+ZWJ = "‍"
+
+
+def zwj_word_html(line, word, result):
+    """Split a word into segments of whole clusters (base letter + its marks)
+    sharing one feature set; at each internal boundary where the letter before
+    joins forward, add a zero-width joiner on both sides so each separately
+    shaped segment still gets connected letter forms."""
+    text = line.text
+    clusters = []                      # [start, end] char ranges
+    for idx in range(word.start, word.end + 1):
+        if clusters and unicodedata.category(text[idx]) == "Mn":
+            clusters[-1][1] = idx
+        else:
+            clusters.append([idx, idx])
+    segs = []                          # (feature-dict, [cluster ranges])
+    for start, end in clusters:
+        feats = {}
+        for idx in range(end, start - 1, -1):   # base letter wins over marks
+            feats.update(result.features.get(idx, {}))
+        if segs and segs[-1][0] == feats:
+            segs[-1][1].append((start, end))
+        else:
+            segs.append((feats, [(start, end)]))
+    out = []
+    for n, (feats, ranges) in enumerate(segs):
+        body = "".join(text[s:e + 1] for s, e in ranges)
+        if n and text[segs[n - 1][1][-1][0]] in justify.DUAL_JOIN:
+            body = ZWJ + body
+        if n + 1 < len(segs) and text[ranges[-1][0]] in justify.DUAL_JOIN:
+            body = body + ZWJ
+        style = f' style=\'font-feature-settings: {css_features(feats)}\'' if feats else ""
+        out.append(f"<span{style}>{html.escape(body)}</span>")
+    return "".join(out)
+
+
 def line_html(line, result, mode="char"):
     """Words as spans. mode "char": characters with features get nested spans;
     mode "word": features are keyed by word index and set on the word span."""
@@ -44,6 +81,10 @@ def line_html(line, result, mode="char"):
             feats = result.features.get(wi)
             style = f' style=\'font-feature-settings: {css_features(feats)}\'' if feats else ""
             out.append(f'<span class="w"{style}>{html.escape(word.text)}</span>')
+            continue
+        if mode == "zwj":
+            out.append(f'<span class="w" data-i="{wi}">{zwj_word_html(line, word, result)}'
+                       '</span>')
             continue
         chunks, run = [], ""
         for idx in range(word.start, word.end + 1):
@@ -83,8 +124,9 @@ def main():
     ap.add_argument("page", type=int)
     ap.add_argument("out_dir")
     ap.add_argument("--browser", default="chromium")
-    ap.add_argument("--mode", choices=("char", "word"), default="char",
-                    help="char: per-letter cvNN (justify_line); word: per-word jt/dc/kt")
+    ap.add_argument("--mode", choices=("char", "zwj", "word"), default="char",
+                    help="char: per-letter cvNN spans; zwj: same, joined with ZWJ; "
+                         "word: per-word jt/dc/kt (Old Madina only)")
     a = ap.parse_args()
 
     with open(a.font, "rb") as fh:

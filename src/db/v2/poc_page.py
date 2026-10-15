@@ -18,11 +18,10 @@ import json
 import re
 from collections import defaultdict
 
-import uharfbuzz as hb
-from fontTools.ttLib import TTFont
-
 import justify
 import render_svg
+import uharfbuzz as hb
+from fontTools.ttLib import TTFont
 
 PANEL_PX = 900
 
