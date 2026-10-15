@@ -2,12 +2,15 @@
 
 ## Layouts
 
-| | 1441H (default) | 1405H (option) |
-|---|---|---|
-| Font | DigitalKhatt New Madina (`hb/madina.otf`) | DigitalKhatt Old Madina (`hb/oldmadina.otf`) |
-| License | OFL 1.1, no Reserved Font Name | OFL 1.1, no Reserved Font Name |
-| Line breaks | DigitalKhatt `quran_text_madina.ts` (MIT) | DigitalKhatt `quran_text_old_madinah.ts` (MIT); same breaks as the v1 `Madina05` DB |
-| Line width | 16200 font units | 16400 font units |
+| | 1441H (default) | 1405H (option) | IndoPak 15-line (option) |
+|---|---|---|---|
+| Font | DigitalKhatt New Madina (`hb/madina.otf`) | DigitalKhatt Old Madina (`hb/oldmadina.otf`) | DigitalKhatt IndoPak (`hb/indopak.otf`) |
+| License | OFL 1.1, no Reserved Font Name | OFL 1.1, no Reserved Font Name | OFL 1.1, no Reserved Font Name |
+| Line breaks | DigitalKhatt `quran_text_madina.ts` (MIT) | DigitalKhatt `quran_text_old_madinah.ts` (MIT); same breaks as the v1 `Madina05` DB | DigitalKhatt `quran_text_indopak_15.ts` (MIT) |
+| Line width | 16200 font units | 16400 font units | 16400 font units |
+
+IndoPak was added at the user's request; its text and pause marks will need
+their own check against Tanzil (IndoPak spelling conventions differ).
 
 The two layouts break lines differently on ~37% of lines (5658 of 9046 lines
 have the same word count).
