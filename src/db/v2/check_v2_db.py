@@ -9,11 +9,13 @@ Checks:
     their features, as the browser does) + spaces == line width
 """
 import argparse
+import io
 import json
 import os
 import sys
 
 import uharfbuzz as hb
+from fontTools.ttLib import TTFont
 
 sys.path.insert(0, os.path.dirname(__file__))
 import tanzil_encoding as enc
@@ -41,11 +43,14 @@ def main():
     with open(a.db, encoding="utf-8") as fh:
         db = json.load(fh)
     font_path = a.font or os.path.join(os.path.dirname(a.db), os.path.basename(db["font_url"]))
-    with open(font_path, "rb") as fh:
-        font = hb.Font(hb.Face(fh.read()))
+    tt = TTFont(font_path)          # HarfBuzz reads sfnt, not woff2
+    tt.flavor = None
+    data = io.BytesIO()
+    tt.save(data)
+    font = hb.Font(hb.Face(data.getvalue()))
     errors = []
-    if len(db["pages"]) != 604:
-        errors.append(f"{len(db['pages'])} pages")
+    if len(db["lines"]) != 604:
+        errors.append(f"{len(db['lines'])} pages")
     for si, sura in enumerate(db["suras"]):
         if len(sura["ayas"]) < 3:
             errors.append(f"sura {si + 1}: no ayas")
@@ -69,7 +74,7 @@ def main():
                 lines.setdefault((page, part["l"]), []).extend(zip(part["t"].split(), part["f"]))
     checked = worst = 0
     for (page, line), words in lines.items():
-        row = db["pages"][page - 1][line - 1]
+        row = db["lines"][page - 1][line - 1]
         if row["k"] != "text":
             continue
         spaces = row.get("s", [])

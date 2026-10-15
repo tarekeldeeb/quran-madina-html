@@ -390,9 +390,10 @@
     // document-wide: the same aya can appear in more than one <quran-madina-html> tag on a page
     // (e.g. a normal render and a headless="true" one of the same range), which would otherwise
     // duplicate the copied text with fragments from every tag that happens to share the class.
-    return Array.from(tag.getElementsByClassName(class_name))
+    var text = Array.from(tag.getElementsByClassName(class_name))
       .map(function(e){ return e.textContent; })
       .join(" ").replace(/\s+/g, " ").trim();
+    return isV2() ? v2CleanText(text) : text;
   }
   function positionAyaPopup(popup, elm){
     var rect = elm.getBoundingClientRect();
@@ -459,16 +460,82 @@
     if(madina_data.font_family === "me_quran"){
       tag.style.setProperty('line-height', madina_data.font_size*2+"px", '');
     }
+    if(isV2()) tag.style.setProperty('line-height', "1.8", ''); // DigitalKhatt line pitch
     tag.style.width = (madina_data.line_width+10)+"px";
     if(!headless){
       tag.style.setProperty('box-shadow', 'inset '+(page%2==1?"":"-")+'8px 0 7px -7px #333', '');
     }
   }
+  // --------------------------------------------------------------------------
+  // v2 DBs (version: 2). Lines are justified by stretching letters: each word carries its own
+  // font-feature-settings (position features jpNN of the v2 font, chosen by HarfBuzz at build
+  // time) and each space its exact width. All widths are in em, so any font-size renders the same
+  // layout. Line geometry lives in madina_data.lines[page-1][line-1] = {k, w, s, x}.
+  // --------------------------------------------------------------------------
+  function isV2(){ return madina_data.version === 2; }
+  function v2InitLine(line, page, line_no){
+    // Attach the line's layout row; words appended later consume its spaces in order.
+    var row = madina_data.lines[page - 1][line_no - 1];
+    line._qmh = {row: row, words: 0};
+    line.style.setProperty('width', row.w + "em", '');
+    line.style.setProperty('margin', "0 auto", '');
+    line.style.setProperty('white-space', "nowrap", '');
+    if(row.k !== "text") line.style.setProperty("text-align", "center", "");
+    if(row.x) line.style.setProperty("transform", `scaleX(${row.x})`, "");
+  }
+  function v2FeatureSettings(f){
+    // "jp04=3,jp06=1" -> '"jp04" 3, "jp06" 1'
+    return f.split(",").map(function(kv){ var p = kv.split("="); return `"${p[0]}" ${p[1]}`; }).join(", ");
+  }
+  function v2InitPlainLine(line){
+    // Inline (single-line quote) renders: natural spacing, no stretching.
+    line._qmh = {row: null, words: 0};
+  }
+  function v2AppendWords(parent, line, part, onWord){
+    // Append a part's words to `parent` (an aya div inside `line`). Justified lines get their
+    // exact space widths and per-word features; other lines (titles, basmala, inline quotes)
+    // plain spaces and no stretching. onWord(span, token) lets callers count/hide/mark words.
+    if(!line._qmh) v2InitPlainLine(line);
+    var state = line._qmh;
+    var justified = state.row !== null && state.row.k === "text";
+    part.t.split(" ").forEach(function(token, j){
+      if(token === "") return;
+      if(state.words > 0){
+        if(justified){
+          var sp = document.createElement("span");
+          sp.className = `${name}-space`;
+          sp.textContent = " ";
+          sp.style.cssText = `display:inline-block;width:${state.row.s[state.words - 1]}em`;
+          parent.appendChild(sp);
+        } else {
+          parent.appendChild(document.createTextNode(" "));
+        }
+      }
+      state.words = state.words + 1;
+      var span = document.createElement("span");
+      span.textContent = token;
+      span.classList.add(`${name}-word`);
+      if(justified && part.f && part.f[j]) span.style.fontFeatureSettings = v2FeatureSettings(part.f[j]);
+      if(onWord) onWord(span, token);
+      parent.appendChild(span);
+    });
+  }
+  function v2CleanText(text){
+    // Copy/paste: undo the font's encoding (CGJ joiners, decomposed hamza, open tanween) so the
+    // clipboard gets standard Uthmani text.
+    return text
+      .replace(/ا͏ٔ͏/g, "أ").replace(/إ͏/g, "إ")
+      .replace(/و͏ٔ͏/g, "ؤ").replace(/ي͏ٔ͏/g, "ئ")
+      .replace(/͏/g, "")
+      .replace(/ࣰ/g, "ً").replace(/ࣱ/g, "ٌ").replace(/ࣲ/g, "ٍ");
+  }
+
   function applyLineStyle(line, stretch){
     // A stretch >= 0 is a scaleX factor filling the line; -1 means center this line instead.
     // stretch_scale (1 unless the font-size is interpolated, see bootInterpolated) corrects the
     // anchor DB's factors: glyph widths grow proportionally with font-size but the fitted
     // line_width does not, so every justified line needs the same small scaleX adjustment.
+    if(isV2()) return; // v2 lines are styled once, by v2InitLine
     if(stretch >= 0){
       line.style.setProperty("transform", `scaleX(${stretch * (madina_data.stretch_scale || 1)})`, "");
     } else {
@@ -484,12 +551,21 @@
       span.classList.add(`${name}-word-highlight`);
     }
   }
-  function appendWords(parent, text, range, counter, highlightRange, errorRange){
+  function appendWords(parent, text, range, counter, highlightRange, errorRange, part, line){
     // Render each whitespace-separated word as its own span so non-selected words can be
     // hidden in place (visibility:hidden) while keeping the original Madina line geometry.
     // `counter` is the running 1-based word index across the whole selection (spans ayas).
     // `range` is optional: null means nothing is hidden (used by the plain render path,
     // which has no words= selection to restrict to - see doRender).
+    // v2 DBs pass the `part` and its `line`, so words keep their stretch features and spaces.
+    if(isV2() && part && line){
+      v2AppendWords(parent, line, part, function(span, token){
+        if(isWordToken(token)) counter = counter + 1;
+        if(range && (counter < range[0] || counter > range[1])) span.classList.add(`${name}-word-hidden`);
+        applyMarkClass(span, counter, highlightRange, errorRange);
+      });
+      return counter;
+    }
     text.split(/(\s+)/).forEach(function(token){
       if(token === "") return;
       if(/^\s+$/.test(token)){ parent.appendChild(document.createTextNode(token)); return; }
@@ -519,6 +595,7 @@
     function partiallyIn(rng){
       return !!rng && !fullyIn(rng) && counter + basmalaWords >= rng[0] && counter + 1 <= rng[1];
     }
+    if(isV2()) return {ligature: false}; // v2 fonts draw the basmala line from its 4 words
     if(!fullyIn(displayRange)) return {ligature: false};
     // A highlight/error range that cuts into only some of the basmala's words forces the
     // individual tokens so the partial mark is actually visible.
@@ -567,8 +644,9 @@
     // excluded from copy-to-clipboard. Shared by the verse and words= render paths.
     for(var i = 0; i < parts.length; i++){
       var spacer = document.createElement("div");
-      spacer.textContent = parts[i].t;
       spacer.style.cssText = 'display:inline;visibility:hidden';
+      if(isV2()) v2AppendWords(spacer, line_el, parts[i]); // same words + spaces as when visible
+      else spacer.textContent = parts[i].t;
       line_el.appendChild(spacer);
     }
   }
@@ -612,6 +690,7 @@
     } else {
       body = clone.textContent.replace(/\s+/g, " ").trim();
     }
+    if(isV2()) body = v2CleanText(body);
     var text = "\u201C" + body + "\u201D" + "\n\n" + sura_name;
     navigator.clipboard.writeText(text);
     alert("\u2398 تم نسخ:\n\n" + text);
@@ -730,6 +809,10 @@
       var line = document.createElement("quran-madina-html-line");
       if(multiline){
         line.style.setProperty('display', 'block', '');
+        if(isV2()){
+          var key = group.key.split(':');
+          v2InitLine(line, parseInt(key[0], 10), parseInt(key[1], 10));
+        }
         applyLineStyle(line, group.stretch);
         var first = group.parts[0];
         if(!isLineStartPart(first.sura, first.ayaIdx, first.part.l)){
@@ -767,7 +850,8 @@
           } else {
             // A partial words= overlap, or a highlight/error range cutting into only some of
             // the basmala's words, falls through to appendWords so the right words show/mark.
-            counter = appendWords(aya_part, item.part.t, range, counter, highlight_range, error_range);
+            counter = appendWords(aya_part, item.part.t, range, counter, highlight_range, error_range,
+                                  item.part, line);
           }
         } else if(notitle && (item.ayaIdx === 0 || (item.sura === 0 && item.ayaIdx === 1))){
           // notitle: keep the title's line and its decorative frame (the sura_border SVG is
@@ -816,9 +900,16 @@
     print(`font-size ${doc_font_sz} outside ${FONT_SIZE_RANGE[0]}..${FONT_SIZE_RANGE[1]}, using ${DEFAULT_FONT_SIZE}`);
     doc_font_sz = DEFAULT_FONT_SIZE;
   }
+  // v2 (default): data-layout="1441H" (default) | "1405H" loads assets/db/v2/Madina-<layout>.json,
+  // whose lines are justified by stretching letters. A data-font attribute without data-layout
+  // keeps loading the v1 DBs (tatweel + scaleX) as before.
+  var doc_layout  = this_script.getAttribute('data-layout');
+  var use_v2      = doc_layout != null || !this_script.hasAttribute('data-font');
+  if(use_v2) doc_layout = doc_layout || "1441H";
   var doc_cdn     = this_script.getAttribute('data-cdn');
   if (doc_cdn) cdn = doc_cdn.replace(/\/?$/, "/"); // honor explicit base, ensure trailing slash
-  print(`${doc_name} with font: ${doc_font} size: ${doc_font_sz}`);
+  print(use_v2 ? `v2 layout: ${doc_layout} size: ${doc_font_sz}`
+               : `${doc_name} with font: ${doc_font} size: ${doc_font_sz}`);
   const name_css = cdn+"dist/"+name+".min.css?v=1.1";
   if (!document.getElementById(name))
   {
@@ -1118,6 +1209,7 @@
           tag.appendChild(line);
           if(multiline){
             line.style.setProperty('display','block','');
+            if(isV2()) v2InitLine(line, parseInt(page, 10), l);
           } else {
             line.style.setProperty('font-family', madina_data.font_family, '');
             line.style.setProperty('font-size', madina_data.font_size+"px", '');
@@ -1160,14 +1252,17 @@
                     word_counter = word_counter + basmalaWords;
                   } else {
                     word_counter = appendWords(aya_part, line_match[0].t, null, word_counter,
-                                                highlight_range, error_range);
+                                                highlight_range, error_range, line_match[0], line);
                   }
+                } else if(isV2() && isCountableAya(sura_current, a)){
+                  // v2: words keep their stretch features and the line its exact spaces.
+                  v2AppendWords(aya_part, line, line_match[0]);
                 } else {
                   // A page render always shows the complete basmala line, so it gets the
                   // traditional ligature instead of the DB's 4 word tokens (blank slots,
                   // e.g. At-Tawba's, stay blank).
-                  aya_part.textContent = (isBasmalaSlot(sura_current, a) && line_match[0].t !== "") ?
-                    BASMALA_LIGATURE : line_match[0].t;
+                  aya_part.textContent = (!isV2() && isBasmalaSlot(sura_current, a) &&
+                    line_match[0].t !== "") ? BASMALA_LIGATURE : line_match[0].t;
                 }
                 aya_part.style.cssText = 'display:inline';
                 line.appendChild(aya_part);
@@ -1291,6 +1386,18 @@
       dbHeader(sz, function(h){ headers[sz] = h; done(); }, fail);
     });
   }
-  if(ANCHOR_SIZES.indexOf(doc_font_sz) >= 0){ bootFromManifest(); } else { bootInterpolated(); }
+  function bootV2(){
+    // v2 DBs size everything in em: one DB serves every font-size, no anchors/interpolation.
+    loadJSON(`${cdn}assets/db/v2/Madina-${doc_layout}.json`,
+      function(data){
+        madina_data = data;
+        madina_data.font_size = doc_font_sz;
+        madina_data.line_width = data.line_width * doc_font_sz; // px, for the tag's width
+        initTag();
+      },
+      function(xhr){ console.error(`${name}> no v2 DB for layout ${doc_layout}`, xhr); });
+  }
+  if(use_v2){ bootV2(); }
+  else if(ANCHOR_SIZES.indexOf(doc_font_sz) >= 0){ bootFromManifest(); } else { bootInterpolated(); }
 
 })();

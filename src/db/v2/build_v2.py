@@ -19,8 +19,8 @@ DB schema (version 2) — all widths in em, so any font size works:
   {
     "version": 2, "layout": "1441H", "title", "published",
     "font_family", "font_url", "line_width": <em>,
-    "pages": [ [ {"k": "text"|"sura"|"bism", "w": <line width em>,
-                  "s": [space widths em], "x": <scaleX if < 1>} ... 15 ] ... 604 ],
+    "lines": [ [ {"k": "text"|"sura"|"bism", "w": <line width em>,
+                  "s": [space widths em], "x": <scaleX if < 1>} ... 15 ] ... 604 pages ],
     "suras": [ {"name", "ayas": [ {"p": page, "r": [ {"l": line, "t": text,
                  "f": ["jp04=3,jp06=1" | "" per word of t]} ] } ] } ]
   }
@@ -36,6 +36,7 @@ import unicodedata
 from collections import defaultdict
 
 import uharfbuzz as hb
+from fontTools.ttLib import TTFont
 
 sys.path.insert(0, os.path.dirname(__file__))
 import font_patch
@@ -239,12 +240,16 @@ def build(args):
         suras.append({"name": sura_names[s - 1], "ayas": ayas_json})
 
     os.makedirs(args.out, exist_ok=True)
-    font_name = f"{os.path.splitext(os.path.basename(cfg['font']))[0]}-qmh.otf"
-    font_out = os.path.join(args.out, font_name)
+    stem = f"{os.path.splitext(os.path.basename(cfg['font']))[0]}-qmh"
+    font_out = os.path.join(args.out, stem + ".otf")
     font_patch.patch_font(font_path, font_out, table, positions, cfg["family"])
+    font_name = stem + ".woff2"                     # what the browser loads
+    woff2 = TTFont(font_out)
+    woff2.flavor = "woff2"
+    woff2.save(os.path.join(args.out, font_name))
     db = {"version": 2, "layout": args.layout, "title": cfg["title"], "published": cfg["published"],
           "font_family": cfg["family"], "font_url": f"assets/db/v2/{font_name}",
-          "line_width": round(full / 1000, 4), "pages": page_rows, "suras": suras}
+          "line_width": round(full / 1000, 4), "lines": page_rows, "suras": suras}
     db_path = os.path.join(args.out, f"Madina-{args.layout}.json")
     with open(db_path, "w", encoding="utf-8") as fh:
         json.dump(db, fh, ensure_ascii=False, separators=(",", ":"))

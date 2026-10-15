@@ -12,3 +12,4 @@ dist
 *.csv
 
 tmp_v2poc/
+assets/db/v2/*.otf

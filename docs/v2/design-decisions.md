@@ -77,3 +77,25 @@ since the alternate lists depend on the corpus.
 - Aya marker collides with the next word on tight lines (1441H p3 l8):
   give aya spaces a higher minimum when shrinking.
 - Pages 1-2, sura titles, basmala lines.
+
+## Runtime (Phase 4)
+
+`<script src=".../quran-madina-html.js" data-layout="1441H">` (default `1441H`,
+or `1405H`) loads `assets/db/v2/Madina-<layout>.json` and its woff2 font. A page
+that sets `data-font` without `data-layout` keeps the v1 DBs.
+
+- Every v2 line gets its row from `lines[page][line]`: width (em), centering for
+  titles/basmala/narrow lines, `scaleX` for the few shrunk lines.
+- Words are spans with their `font-feature-settings`; spaces are inline-block
+  spans of the exact width. The words=, highlight=, error= and spacer paths all
+  use the same builder (`v2AppendWords`), so selections keep the page geometry.
+- Copy/paste maps the font encoding back to standard Uthmani (CGJ removed,
+  hamza recomposed, open tanween → regular).
+- No font-size anchors or interpolation: everything is in em.
+
+Screenshot: `img/v2-runtime-chromium.png` (page 3, highlight/error, words=,
+inline quote, page 1).
+
+The v2 DBs in `assets/db/v2` are currently built from the Tanzil text recovered
+from the v1 DB (tanzil.net is unreachable from the build sandbox); rebuild with
+`--tanzil` from the real download before release.
