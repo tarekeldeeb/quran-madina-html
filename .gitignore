@@ -11,3 +11,4 @@ dist
 .DS_Store
 *.csv
 
+tmp_v2poc/

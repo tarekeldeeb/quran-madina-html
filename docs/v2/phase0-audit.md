@@ -4,7 +4,11 @@ Goal of v2.0: replace build-time tatweel insertion with real glyph stretching
 (HarfBuzz shaping + the font's own stretch features), to look closer to the
 printed Madina Mushaf.
 
-## Font chosen for the single-font pilot
+> **Update (Phase 1):** the pilot font is now *DigitalKhatt Old Madina*, which
+> matches our 1405H layout and has whole-word stretch features that work in
+> the browser. See `phase1-poc.md`.
+
+## Font first considered for the pilot
 
 | | |
 |---|---|
