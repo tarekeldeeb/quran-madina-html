@@ -136,3 +136,31 @@ def convert_tokens(tokens):
         else:
             merged.append(tok)
     return merged
+
+
+WAQF_MARKS = re.compile("[ۖ-ۜ]")
+
+
+def strip_pause_marks(token):
+    return WAQF_MARKS.sub("", token)
+
+
+def apply_pause_marks(tokens, reference):
+    """Take pause marks (waqf, U+06D6-U+06DC) from `reference` tokens.
+
+    The 1441H print revised ~350 pause marks; Tanzil keeps the earlier ones.
+    Tokens are aligned on their text without pause marks; wherever a token
+    matches its reference token apart from pause marks, the reference's marks
+    are used. Letters and vowels always stay Tanzil's. Returns (tokens, n_changed)."""
+    import difflib
+    ours = [strip_pause_marks(t) for t in tokens]
+    theirs = [strip_pause_marks(t) for t in reference]
+    out = list(tokens)
+    changed = 0
+    for block in difflib.SequenceMatcher(None, ours, theirs, autojunk=False).get_matching_blocks():
+        for k in range(block.size):
+            i, j = block.a + k, block.b + k
+            if out[i] != reference[j]:
+                out[i] = reference[j]
+                changed += 1
+    return out, changed

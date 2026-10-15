@@ -43,6 +43,17 @@ class EncodingTest(unittest.TestCase):
         out = E.convert_tokens(["۞", "مَا", "۩", E.aya_number(12)])
         self.assertEqual(out, ["۞مَا۩", "۝١٢"])
 
+    def test_pause_marks_from_reference(self):
+        ours = ["\u0628\u064E\u0644\u064E\u0649\u0670", "\u0627\u0644\u0644\u0651\u064E\u0647\u0650\u06D7"]
+        ref = ["\u0628\u064E\u0644\u064E\u0649\u0670\u06DA", "\u0627\u0644\u0644\u0651\u064E\u0647\u0650\u06DA"]
+        out, changed = E.apply_pause_marks(ours, ref)
+        self.assertEqual((out, changed), (ref, 2))
+
+    def test_pause_marks_never_change_letters(self):
+        ours = ["\u0645\u064E\u0627"]
+        out, changed = E.apply_pause_marks(ours, ["\u0645\u064F\u0627\u06DA"])
+        self.assertEqual((out, changed), (ours, 0))
+
 
 if __name__ == "__main__":
     unittest.main()

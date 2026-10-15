@@ -30,8 +30,10 @@ Checked over the whole Quran (`src/db/v2/validate_encoding.py`):
 | 1441H text | 83,764 / 84,116 | **352** | 1 (v1 bug below) |
 
 - Every *letter* of Tanzil matches both prints. The 1441H print revised 352
-  **pause marks (waqf)**; Tanzil keeps the earlier ones. **Open question:** in
-  the 1441H layout, show Tanzil's marks or the 1441H print's?
+  **pause marks (waqf)**; Tanzil keeps the earlier ones. **Decision:** the
+  1441H layout uses the 1441H print's pause marks
+  (`tanzil_encoding.apply_pause_marks`, aligned on text without marks; letters
+  and vowels always stay Tanzil's). Result: 84,116 / 84,116 tokens identical.
 - **v1 bug found:** page 254 (13:37) — the v1 DB has no ﴿٣٧﴾ marker and puts
   "مَا" on line 7 instead of line 6.
 
