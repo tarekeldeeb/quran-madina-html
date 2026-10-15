@@ -477,7 +477,13 @@
     // Attach the line's layout row; words appended later consume its spaces in order.
     var row = madina_data.lines[page - 1][line_no - 1];
     line._qmh = {row: row, words: 0};
-    line.style.setProperty('width', row.w + "em", '');
+    // z: the page's text is set z times smaller so its widest line fits undistorted;
+    // the line keeps its width, measured in its own (smaller) em.
+    if(row.z){
+      line.style.setProperty('font-size', row.z + "em", '');
+      line.style.setProperty('line-height', String(1.8 / row.z), ''); // keep the page's line pitch
+    }
+    line.style.setProperty('width', (row.w / (row.z || 1)) + "em", '');
     line.style.setProperty('margin', "0 auto", '');
     line.style.setProperty('white-space', "nowrap", '');
     if(row.k !== "text") line.style.setProperty("text-align", "center", "");

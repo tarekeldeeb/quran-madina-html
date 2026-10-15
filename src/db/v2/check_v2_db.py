@@ -82,7 +82,7 @@ def main():
             errors.append(f"p{page} l{line}: {len(words)} words, {len(spaces)} spaces")
             continue
         total = sum(width(font, w, css_to_features(f)) for w, f in words) + sum(spaces) * 1000
-        total *= row.get("x", 1)
+        total *= row.get("x", 1) * row.get("z", 1)    # z: the line's font is z em
         diff = abs(total - row["w"] * 1000)
         worst = max(worst, diff)
         checked += 1

@@ -20,7 +20,8 @@ DB schema (version 2) — all widths in em, so any font size works:
     "version": 2, "layout": "1441H", "title", "published",
     "font_family", "font_url", "line_width": <em>,
     "lines": [ [ {"k": "text"|"sura"|"bism", "w": <line width em>,
-                  "s": [space widths em], "x": <scaleX if < 1>} ... 15 ] ... 604 pages ],
+                  "z": <page font factor if < 1>, "s": [space widths, em of the line's
+                  font], "x": <scaleX if < 1>} ... 15 ] ... 604 pages ],
     "suras": [ {"name", "ayas": [ {"p": page, "r": [ {"l": line, "t": text,
                  "f": ["jp04=3,jp06=1" | "" per word of t]} ] } ] } ]
   }
@@ -172,14 +173,33 @@ def build(args):
     table, positions = font_patch.AlternateTable(), 1
     page_rows = [[None] * len(p) for p in pages]
     word_css = {}                       # token index -> css string
+    # Page font factor (hybrid fitting): the page's text may shrink uniformly, by at
+    # most PAGE_SCALE_MIN, so its widest line fits without distorting letters; the
+    # rest of an overfull line is then squeezed (scaleX) by the justifier.
+    page_scale = {}
+    for ln in lines:
+        if ln.kind != "text":
+            continue
+        desired = full * ratios.get((ln.page, ln.line), 1.0)
+        natural = justify.natural_width(font, " ".join(tokens[i] for i in ln.tokens))
+        page_scale[ln.page] = min(page_scale.get(ln.page, 1.0), desired / natural)
+    page_scale = {p: max(args.page_scale_min, min(1.0, z)) for p, z in page_scale.items()}
+    if args.page_scale == "global":
+        # one factor for the whole mushaf: same text size on every page
+        z_all = min(page_scale.values())
+        page_scale = {p: z_all for p in page_scale}
     for ln in lines:
         ratio = ratios.get((ln.page, ln.line), 1.0)
         row = {"k": ln.kind, "w": round(full * ratio / 1000, 4)}
         page_rows[ln.page - 1][ln.line - 1] = row
         if ln.kind != "text":
             continue
+        z = page_scale[ln.page]
+        if z < 1:
+            row["z"] = round(z, 4)
         text = " ".join(tokens[i] for i in ln.tokens)
-        res = justify.justify_line(font, text, full * ratio, space_stretch=args.space_stretch,
+        # justified at the page's font size: the line is 1/z wider in that font's units
+        res = justify.justify_line(font, text, full * ratio / z, space_stretch=args.space_stretch,
                                    exhaustive=args.exhaustive)
         info = justify.analyze_line(text)
         row["s"] = [round((res.aya_spacing if info.spaces[k] == "aya" else res.simple_spacing) / 1000, 4)
@@ -270,4 +290,8 @@ if __name__ == "__main__":
     ap.add_argument("--out", default="assets/db/v2")
     ap.add_argument("--space-stretch", type=float, default=0.5)
     ap.add_argument("--exhaustive", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--page-scale-min", type=float, default=0.92,
+                    help="smallest font factor before lines get squeezed (1 = never)")
+    ap.add_argument("--page-scale", choices=("global", "page"), default="global",
+                    help="global: one factor for all pages (consistent size); page: per page")
     build(ap.parse_args())

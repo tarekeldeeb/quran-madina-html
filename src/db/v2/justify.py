@@ -356,6 +356,16 @@ class _Justifier:
                 break
 
 
+def natural_width(font, text):
+    """Width of a line with plain spaces (aya spaces at their base width), words
+    shaped one by one as in the DOM."""
+    line = analyze_line(text)
+    space_w = width(font, " ")
+    n_aya = sum(1 for t in line.spaces.values() if t == "aya")
+    return (sum(width(font, w.text) for w in line.words)
+            + space_w * (len(line.spaces) - n_aya) + space_w * AYA_SPACE * n_aya)
+
+
 def justify_line(font, text, desired_width, stretch_letters=True, space_stretch=1.0,
                  exhaustive=False):
     """Justify one line to `desired_width` font units (justifyLine, XScale style).

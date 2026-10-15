@@ -99,3 +99,23 @@ inline quote, page 1).
 The v2 DBs in `assets/db/v2` are currently built from the Tanzil text recovered
 from the v1 DB (tanzil.net is unreachable from the build sandbox); rebuild with
 `--tanzil` from the real download before release.
+
+## Fitting overfull lines (hybrid)
+
+With DigitalKhatt's line width, a third of 1441H lines (a fifth of 1405H) are
+wider than the line, mostly on the later pages where short ayas bring many
+markers. Options considered: squeeze lines (DigitalKhatt site: down to ~75%),
+per-page font size, wider lines, or a hybrid. **Decision: hybrid.**
+
+- The text is set 8% smaller than the line's nominal em (`z = 0.92`, one factor
+  for the whole mushaf so the size never jumps between pages; `--page-scale page`
+  gives per-page factors instead), and line height compensates so the page keeps
+  its proportions.
+- Overfull lines then use the fonts' shrink features (`shr1`, and `shrr` away
+  from aya numbers), and only the remainder is squeezed with scaleX.
+
+| | lines squeezed | squeezed below 95% | worst |
+|---|---|---|---|
+| 1441H before | 2907 (33%) | 1616 | 74% |
+| 1441H hybrid | 993 (11%) | 389 | 81% |
+| 1405H hybrid | 575 (6.5%) | 206 | 82% |
