@@ -41,7 +41,7 @@ Three layouts, picked with `data-layout` on the script tag:
 <table>
 <tr>
 <td align="center"><img src="demo/img/v2-p50-1441H.png" width="220" alt="page 50, 1441H"><br/><code>1441H</code> (default)<br/>New Madina Mushaf</td>
-<td align="center"><img src="demo/img/v2-p50-1405H.png" width="220" alt="page 50, 1405H"><br/><code>1405H</code><br/>Old Madina Mushaf (v1's layout)</td>
+<td align="center"><img src="demo/img/v2-p50-1405H.png" width="220" alt="page 50, 1405H"><br/><code>1405H</code><br/>Old Madina Mushaf</td>
 <td align="center"><img src="demo/img/v2-p50-IndoPak.png" width="220" alt="page 50, IndoPak"><br/><code>IndoPak</code><br/>15-line IndoPak</td>
 </tr>
 </table>
@@ -55,7 +55,7 @@ Three layouts, picked with `data-layout` on the script tag:
 |---|---|---|---|
 | Font | DigitalKhatt New Madina | DigitalKhatt Old Madina | DigitalKhatt IndoPak |
 | Text | [Tanzil](https://tanzil.net) Uthmani; pause marks of the 1441H print | Tanzil Uthmani | DigitalKhatt's IndoPak text (IndoPak spelling) |
-| Line breaks | the 1441H print (King Fahd Complex page data) | the 1405H print (same as v1) | DigitalKhatt's IndoPak layout |
+| Line breaks | the 1441H print (King Fahd Complex page data) | the 1405H print | DigitalKhatt's IndoPak layout |
 | Pages | 604 | 604 | 610 |
 
 * Everything else works the same in every layout: `page`, `sura`/`aya`, `words`, `highlight`,
@@ -65,36 +65,19 @@ Three layouts, picked with `data-layout` on the script tag:
 * Spacing follows the print: words keep the print's ink-to-ink gaps, loose lines stretch
   letters, dense lines narrow their words (never the aya numbers). See
   [`docs/v2`](docs/v2/design-decisions.md) for how it was measured against the print.
-* **Drop-in upgrade:** every tag renders with v2, no code changes needed. `data-font` and
-  `data-name` are ignored since 2.0 (a console warning says so); pick a layout with
-  `data-layout` instead. The v1 font databases are no longer shipped in the npm package — pin
-  `quran-madina-html@1` if you need them.
+* **Upgrading from 1.x** is a drop-in replacement: existing tags render with 2.0 unchanged.
+  Pick a layout with `data-layout`; 1.x's font options no longer apply (pin
+  `quran-madina-html@1` to keep the 1.x renderer).
 
-## History: the 1.x renderer
+## Next to the print
 
-Version 1 inserted tatweels and scaled whole lines to fit. Page 106, rendered by 1.x next to a
-scan of the actual printed page:
-
-<table>
-<tr>
-<td align="center"><img src="demo/img/p106-image.JPG" width="190" alt="Scanned Madina Mushaf page 106"><br/>Printed Madina Mushaf</td>
-<td align="center"><img src="demo/img/p106-hafs.png" width="190" alt="quran-madina-html rendering of page 106"><br/><code>&lt;quran-madina-html page="106" headless="true"&gt;</code></td>
-</tr>
-</table>
-
-1.x supported several fonts through `data-font` — `Hafs`, `Uthman`, `Amiri Quran`,
-`Amiri Quran Colored` (tajweed rules color-coded) and `me_quran`:
+Page 106 of the printed (1405H) Madina Mushaf, and the same page rendered with
+`data-layout="1405H"` — same lines, same words on each line, as live text:
 
 <table>
 <tr>
-<td align="center"><img src="demo/img/p106-hafs.png" width="170" alt="Hafs font"><br/>Hafs</td>
-<td align="center"><img src="demo/img/p106-uthman.png" width="170" alt="Uthman font"><br/>Uthman</td>
-<td align="center"><img src="demo/img/p106-amiri.png" width="170" alt="Amiri Quran font"><br/>Amiri Quran</td>
-</tr>
-<tr>
-<td align="center"><img src="demo/img/p106-amiri-colored.png" width="170" alt="Amiri Quran Colored font"><br/>Amiri Quran Colored</td>
-<td align="center"><img src="demo/img/p106-me_quran.png" width="170" alt="me_quran font"><br/>me_quran</td>
-<td></td>
+<td align="center"><img src="demo/img/p106-image.JPG" width="260" alt="Scanned Madina Mushaf page 106"><br/>Printed Madina Mushaf</td>
+<td align="center"><img src="demo/img/p106-1405H.png" width="260" alt="quran-madina-html rendering of page 106"><br/><code>&lt;quran-madina-html page="106" headless="true"&gt;</code></td>
 </tr>
 </table>
 
@@ -115,7 +98,7 @@ that chrome and keep only the Quran text:
 </quran-madina-html>
 ```
 
-<img src="demo/img/verse-default.png" width="260" alt="Verse range with the default header">
+<img src="demo/img/verse-default.png" width="300" alt="Verse range with the default header">
 </td>
 <td align="center">
 
@@ -125,7 +108,7 @@ that chrome and keep only the Quran text:
 </quran-madina-html>
 ```
 
-<img src="demo/img/verse-headless.png" width="260" alt="Same verse range, headless">
+<img src="demo/img/verse-headless.png" width="300" alt="Same verse range, headless">
 </td>
 </tr>
 </table>
@@ -147,10 +130,11 @@ and even sura boundaries:
 </quran-madina-html>
 ```
 
-first two words of Al-Fatiha; the dashed
-outline marks the hidden remainder of the line
+first two words of Al-Fatiha; the rest of the
+line stays in place, hidden (the blank before
+the closing quote)
 <br/><br/>
-<img src="demo/img/words-inline.png" width="260" alt="words attribute, inline selection">
+<img src="demo/img/words-inline.png" width="216" alt="words attribute, inline selection">
 </td>
 <td align="center">
 
@@ -164,7 +148,7 @@ words 1-14 counted from Al-Fatiha's last aya
 spill into Surat Al-Baqara — its basmala
 counts as words 10-13
 <br/><br/>
-<img src="demo/img/words-multiline.png" width="260" alt="words attribute, spanning Al-Fatiha into Al-Baqara">
+<img src="demo/img/words-multiline.png" width="300" alt="words attribute, spanning Al-Fatiha into Al-Baqara">
 </td>
 </tr>
 </table>
@@ -179,7 +163,7 @@ a `words` selection, and even on a full `page` render:
 <quran-madina-html sura="1" aya="1" highlight="2-3"></quran-madina-html>
 ```
 
-<img src="demo/img/highlight.png" width="260" alt="highlight attribute marking words 2-3 of Al-Fatiha's first aya">
+<img src="demo/img/highlight.png" width="216" alt="highlight attribute marking words 2-3 of Al-Fatiha's first aya">
 
 ## Getting Started
 
@@ -199,7 +183,6 @@ Or include directly via **CDN script tag** in your HTML `<head>`:
 
 * ``data-layout``: ``1441H`` (default), ``1405H``, ``IndoPak`` — see *New in 2.0* above
 * ``data-font-size`` defaults to 16 (px); any size works
-* ``data-font`` / ``data-name``: ignored since 2.0 (a console warning is logged)
 
 Then in your body, just add the tag.
 
@@ -288,7 +271,6 @@ By default a multiline render gets a header (sura name + copy/translate icons); 
 | `notitle` | `boolean \| string` | `false` | Set to `"true"` to hide sura name text while retaining title frame decoration. |
 | `data-layout` | `string` | `"1441H"` | Layout: `1441H`, `1405H`, `IndoPak`. |
 | `data-font-size` | `number \| string` | `16` | Font size in px; any size. |
-| `data-font`, `data-name` | `string` | - | Ignored since 2.0 (logs a warning). |
 | `data-cdn` | `string` | unpkg | Base URL for the CSS and databases (self-hosting, offline apps). |
 
 ## React wrapper
@@ -337,6 +319,9 @@ python src/db/v2/check_v2_db.py assets/db/v2/Madina-1441H.json
 ```
 
 Download the Tanzil text as *Uthmani*, with pause marks, sajda and rub-el-hizb signs.
+
+The README screenshots in `demo/img` are taken from the current build by
+`python scripts/readme_screenshots.py` (with `npm run start` running).
 
 ## Credits
 
