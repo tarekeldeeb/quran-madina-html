@@ -67,7 +67,8 @@ Three layouts, picked with `data-layout` on the script tag:
   [`docs/v2`](docs/v2/design-decisions.md) for how it was measured against the print.
 * **Upgrading from 1.x** is a drop-in replacement: existing tags render with 2.0 unchanged.
   Pick a layout with `data-layout`; 1.x's font options no longer apply (pin
-  `quran-madina-html@1` to keep the 1.x renderer).
+  `quran-madina-html@1` to keep the 1.x renderer). The 1.x documentation is in
+  [README_v1.md](README_v1.md).
 
 ## Next to the print
 
