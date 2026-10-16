@@ -64,6 +64,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # the wrapper waits for the core version to show on npm: 2.0.0 took several minutes
+          WRAPPER_PUBLISH_RETRIES: ${{ inputs.dry_run && '1' || '60' }}
+          WRAPPER_PUBLISH_DELAY_MS: "10000"
 
       - name: Publish the React wrapper only
         if: ${{ inputs.wrapper_only && !inputs.dry_run }}
