@@ -3,104 +3,142 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>quran-madina-html — letter emphasis styles</title>
-  <script src="../dist/quran-madina-html.js" data-cdn="../" data-font-size="26"></script>
+  <title>quran-madina-html — letter emphasis</title>
+  <script src="../dist/quran-madina-html.js" data-cdn="../" data-font-size="28"></script>
   <style>
     :root { --bg: #f6f3ea; --card: #fffdf7; --ink: #23211c; --muted: #7a7466; --line: #e6dfcd; }
     html.dark { --bg: #15140f; --card: #1f1d17; --ink: #ece6d6; --muted: #9c9583; --line: #34302a; }
     body { margin: 0; background: var(--bg); color: var(--ink);
            font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-    header { max-width: 980px; margin: 0 auto; padding: 18px 16px 4px; direction: ltr; text-align: left; }
-    header h1 { font-size: 20px; margin: 0 0 6px; }
-    header p { margin: 4px 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
-    header button { font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 6px;
-                    border: 1px solid var(--line); background: var(--card); color: var(--ink); }
-    #check { font-size: 13px; }
-    #check.bad { color: #a3263a; } #check.good { color: #17785a; }
-    .grid { max-width: 980px; margin: 0 auto; padding: 12px 16px 40px; display: grid; gap: 16px;
-            grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 18px 16px 40px; }
+    .intro { direction: ltr; text-align: left; }
+    .intro h1 { font-size: 20px; margin: 0 0 6px; }
+    .intro p { margin: 4px 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .controls { direction: ltr; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
+                margin: 12px 0 16px; font-size: 14px; }
+    .controls .group { display: flex; gap: 4px; align-items: center; }
+    .controls .label { color: var(--muted); margin-right: 4px; }
+    .controls button { font: inherit; padding: 5px 10px; border-radius: 6px; cursor: pointer;
+                       border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+    .controls button[aria-pressed="true"] { border-color: var(--ink); font-weight: 600; }
+    #check { direction: ltr; text-align: left; font-size: 13px; margin: 0 0 12px; }
+    #check.good { color: #17785a; } #check.bad { color: #a3263a; }
     .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
-            padding: 14px 12px 12px; overflow-x: auto; }
+            padding: 14px 12px; margin-bottom: 14px; overflow-x: auto; }
     .card h2 { direction: ltr; text-align: left; font-size: 15px; margin: 0 0 2px; }
     .card .note { direction: ltr; text-align: left; font-size: 12px; color: var(--muted); margin: 0 0 10px; }
     .card quran-madina-html { background: transparent; }
 
-    /* ---- the styles: colour and shadow only, never size or position ---- */
-    /* 1. Gold leaf: illuminated-manuscript gold with a faint warm halo */
-    .em-gold { color: #a8741a; text-shadow: 0 0 0.12em rgba(214, 168, 66, 0.45); }
-    html.dark .em-gold { color: #e2b45a; text-shadow: 0 0 0.14em rgba(226, 180, 90, 0.5); }
-    /* 2. Red ink: the mushaf's own annotation red */
-    .em-red { color: #a3263a; }
-    html.dark .em-red { color: #e0707f; }
-    /* 3. Soft glow: the ink stays dark, light gathers around the letter */
-    .em-glow { color: #3a2a06; text-shadow: 0 0 0.16em rgba(255, 196, 70, 0.95), 0 0 0.38em rgba(255, 196, 70, 0.55); }
-    html.dark .em-glow { color: #fff6dc; text-shadow: 0 0 0.16em rgba(255, 205, 100, 0.9), 0 0 0.4em rgba(255, 205, 100, 0.5); }
-    /* 4. Spotlight: the rest of the word recedes, the letter stays full ink */
-    .em-dim { color: rgba(35, 33, 28, 0.32); }
-    html.dark .em-dim { color: rgba(236, 230, 214, 0.3); }
-    .em-spot { color: #23211c; }
-    html.dark .em-spot { color: #ece6d6; }
-    /* 5. Emerald: the green of tajweed prints, with a breath of shadow */
-    .em-emerald { color: #17785a; text-shadow: 0 0 0.1em rgba(23, 120, 90, 0.25); }
-    html.dark .em-emerald { color: #5cc7a0; text-shadow: 0 0 0.12em rgba(92, 199, 160, 0.35); }
-    /* 6. Lapis: the deep blue of illumination borders */
-    .em-lapis { color: #27509e; text-shadow: 0 0 0.1em rgba(39, 80, 158, 0.22); }
-    html.dark .em-lapis { color: #8fb0f0; text-shadow: 0 0 0.12em rgba(143, 176, 240, 0.35); }
+    /* ================================================================================
+       Letter emphasis: what would ship in the library CSS.
+       Colour + a soft halo of the same hue. Never size, weight or position, so the
+       pre-computed line geometry is untouched. One hue everywhere, readable on plain
+       text, on highlight= and on error= words, light and dark.
+       ================================================================================ */
+    quran-madina-html {
+      --qmh-letter: #1f4fb0;                       /* lapis */
+      --qmh-letter-halo: rgba(31, 79, 176, 0.30);
+      --qmh-letter-halo-strong: rgba(31, 79, 176, 0.55);
+    }
+    quran-madina-html[data-qmh-text-scheme="dark"] {
+      --qmh-letter: #9cc0ff;
+      --qmh-letter-halo: rgba(156, 192, 255, 0.35);
+      --qmh-letter-halo-strong: rgba(156, 192, 255, 0.75);
+    }
+    .quran-madina-html-letter {
+      color: var(--qmh-letter);
+      text-shadow: 0 0 0.12em var(--qmh-letter-halo);
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    /* Optional animation (letters-animate="breathe" | "blink"). Both keep the letter in its
+       emphasis colour in every frame, so a screenshot taken at any moment still shows it. */
+    @keyframes qmh-letter-breathe {
+      0%, 100% { text-shadow: 0 0 0.12em var(--qmh-letter-halo); }
+      50%      { text-shadow: 0 0 0.12em var(--qmh-letter-halo), 0 0 0.45em var(--qmh-letter-halo-strong); }
+    }
+    @keyframes qmh-letter-blink {
+      0%, 55%, 100% { text-shadow: 0 0 0.12em var(--qmh-letter-halo); }
+      70%, 85%      { text-shadow: 0 0 0.08em var(--qmh-letter-halo-strong), 0 0 0.3em var(--qmh-letter-halo-strong),
+                                   0 0 0.6em var(--qmh-letter-halo-strong); }
+    }
+    .qmh-animate-breathe .quran-madina-html-letter { animation: qmh-letter-breathe 2.4s ease-in-out infinite; }
+    .qmh-animate-blink .quran-madina-html-letter   { animation: qmh-letter-blink 1.4s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) { .quran-madina-html-letter { animation: none !important; } }
+    @media print { .quran-madina-html-letter { animation: none !important; } }
+
+    /* demo only: try other hues */
+    .hue-crimson quran-madina-html { --qmh-letter: #a3263a; --qmh-letter-halo: rgba(163,38,58,.28); --qmh-letter-halo-strong: rgba(163,38,58,.55); }
+    .hue-crimson quran-madina-html[data-qmh-text-scheme="dark"] { --qmh-letter: #ff8fa0; --qmh-letter-halo: rgba(255,143,160,.35); --qmh-letter-halo-strong: rgba(255,143,160,.75); }
+    .hue-emerald quran-madina-html { --qmh-letter: #0f6b4f; --qmh-letter-halo: rgba(15,107,79,.28); --qmh-letter-halo-strong: rgba(15,107,79,.55); }
+    .hue-emerald quran-madina-html[data-qmh-text-scheme="dark"] { --qmh-letter: #6fe0b4; --qmh-letter-halo: rgba(111,224,180,.35); --qmh-letter-halo-strong: rgba(111,224,180,.75); }
+    .hue-violet quran-madina-html { --qmh-letter: #5b2aa8; --qmh-letter-halo: rgba(91,42,168,.28); --qmh-letter-halo-strong: rgba(91,42,168,.55); }
+    .hue-violet quran-madina-html[data-qmh-text-scheme="dark"] { --qmh-letter: #c9a8ff; --qmh-letter-halo: rgba(201,168,255,.35); --qmh-letter-halo-strong: rgba(201,168,255,.75); }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Letter emphasis — pick a style</h1>
-    <p>Each card marks the same letters: <b>ح</b> in ٱلْحَمْدُ, <b>ع</b> and <b>م</b> in ٱلْعَٰلَمِينَ
-      (two letters in one word), and <b>ح</b> in ٱلرَّحِيمِ. Only colour and shadow change, so the
-      stretched letters, joining and line layout should stay exactly as they are.</p>
-    <p id="check">checking…</p>
-    <p><button id="mode">Dark background</button></p>
-  </header>
-  <div class="grid" id="grid"></div>
+<div class="wrap" id="root">
+  <div class="intro">
+    <h1>Letter emphasis</h1>
+    <p>One style: the letter takes a lapis-blue ink with a soft halo of the same blue. It reads on
+      plain text, inside a <b>highlight</b> (yellow) word and inside an <b>error</b> (red) word, on
+      light and dark pages, and in print. Nothing changes size or position.</p>
+  </div>
+  <div class="controls">
+    <div class="group"><span class="label">Animation</span>
+      <button data-anim="none" aria-pressed="true">Off</button>
+      <button data-anim="breathe">Breathe</button>
+      <button data-anim="blink">Blink</button></div>
+    <div class="group"><span class="label">Page</span>
+      <button data-mode="light" aria-pressed="true">Light</button>
+      <button data-mode="dark">Dark</button></div>
+    <div class="group"><span class="label">Hue</span>
+      <button data-hue="lapis" aria-pressed="true">Lapis ★</button>
+      <button data-hue="violet">Violet</button>
+      <button data-hue="emerald">Emerald</button>
+      <button data-hue="crimson">Crimson</button></div>
+  </div>
+  <p id="check">checking…</p>
 
-  <script>
-  var STYLES = [
-    ["gold", "Gold leaf", "Illuminated-manuscript gold, faint warm halo"],
-    ["red", "Red ink", "The mushaf's own annotation red, no effects"],
-    ["glow", "Soft glow", "Ink colour kept, light gathers around the letter"],
-    ["spot", "Spotlight", "The rest of the word recedes; the letter stays full ink"],
-    ["emerald", "Emerald", "Tajweed green with a breath of shadow"],
-    ["lapis", "Lapis", "Illumination blue, a touch of shadow"]
-  ];
-  // which letters to mark: [word number (1-based, aya numbers not counted), [letter numbers]]
-  var MARKS = [[1, [3]], [4, [3, 5]], [6, [4]]];
+  <div class="card">
+    <h2>Inside a highlighted word, inside an error word, and on plain text</h2>
+    <p class="note">highlight="1-2" · error="4" · letters: word 1 letter 3 (ح), word 4 letters 3 and 5 (ع, م), word 6 letter 4 (ح)</p>
+    <quran-madina-html sura="1" aya="2-4" headless="true" highlight="1-2" error="4"
+                       data-letters="1:3, 4:3,5, 6:4"></quran-madina-html>
+  </div>
+  <div class="card">
+    <h2>Plain text, several letters</h2>
+    <p class="note">letters: word 1 letters 2 and 4 (ل, م), word 3 letter 1 (ر), word 7 letters 1 and 3 (م, ك)</p>
+    <quran-madina-html sura="1" aya="2-4" headless="true"
+                       data-letters="1:2,4, 3:1, 7:1,3"></quran-madina-html>
+  </div>
+  <div class="card">
+    <h2>Inline quote</h2>
+    <p class="note">lam-alef (لا) is one glyph in the font, so marking either letter colours both. sura="2" aya="255" words="1:4" highlight="2" · letters: word 2 letter 1 (ل), word 4 letter 2 (ل)</p>
+    <quran-madina-html sura="2" aya="255" words="1:4" highlight="2"
+                       data-letters="2:1, 4:2"></quran-madina-html>
+  </div>
+</div>
 
-  var grid = document.getElementById("grid");
-  STYLES.forEach(function (s) {
-    var card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = "<h2>" + s[1] + "</h2><p class='note'>" + s[2] + "</p>" +
-      "<quran-madina-html sura='1' aya='2-4' headless='true' data-style='" + s[0] + "'></quran-madina-html>";
-    grid.appendChild(card);
-  });
-
-  // A "letter" is a base character plus everything that rides on it: harakat, hamza above,
-  // the dagger alef, the joiners the font's encoding uses (CGJ) and a following tatweel.
+<script>
+  // ---- what the runtime would do for letters="w:l,l, w:l" (demo version) ----
   function letterStarts(s) {
     var starts = [];
     for (var i = 0; i < s.length; i++) {
       var ch = s[i];
-      if (!(/\p{M}/u.test(ch) || ch === "\u034F" || ch === "\u200D" || ch === "\u0640")) starts.push(i);
+      // a letter = base character + harakat, hamza above, dagger alef, CGJ joiners, tatweel
+      if (!(/\p{M}/u.test(ch) || ch === "͏" || ch === "‍" || ch === "ـ")) starts.push(i);
     }
     starts.push(s.length);
     return starts;
   }
-  // Wrap the chosen letters of a word span in <span class=cls>. Only colour/shadow change, and the
-  // word keeps its font-feature-settings, so the browser shapes it as before (checked below).
-  function wrapLetters(word, numbers, cls) {
+  function wrapLetters(word, numbers) {
     var s = word.textContent, starts = letterStarts(s), out = [], last = 0;
     numbers.filter(function (n) { return n >= 1 && n < starts.length; })
       .sort(function (a, b) { return a - b; })
       .forEach(function (n) {
         out.push(document.createTextNode(s.slice(last, starts[n - 1])));
         var sp = document.createElement("span");
-        sp.className = cls;
+        sp.className = "quran-madina-html-letter";
         sp.textContent = s.slice(starts[n - 1], starts[n]);
         out.push(sp);
         last = starts[n];
@@ -109,41 +147,77 @@
     word.textContent = "";
     out.forEach(function (n) { if (n.nodeType !== 3 || n.data) word.appendChild(n); });
   }
+  function parseLetters(spec) {          // "1:3, 4:3,5" -> [[1,[3]], [4,[3,5]]]
+    var marks = [], cur = null;
+    spec.split(",").map(function (t) { return t.trim(); }).filter(Boolean).forEach(function (t) {
+      if (t.indexOf(":") > 0) { var p = t.split(":"); cur = [parseInt(p[0], 10), []]; marks.push(cur); t = p[1]; }
+      if (cur) cur[1].push(parseInt(t, 10));
+    });
+    return marks;
+  }
   function words(tag) {
     return Array.from(tag.querySelectorAll(".quran-madina-html-word")).filter(function (w) {
-      return w.textContent.indexOf("\u06DD") < 0 && getComputedStyle(w).visibility !== "hidden";
+      return w.textContent.indexOf("۝") < 0 && getComputedStyle(w).visibility !== "hidden";
     });
   }
   function emphasize() {
     var worst = 0, n = 0;
-    document.querySelectorAll("quran-madina-html[data-style]").forEach(function (tag) {
-      var style = tag.getAttribute("data-style"), ws = words(tag);
-      MARKS.forEach(function (m) {
+    document.querySelectorAll("quran-madina-html[data-letters]").forEach(function (tag) {
+      var ws = words(tag);
+      parseLetters(tag.getAttribute("data-letters")).forEach(function (m) {
         var w = ws[m[0] - 1];
         if (!w) return;
         var before = w.getBoundingClientRect().width;
-        if (style === "spot") w.classList.add("em-dim");
-        wrapLetters(w, m[1], "em-" + style);
+        wrapLetters(w, m[1]);
         worst = Math.max(worst, Math.abs(w.getBoundingClientRect().width - before));
         n++;
       });
     });
-    // If this browser stopped shaping the word as one piece, its width would change.
     var check = document.getElementById("check");
-    check.textContent = "Width check: " + n + " words marked, largest width change " +
-      worst.toFixed(2) + "px " + (worst < 0.5 ? "— shaping unchanged ✓" : "— this browser re-shaped the words ✗");
+    check.textContent = "Width check: " + n + " words marked, largest width change " + worst.toFixed(2) +
+      "px " + (worst < 0.5 ? "— shaping unchanged ✓" : "— this browser re-shaped the words ✗");
     check.className = worst < 0.5 ? "good" : "bad";
   }
   (function wait(tries) {
-    var tags = document.querySelectorAll("quran-madina-html[data-style]");
-    var ready = Array.from(tags).every(function (t) { return words(t).length >= 6; });
-    if (ready || tries > 80) emphasize(); else setTimeout(function () { wait(tries + 1); }, 150);
+    var tags = Array.from(document.querySelectorAll("quran-madina-html[data-letters]"));
+    if (tags.every(function (t) { return words(t).length >= 4; }) || tries > 80) emphasize();
+    else setTimeout(function () { wait(tries + 1); }, 150);
   })(0);
 
-  document.getElementById("mode").onclick = function () {
-    var dark = document.documentElement.classList.toggle("dark");
-    this.textContent = dark ? "Light background" : "Dark background";
-  };
-  </script>
+  // ---- demo controls ----
+  function press(attr, value) {
+    document.querySelectorAll("button[" + attr + "]").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute(attr) === value));
+    });
+  }
+  document.querySelectorAll("button[data-anim]").forEach(function (b) {
+    b.onclick = function () {
+      var a = b.getAttribute("data-anim");
+      document.querySelectorAll("quran-madina-html").forEach(function (t) {
+        t.classList.remove("qmh-animate-breathe", "qmh-animate-blink");
+        if (a !== "none") t.classList.add("qmh-animate-" + a);
+      });
+      press("data-anim", a);
+    };
+  });
+  document.querySelectorAll("button[data-mode]").forEach(function (b) {
+    b.onclick = function () {
+      var dark = b.getAttribute("data-mode") === "dark";
+      document.documentElement.classList.toggle("dark", dark);
+      // the runtime picks highlight/error/letter colours from the text colour at render time
+      document.querySelectorAll("quran-madina-html").forEach(function (t) {
+        t.setAttribute("data-qmh-text-scheme", dark ? "dark" : "light");
+      });
+      press("data-mode", b.getAttribute("data-mode"));
+    };
+  });
+  document.querySelectorAll("button[data-hue]").forEach(function (b) {
+    b.onclick = function () {
+      var root = document.getElementById("root");
+      root.className = "wrap" + (b.getAttribute("data-hue") === "lapis" ? "" : " hue-" + b.getAttribute("data-hue"));
+      press("data-hue", b.getAttribute("data-hue"));
+    };
+  });
+</script>
 </body>
 </html>
