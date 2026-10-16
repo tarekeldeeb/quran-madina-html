@@ -18,14 +18,18 @@ let loaderPromise = null;
  * @param {object} [opts]
  * @param {string} [opts.src]      URL of the library script (default: unpkg latest).
  * @param {string} [opts.cdn]      Base URL for the CSS + JSON assets (default: unpkg package root).
- * @param {string} [opts.font]     data-font: Hafs | Uthman | "Amiri Quran" | "Amiri Quran Colored" | me_quran.
+ * @param {string} [opts.layout]   data-layout (v2): "1441H" (default) | "1405H" | "IndoPak". Letters
+ *                                  stretched like the print, any font size, one DB per layout.
+ * @param {string} [opts.font]     data-font (v1): Hafs | Uthman | "Amiri Quran" | "Amiri Quran Colored" |
+ *                                  me_quran. Without `layout` it selects the v1 renderer; with neither,
+ *                                  the v2 1441H layout is used.
  * @param {string} [opts.name]     data-name (default Madina05).
  * @param {number|string} [opts.fontSize] data-font-size in px (default 16). Any size 6-100 works:
  *                                  16/24 have pre-built DBs, others are interpolated between them.
  * @returns {Promise<void>}
  */
 export function loadQuranMadinaHtml(opts = {}) {
-  const { src = DEFAULT_SRC, cdn = DEFAULT_CDN, font, name, fontSize } = opts;
+  const { src = DEFAULT_SRC, cdn = DEFAULT_CDN, layout, font, name, fontSize } = opts;
   if (typeof window === "undefined" || typeof document === "undefined") {
     return Promise.resolve(); // SSR / non-browser: nothing to load
   }
@@ -39,6 +43,7 @@ export function loadQuranMadinaHtml(opts = {}) {
     script.src = src;
     script.async = true;
     if (cdn) script.setAttribute("data-cdn", cdn);
+    if (layout) script.setAttribute("data-layout", layout);
     if (font) script.setAttribute("data-font", font);
     if (name) script.setAttribute("data-name", name);
     if (fontSize != null) script.setAttribute("data-font-size", String(fontSize));
@@ -58,6 +63,8 @@ export function loadQuranMadinaHtml(opts = {}) {
  * Render a full page:           <QuranMadinaHtml page={106} />
  * Render an aya range:          <QuranMadinaHtml sura={2} aya="8-10" />
  * Restrict to words:            <QuranMadinaHtml sura={1} aya={1} words="1:2" />
+ * Mark words:                   <QuranMadinaHtml sura={2} aya={255} highlight="5-8" error="1" />
+ * Pick the v2 layout:           <QuranMadinaHtml page={3} layout="1405H" />
  * Drop header/copy chrome:      <QuranMadinaHtml sura={2} aya="8-10" headless />
  * Drop the inline quote marks:  <QuranMadinaHtml sura={1} aya={3} quotes="no" />
  * Force the multiline layout:   <QuranMadinaHtml sura={1} aya={3} inline="no" />
@@ -71,6 +78,7 @@ export default function QuranMadinaHtml({
   sura,
   aya,
   words,
+  highlight,
   error,
   headless,
   quotes,
@@ -79,6 +87,7 @@ export default function QuranMadinaHtml({
   // loader config (only honored on first mount, see loadQuranMadinaHtml)
   src,
   cdn,
+  layout,
   font,
   name,
   fontSize,
@@ -95,13 +104,13 @@ export default function QuranMadinaHtml({
 
   useEffect(() => {
     let active = true;
-    loadQuranMadinaHtml({ src, cdn, font, name, fontSize })
+    loadQuranMadinaHtml({ src, cdn, layout, font, name, fontSize })
       .then(() => active && setReady(true))
       .catch((err) => console.error("[quran-madina-html]", err));
     return () => {
       active = false;
     };
-  }, [src, cdn, font, name, fontSize]);
+  }, [src, cdn, layout, font, name, fontSize]);
 
   // Sync attributes imperatively. We avoid passing page/sura/aya as React props because attribute
   // handling for custom elements differs across React versions; setting them on the DOM node is
@@ -126,12 +135,13 @@ export default function QuranMadinaHtml({
       set("aya", aya);
     }
     set("words", words);
+    set("highlight", highlight);
     set("error", error);
     set("headless", headless);
     set("quotes", quotes);
     set("inline", inline);
     set("notitle", notitle);
-  }, [ready, page, sura, aya, words, error, headless, quotes, inline, notitle]);
+  }, [ready, page, sura, aya, words, highlight, error, headless, quotes, inline, notitle]);
 
   // Render as `class` rather than `className`: React < 19 does not map className -> class for
   // custom elements, so passing className would silently drop the class on those versions.

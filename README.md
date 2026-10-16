@@ -28,7 +28,47 @@ the snippet above once it's on your own page.)
 * **Any font** — Hafs, Uthman, Amiri Quran (plain or tajweed-colored), or your own.
 * **Word-level addressing** — render any word range, even across ayas, pages, and suras.
 
-## See it in action
+## New in 2.0: lines justified like the print
+
+Version 2 stretches the **letters themselves** (kashida strokes and wider letter forms, the way a
+calligrapher fills a line) instead of inserting tatweel characters or squashing whole lines. It
+uses the [DigitalKhatt](https://github.com/DigitalKhatt/digitalkhatt.org) fonts by Amine Anane
+(OFL), with HarfBuzz deciding every stretch at build time; the browser only needs the font and
+one `font-feature-settings` per word. The text is still real, selectable text.
+
+Three layouts, picked with `data-layout` on the script tag:
+
+<table>
+<tr>
+<td align="center"><img src="demo/img/v2-p50-1441H.png" width="220" alt="page 50, 1441H"><br/><code>1441H</code> (default)<br/>New Madina Mushaf</td>
+<td align="center"><img src="demo/img/v2-p50-1405H.png" width="220" alt="page 50, 1405H"><br/><code>1405H</code><br/>Old Madina Mushaf (v1's layout)</td>
+<td align="center"><img src="demo/img/v2-p50-IndoPak.png" width="220" alt="page 50, IndoPak"><br/><code>IndoPak</code><br/>15-line IndoPak</td>
+</tr>
+</table>
+
+```html
+<script src="https://unpkg.com/quran-madina-html" data-layout="1441H" data-font-size="22"></script>
+<quran-madina-html page="50"></quran-madina-html>
+```
+
+| | `1441H` | `1405H` | `IndoPak` |
+|---|---|---|---|
+| Font | DigitalKhatt New Madina | DigitalKhatt Old Madina | DigitalKhatt IndoPak |
+| Text | [Tanzil](https://tanzil.net) Uthmani; pause marks of the 1441H print | Tanzil Uthmani | DigitalKhatt's IndoPak text (IndoPak spelling) |
+| Line breaks | the 1441H print (King Fahd Complex page data) | the 1405H print (same as v1) | DigitalKhatt's IndoPak layout |
+| Pages | 604 | 604 | 610 |
+
+* Everything else works the same in every layout: `page`, `sura`/`aya`, `words`, `highlight`,
+  `error`, `headless`, `notitle`, copy and translate. `sura`/`aya` always use the Kufan
+  numbering, so the same attributes show the same verse in every layout.
+* Any font size: the v2 databases are in em, so `data-font-size` just scales the page.
+* Spacing follows the print: words keep the print's ink-to-ink gaps, loose lines stretch
+  letters, dense lines narrow their words (never the aya numbers). See
+  [`docs/v2`](docs/v2/design-decisions.md) for how it was measured against the print.
+* **Changed default:** a script tag with neither `data-layout` nor `data-font` now renders the
+  v2 `1441H` layout. Set `data-font` (e.g. `data-font="Hafs"`) to keep the v1 renderer.
+
+## See it in action (v1)
 
 Page 106, rendered by the library next to a scan of the actual printed page:
 
@@ -155,9 +195,11 @@ Or include directly via **CDN script tag** in your HTML `<head>`:
 <script type="text/javascript" src="https://unpkg.com/quran-madina-html"></script>
 ```
 
-* Supported ``data-name`` parameters are: Madina05 (default), others are under development (Shemerly, Qaloon, Newer Madina)
-* Supported ``data-font`` parameters are: Hafs (default), Uthman, Amiri Quran, Amiri Quran Colored
-* Other options include: ``data-font-size`` which defaults to 16 (px). Any size from 6 to 100 works:
+* ``data-layout`` (v2): ``1441H`` (default), ``1405H``, ``IndoPak`` — see *New in 2.0* above
+* ``data-font`` (v1): Hafs, Uthman, Amiri Quran, Amiri Quran Colored, me_quran. Setting it without
+  ``data-layout`` selects the v1 renderer; with neither attribute, v2 ``1441H`` is used
+* ``data-name`` (v1): Madina05 (default)
+* ``data-font-size`` defaults to 16 (px). v2: any size. v1: any size from 6 to 100 works —
   16 and 24 have pre-built databases, and every other size is fitted at load time by linear
   interpolation between those two anchors (page/line width interpolated, letter stretching
   re-scaled accordingly)
@@ -241,15 +283,17 @@ By default a multiline render gets a header (sura name + copy/translate icons); 
 |---|---|---|---|
 | `sura` | `number \| string` | - | Sura number (1–114). Required when using `aya`. |
 | `aya` | `number \| string` | - | Single aya or verse range (e.g., `255`, `"8-10"`). |
-| `page` | `number \| string` | - | Full Mushaf page number (1–604). Mutually exclusive with `sura`/`aya`. |
+| `page` | `number \| string` | - | Full Mushaf page number (1–604; IndoPak 1–610). Mutually exclusive with `sura`/`aya`. |
 | `words` | `string` | - | 1-based word index or range (e.g., `"1:2"`, `"3-10"`, or single index `"5"`). |
 | `highlight` | `string` | - | 1-based word range to mark soft yellow (same format as `words`). Works with or without `words`, and with `page` too. |
 | `error` | `string` | - | 1-based word range to mark soft red (same format as `words`). Wins over `highlight` on overlap. |
 | `headless` | `boolean \| string` | `false` | Set to `"true"` to remove top sura header chrome and copy/translate icons. |
 | `notitle` | `boolean \| string` | `false` | Set to `"true"` to hide sura name text while retaining title frame decoration. |
-| `data-font` | `string` | `"Hafs"` | Font family: `Hafs`, `Uthman`, `Amiri Quran`, `Amiri Quran Colored`, `me_quran`. |
-| `data-name` | `string` | `"Madina05"` | Layout database dataset name. |
-| `data-font-size` | `number \| string` | `16` | Font size in px (6–100; interpolated between 16 and 24). |
+| `data-layout` | `string` | `"1441H"` | v2 layout: `1441H`, `1405H`, `IndoPak`. |
+| `data-font` | `string` | - | v1 font: `Hafs`, `Uthman`, `Amiri Quran`, `Amiri Quran Colored`, `me_quran`. Without `data-layout`, selects the v1 renderer. |
+| `data-name` | `string` | `"Madina05"` | v1 layout database dataset name. |
+| `data-font-size` | `number \| string` | `16` | Font size in px (v2: any; v1: 6–100, interpolated between 16 and 24). |
+| `data-cdn` | `string` | unpkg | Base URL for the CSS and databases (self-hosting, offline apps). |
 
 ## React wrapper
 
@@ -265,7 +309,7 @@ npm install @tarekeldeeb/quran-madina-react react
 ```jsx
 import QuranMadinaHtml from "@tarekeldeeb/quran-madina-react";
 
-<QuranMadinaHtml page={106} font="Hafs" />
+<QuranMadinaHtml page={106} layout="1441H" />
 ```
 
 See [`react/README.md`](react/README.md) for the full prop reference and the Capacitor
@@ -283,6 +327,29 @@ npm run build-db // build all json Db files
 npm run release // build the dist with dependencies
 
 ```
+
+v2 databases (`assets/db/v2`) are built from the Tanzil text and a checkout of
+[digitalkhatt.org](https://github.com/DigitalKhatt/digitalkhatt.org) (fonts and layouts):
+
+```bash
+python src/db/v2/build_v2.py --layout 1441H --tanzil quran-uthmani.txt --dk-src ../digitalkhatt.org/ClientApp/src
+python src/db/v2/build_v2.py --layout 1405H --tanzil quran-uthmani.txt --dk-src ../digitalkhatt.org/ClientApp/src
+python src/db/v2/build_v2.py --layout IndoPak --dk-src ../digitalkhatt.org/ClientApp/src
+for db in Madina-1441H Madina-1405H IndoPak-15; do python src/db/shard_db.py assets/db/v2/$db.json assets/db/v2; done
+python src/db/v2/check_v2_db.py assets/db/v2/Madina-1441H.json
+```
+
+Download the Tanzil text as *Uthmani*, with pause marks, sajda and rub-el-hizb signs.
+
+## Credits
+
+* Quran text: [Tanzil Project](https://tanzil.net) (Uthmani 1.1).
+* v2 fonts and the 1405H/IndoPak layouts: [DigitalKhatt](https://github.com/DigitalKhatt/digitalkhatt.org)
+  by Amine Anane, sponsored by Tarteel (fonts OFL 1.1, code MIT). The fonts in `assets/db/v2` are
+  modified copies (stretch-position features added) under the same license, renamed `QMH ...`.
+* 1441H line breaks: King Fahd Glorious Quran Printing Complex page data, as published in the
+  [`quran-qcf4`](https://www.npmjs.com/package/quran-qcf4) package (data under MIT); only line
+  boundaries are used.
 
 ## Demo
 

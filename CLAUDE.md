@@ -188,6 +188,38 @@ slot 1 is blank (no basmala in the real text). Decoration slots are always cente
   `applyLineStyle`. The overrides ride in module-level `sizeOverrides`, applied by both boot
   paths just before `initTag`; a missing anchor DB falls back to the default size like before.
 
+## v2 (letter stretching, `assets/db/v2`, `src/db/v2/`)
+
+Selected with `data-layout` on the script tag: `1441H` (default when neither `data-layout` nor
+`data-font` is set), `1405H`, `IndoPak`. `data-font` without `data-layout` keeps the v1 path
+above. Design notes and measurements: `docs/v2/design-decisions.md`.
+
+- **Fonts:** DigitalKhatt's `madina.otf` / `oldmadina.otf` / `indopak.otf` (OFL), patched by
+  `font_patch.py` with an AlternateSubst lookup + position features `jp01..jpNN` (`jpKK` swaps
+  the glyph at position KK of the word, the value picks the variant). HarfBuzz decides each
+  word's stretch at build time; the DOM gets one `font-feature-settings` per word span.
+- **Text:** Tanzil (`--tanzil`), converted to the fonts' encoding by `tanzil_encoding.py`
+  (1441H takes pause marks from the print; a Tanzil file without marks gets marks + ۞/۩ from the
+  layout text). IndoPak uses DigitalKhatt's own IndoPak text (`layout_lines.layout_tokens`),
+  numbered with the Kufan count so sura/aya address the same verse in every layout.
+- **Line breaks:** 1441H from the KFGQPC print (`src/db/v2/data/print-1441H-lines.json`, made by
+  `extract_print_lines.py`); 1405H and IndoPak from DigitalKhatt's layout texts.
+- **Fitting** (`justify.fit_line_print`): ink-to-ink gaps between words (band profiles,
+  `ink.py`) kept in the print's measured range; loose lines stretch letters (Madina:
+  `_Justifier.run`, a port of DigitalKhatt's experimental justifier; IndoPak:
+  `run_simple`, its applySimpleJust), dense lines narrow words (`c`, never aya numbers), the
+  whole line is scaled (`x`) only as a last resort. Never use `shr1`/`shrr` (they overlap letters).
+- **DB schema (version 2):** header + `lines[page][line] = {k, w, z, s[], x?, c?}` (em) +
+  `suras` (v1 shape, parts carry `f` = per-word feature strings). Spaces `s` may be negative.
+  `shard_db.py` splits v2 DBs too: line rows travel with the juz' shards of their pages.
+  Stems: `Madina-1441H`, `Madina-1405H`, `IndoPak-15` (`V2_STEMS` in the runtime).
+- **Runtime:** `isV2()` branches; `v2InitLine` (row geometry), `v2AppendWords` (word spans,
+  spaces, narrowing with transform-origin right/left for the line's first/last word). A
+  `sura`+`aya` range that runs onto another page renders through `renderWordsSpan`.
+- **Checks:** `check_v2_db.py <db>` (widths with the patched font), `test/v2_encoding_test.py`,
+  `test/v2_layout_test.py` (print line breaks, gaps). `render_test.py` pins `data-font=me_quran`
+  in its template so it keeps testing v1.
+
 ## Conventions
 
 - `src/db/test*.html` files are temp scratch files written/removed during DB builds — don't commit them.

@@ -55,6 +55,17 @@ describe("<QuranMadinaHtml>", () => {
     expect(el.hasAttribute("error")).toBe(false);
   });
 
+  it("sets highlight as a plain string attribute, toggled on rerender", () => {
+    const { container, rerender } = render(
+      <QuranMadinaHtml sura={2} aya={255} highlight="5-8" />
+    );
+    const el = tag(container);
+    expect(el.getAttribute("highlight")).toBe("5-8");
+
+    rerender(<QuranMadinaHtml sura={2} aya={255} />);
+    expect(el.hasAttribute("highlight")).toBe(false);
+  });
+
   it("lets page win when both page and sura/aya are provided", () => {
     const { container } = render(<QuranMadinaHtml page={5} sura={2} aya="8-10" />);
     const el = tag(container);

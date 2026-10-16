@@ -15,7 +15,11 @@
     // Font/size are read once by the runtime from this <script>'s data attributes, so switching
     // them at runtime requires a full page reload. The chooser below just persists the pick and
     // reloads; this reads it back before the runtime script is injected.
+    // "v2:<layout>" picks a v2 layout (letters stretched like the print); the others are v1 fonts.
     var FONT_CHOICES = [
+      { value: "v2:1441H", label: "مصحف المدينة ١٤٤١هـ (v2)" },
+      { value: "v2:1405H", label: "مصحف المدينة ١٤٠٥هـ (v2)" },
+      { value: "v2:IndoPak", label: "المصحف الهندي ١٥ سطرًا (v2)" },
       { value: "Uthman", label: "عثمان طه" },
       { value: "me_quran", label: "خط المصحف" },
       { value: "Hafs", label: "حفص" },
@@ -33,7 +37,11 @@
     } else {
         script.setAttribute("src", "https://unpkg.com/quran-madina-html");
     }
-    script.setAttribute("data-font", savedFont);
+    if (savedFont.indexOf("v2:") === 0) {
+      script.setAttribute("data-layout", savedFont.slice(3));
+    } else {
+      script.setAttribute("data-font", savedFont);
+    }
     script.setAttribute("data-font-size", savedSize);
     document.head.appendChild(script);
   </script>
@@ -156,7 +164,7 @@
             <table>
               <tr>
                 <td><button onclick='decrease("in_page")'>&nbsp;▶</button></td>
-                <td><input id="in_page" value="1" min="1" max="604" style="width:50px"></td>
+                <td><input id="in_page" value="1" min="1" max="610" style="width:50px"></td>
                 <td><button onclick='increase("in_page")'>◀&nbsp;</button> </td>
               </tr>
             </table>

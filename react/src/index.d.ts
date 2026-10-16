@@ -5,7 +5,15 @@ export interface QuranMadinaHtmlLoaderOptions {
   src?: string;
   /** Base URL for the CSS + JSON assets (default: https://unpkg.com/quran-madina-html/). */
   cdn?: string;
-  /** data-font: "Hafs" | "Uthman" | "Amiri Quran" | "Amiri Quran Colored" | "me_quran". */
+  /**
+   * data-layout (v2): "1441H" (default) | "1405H" | "IndoPak". Letters are stretched like the
+   * print and any font size works with one DB per layout.
+   */
+  layout?: "1441H" | "1405H" | "IndoPak" | string;
+  /**
+   * data-font (v1): "Hafs" | "Uthman" | "Amiri Quran" | "Amiri Quran Colored" | "me_quran".
+   * Without `layout` it selects the v1 renderer; with neither, the v2 1441H layout is used.
+   */
   font?: string;
   /** data-name (default "Madina05"). */
   name?: string;
@@ -19,7 +27,7 @@ export interface QuranMadinaHtmlLoaderOptions {
 export interface QuranMadinaHtmlProps
   extends QuranMadinaHtmlLoaderOptions,
     React.HTMLAttributes<HTMLElement> {
-  /** Render a full Madina page (1-604). Mutually exclusive with sura/aya. */
+  /** Render a full page (1-604; IndoPak 1-610). Mutually exclusive with sura/aya. */
   page?: number | string;
   /** Sura number (1-114). Use together with `aya`. */
   sura?: number | string;
@@ -27,6 +35,8 @@ export interface QuranMadinaHtmlProps
   aya?: number | string;
   /** Restrict to a 1-based word range, e.g. "1:2", "3-10", or a single index. */
   words?: string;
+  /** 1-based inclusive word range (same syntax as `words`) to mark soft yellow. */
+  highlight?: string;
   /**
    * 1-based inclusive word range (same syntax as `words`) marking a sub-range that should
    * render with the library's built-in "error" highlight styling.
