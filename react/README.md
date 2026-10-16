@@ -27,7 +27,7 @@ export default function App() {
   return (
     <div dir="rtl">
       {/* full page */}
-      <QuranMadinaHtml page={106} font="Hafs" />
+      <QuranMadinaHtml page={106} layout="1441H" />
 
       {/* aya range */}
       <QuranMadinaHtml sura={2} aya="8-10" />
@@ -55,21 +55,22 @@ export default function App() {
 
 | Prop        | Type                | Notes |
 |-------------|---------------------|-------|
-| `page`      | number \| string    | Full page 1–604. Mutually exclusive with `sura`/`aya` (page wins). |
+| `page`      | number \| string    | Full page 1–604 (IndoPak 1–610). Mutually exclusive with `sura`/`aya` (page wins). |
 | `sura`      | number \| string    | Sura 1–114, with `aya`. |
 | `aya`       | number \| string    | Aya or range, e.g. `"8-10"`. |
 | `words`     | string              | 1-based word range: `"1:2"`, `"3-10"`, or a single index. |
+| `highlight` | string              | 1-based word range to mark soft yellow, e.g. `"5-8"`. |
 | `error`     | string              | 1-based word range to mark with built-in "error" highlight styling, e.g. `"10-13"`. |
 | `headless`  | boolean             | Drop the header/copy chrome. |
 | `quotes`    | string              | `"no"` (or `"false"`) drops the quote marks shown around inline (single-line) renders. |
 | `inline`    | string              | `"no"` forces the multiline/header layout even for a selection that fits one line. `"auto"` (default) is fit-based. `"yes"` (force a single line for an overflowing selection) is not implemented yet. |
-| `font`      | string              | `Hafs`, `Uthman`, `Amiri Quran`, `Amiri Quran Colored`, `me_quran`. |
-| `name`      | string              | DB name, default `Madina05`. |
-| `fontSize`  | number \| string    | px, default 16. Any size 6–100: 16 and 24 have pre-built DBs, every other size is interpolated between them at load time. |
+| `layout`    | string              | `1441H` (default), `1405H` or `IndoPak`. Letters are stretched like the print; any `fontSize` works. |
+| `font`, `name` | string           | Deprecated: ignored since 2.0 (the library logs a warning). |
+| `fontSize`  | number \| string    | px, default 16. Any size works. |
 | `src`       | string              | Library script URL. Default: unpkg latest. |
 | `cdn`       | string              | Base URL for CSS + JSON assets. Default: unpkg package root. |
 
-> **Global config caveat:** `font`, `name`, `fontSize`, `src` and `cdn` configure the single
+> **Global config caveat:** `layout`, `fontSize`, `src` and `cdn` configure the single
 > library instance for the whole page. Only the **first** mounted `<QuranMadinaHtml>` sets them;
 > later values are ignored. Put your config on the first instance you render.
 
@@ -113,7 +114,7 @@ Notes for mobile:
 - Capacitor serves the app from `localhost`, so keep the default `cdn` (unpkg) **or** self-host the
   assets and point `cdn` at them — see above. Do not rely on the library's `../` default.
 - **Offline support:** bundle the library `dist/quran-madina-html.min.js`, `dist/*.min.css`, the
-  `assets/db/*.json` you use and the `assets/fonts/*.woff2` into your web build, then set `src` to
+  `assets/db/v2/` files of the layout you use (its `.json` or shard folder and its `-qmh.woff2` font) into your web build, then set `src` to
   the bundled JS and `cdn` to the base path that contains `dist/` and `assets/`. Everything —
   including the font — resolves from `cdn`, so no network is needed (requires library >= 0.6,
   which stores font paths relative).

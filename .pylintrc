@@ -1,0 +1,3 @@
+[MAIN]
+# HarfBuzz bindings are a C extension: let pylint load it to see its members
+extension-pkg-allow-list=uharfbuzz

@@ -4,3 +4,8 @@ selenium==4.45.0
 rich==15.0.0
 ruff==0.15.17
 pytest==9.1.0
+uharfbuzz==0.56.3
+fonttools==4.65.0
+brotli==1.2.0
+freetype-py==2.5.1
+numpy==2.5.3

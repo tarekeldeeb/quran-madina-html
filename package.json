@@ -18,7 +18,9 @@
   "files": [
     "dist/quran-madina-html.min.js",
     "dist/quran-madina-html.min.css",
-    "assets"
+    "assets/img",
+    "assets/db/v2/**/*.json",
+    "assets/db/v2/*.woff2"
   ],
   "scripts": {
     "build": "grunt",
