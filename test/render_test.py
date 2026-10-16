@@ -19,6 +19,20 @@ from selenium.common.exceptions import TimeoutException
 # features) and the basmala always shows as its 4 words: there is no ﷽ ligature.
 DEFAULT_DB = os.path.join("assets", "db", "v2", "Madina-1441H.json")
 ARABIC_LETTER = re.compile("[ء-يٱ-ۓ]")  # a token is a word only if it carries an Arabic letter;
+# Characters that ride on the letter before them (the runtime's LETTER_RIDER)
+LETTER_RIDER = re.compile("[\u0300-\u036F\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC"
+                          "\u06DF-\u06E8\u06EA-\u06ED\u08D3-\u08FF\u200C\u200D\u0640]")
+
+
+def letters_of(word):
+    """A word split into letters the way letters= counts them: base character + its riders"""
+    out = []
+    for ch in word:
+        if out and LETTER_RIDER.match(ch):
+            out[-1] += ch
+        else:
+            out.append(ch)
+    return out
 # markers (﴿N﴾, ۝N), waqf/pause marks (ۖ ۗ ۚ …) and ornaments (۞ ۩) carry none and are not words.
 
 
@@ -139,7 +153,7 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
             soup = BeautifulSoup(template.read(), 'html.parser')
         tag = soup.find("quran-madina-html")
         for key in ("page", "sura", "aya", "words", "highlight", "error", "headless", "notitle",
-                    "quotes", "inline"):
+                    "quotes", "inline", "letters"):
             if key in tag.attrs:  # type: ignore
                 del tag[key]  # type: ignore
         for key, value in attrs.items():
@@ -645,6 +659,80 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertEqual([m["highlight"] for m in marks],
                          [False] * len(fatiha_last) + [True] * 4,
                          f"exactly the basmala words are highlighted\n{self.dump_log()}")
+
+    # ---- letters= -------------------------------------------------------------------------
+
+    def letter_marks(self):
+        """[(word number, letter text, computed colour)] of every marked letter, in order"""
+        return [tuple(x) for x in self.web_driver.execute_script(
+            "return Array.from(document.querySelectorAll('.quran-madina-html-letter')).map("
+            "s => [parseInt(s.parentElement.getAttribute('data-qmh-w'), 10), s.textContent,"
+            " getComputedStyle(s).color]);")]
+
+    def word_geometry(self):
+        """{word number: (left, top, width, height)} relative to the tag, for the shown words"""
+        return {int(k): tuple(v) for k, v in self.web_driver.execute_script(
+            "var t = document.querySelector('quran-madina-html').getBoundingClientRect(), out = {};"
+            "document.querySelectorAll('[data-qmh-w]').forEach(function(w){"
+            " var r = w.getBoundingClientRect();"
+            " out[w.getAttribute('data-qmh-w')] ="
+            "  [r.left - t.left, r.top - t.top, r.width, r.height];});"
+            "return out;").items()}
+
+    def test_39_letters_marks_letters_with_colours(self):
+        """letters= wraps the chosen letters of the chosen words; crimson by default, a named
+        palette colour or any CSS colour per group"""
+        words = aya_word_list(self.db["suras"][0]["ayas"][3])          # Al-Fatiha 2
+        self.set_attrs(sura=1, aya=2, letters="1:3, 3:1 emerald, 4:2-3 #123456")
+        marks = self.letter_marks()
+        self.assertEqual([(w, t) for w, t, _ in marks],
+                         [(1, letters_of(words[0])[2]), (3, letters_of(words[2])[0]),
+                          (4, letters_of(words[3])[1]), (4, letters_of(words[3])[2])],
+                         f"wrong letters marked\n{self.dump_log()}")
+        self.assertEqual([c for _, _, c in marks],
+                         ["rgb(163, 38, 58)", "rgb(15, 107, 79)",
+                          "rgb(18, 52, 86)", "rgb(18, 52, 86)"])
+
+    def test_40_letters_do_not_move_anything(self):
+        """Marking letters changes colour only: every word keeps its exact place and size"""
+        self.set_attrs(sura=1, aya="2-4", highlight="1")      # numbered words, no letters
+        plain = self.word_geometry()
+        self.set_attrs(sura=1, aya="2-4", highlight="1", letters="1:3, 4:3+5, 6:2-4")
+        lettered = self.word_geometry()
+        self.assertEqual(len(self.letter_marks()), 6)
+        self.assertEqual(sorted(plain), sorted(lettered))
+        for k, box in plain.items():
+            for a, b in zip(box, lettered[k]):
+                self.assertAlmostEqual(a, b, delta=0.5,
+                                       msg=f"word {k} moved: {box} -> {lettered[k]}")
+
+    def test_41_letters_inside_highlight_and_error(self):
+        """letters= combines with highlight=/error= on the same words"""
+        self.set_attrs(sura=1, aya="2-4", highlight="1-2", error="4", letters="1:3, 4:3")
+        cls = self.web_driver.execute_script(
+            "return Array.from(document.querySelectorAll('.quran-madina-html-letter'))"
+            ".map(s => s.parentElement.className);")
+        self.assertIn("quran-madina-html-word-highlight", cls[0])
+        self.assertIn("quran-madina-html-word-error", cls[1])
+
+    def test_42_letters_follow_words_and_page_counting(self):
+        """Word numbers count like highlight=: from the words= start, and from a page's first
+        aya (Al-Baqara's basmala on page 2)"""
+        words = aya_word_list(self.db["suras"][0]["ayas"][2])          # Al-Fatiha 1
+        self.set_attrs(sura=1, aya=1, words="2:3", letters="2:1")
+        self.assertEqual([(w, t) for w, t, _ in self.letter_marks()],
+                         [(2, letters_of(words[1])[0])])
+        basmala = aya_word_list(self.db["suras"][1]["ayas"][1])
+        self.set_attrs(page=2, letters="1:1")
+        self.assertEqual([(w, t) for w, t, _ in self.letter_marks()],
+                         [(1, letters_of(basmala[0])[0])])
+
+    def test_43_letters_malformed_ignored(self):
+        """A malformed letters= marks nothing and the verse renders as usual"""
+        self.set_attrs(sura=1, aya=1, letters="abc")
+        self.assertEqual(self.letter_marks(), [])
+        self.assertEqual(self.visible_words(), aya_word_list(self.db["suras"][0]["ayas"][2]))
+
 
 class FontSizeTest(unittest.TestCase):
     """v2 sizes everything in em: any data-font-size gives the same layout, scaled. The tag is

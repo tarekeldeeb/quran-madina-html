@@ -165,6 +165,19 @@ slot 1 is blank (no basmala in the real text). Decoration slots are always cente
   CSS custom properties `--qmh-highlight`/`--qmh-error` set the colors; the two class rules carry
   `background-color` only (no padding/margin/border), since every word span's measured width feeds
   the line's pre-computed stretch/kashida geometry.
+- `letters` ("1:3 crimson, 4:3-5 emerald, 6:2+4": word numbers counted like `highlight`, letter
+  numbers, optional colour from `LETTER_COLORS` or any CSS colour, crimson by default) marks single
+  letters. It takes the numbered word path like `highlight` (`wordMarkMode`; every counted word span
+  carries `data-qmh-w`), then `applyLetters()` runs after every render path (`render()`), shifting by
+  `tag._qmhLetterShift` in the cross-page verse path. `wrapLetters()` splits the word's text into
+  letters (`LETTER_RIDER`: marks, CGJ/ZWJ, tatweel ride on the letter before) and wraps the chosen
+  ones in `.quran-madina-html-letter` spans, the rest in `.quran-madina-html-ink`. Colour and
+  text-shadow only, so the browser shapes the word as before (render test 40 checks nothing moves).
+  The halo must sit *behind* other ink: the tag gets `quran-madina-html-lettered` and all other ink
+  (other words, `-ink` pieces) is lifted to `position:relative; z-index:1`, the letter stays in flow.
+  Do not use the CSS Highlight API (it clips glyphs whose ink overhangs their advance, common in
+  this script) nor a negative z-index/inline-block on the word (paints under the word's background
+  or changes its box). The blink only pulses the halo; off in print and with reduced motion.
 - A range that fits on one line renders as an inline `<span>`; otherwise a multiline `<div>` with a
   header (sura name + copy/translate icons). Generated child tags: `<quran-madina-html-line>`,
   `<quran-madina-html-header>`, and per-aya `<div>`s classed `quran-madina-html-NNN-NNN` for hover

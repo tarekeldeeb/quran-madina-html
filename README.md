@@ -166,6 +166,25 @@ a `words` selection, and even on a full `page` render:
 
 <img src="demo/img/highlight.png" width="216" alt="highlight attribute marking words 2-3 of Al-Fatiha's first aya">
 
+### Emphasising letters
+
+`letters` marks single letters inside words, for teaching a letter or pointing at a mistake:
+comma-separated groups of `word:letters colour`. Word numbers count like `highlight`/`error`;
+letters are `3`, `3-5` or `3+5`; the colour is optional — `crimson` (default), `emerald`, `lapis`,
+`gold`, `violet` or any CSS colour. The letter blinks gently with a halo of its own colour that
+sits behind the surrounding ink. It keeps its colour in every frame, stays still in print and
+with reduced motion, works inside `highlight`/`error` words, and gets a lighter shade on dark
+pages. Nothing changes size or position.
+
+```html
+<quran-madina-html sura="1" aya="2-4" highlight="1" error="4"
+  letters="1:3, 4:3+5 lapis, 6:4 emerald"></quran-madina-html>
+```
+
+<img src="demo/img/letters.png" width="300" alt="letters attribute marking letters inside highlighted, error and plain words">
+
+Lam-alef (لا) is a single glyph, so marking either of its letters colours both.
+
 ## Getting Started
 
 ### Installation
@@ -268,6 +287,7 @@ By default a multiline render gets a header (sura name + copy/translate icons); 
 | `words` | `string` | - | 1-based word index or range (e.g., `"1:2"`, `"3-10"`, or single index `"5"`). |
 | `highlight` | `string` | - | 1-based word range to mark soft yellow (same format as `words`). Works with or without `words`, and with `page` too. |
 | `error` | `string` | - | 1-based word range to mark soft red (same format as `words`). Wins over `highlight` on overlap. |
+| `letters` | `string` | - | Letters to emphasise inside words: `"1:3 crimson, 4:3-5 emerald"` (word:letters, optional colour; crimson by default). Works with `highlight`/`error`, `words` and `page`. |
 | `headless` | `boolean \| string` | `false` | Set to `"true"` to remove top sura header chrome and copy/translate icons. |
 | `notitle` | `boolean \| string` | `false` | Set to `"true"` to hide sura name text while retaining title frame decoration. |
 | `data-layout` | `string` | `"1441H"` | Layout: `1441H`, `1405H`, `IndoPak`. |
