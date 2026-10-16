@@ -143,3 +143,41 @@ def place_tokens_print(tokens, meta, pages, print_pages):
     if len(placed) != len(set(placed)):
         problems.append(("tokens on two lines",))
     return lines, problems
+
+
+INDOPAK_BASMALA = ("بِسْمِ اللّٰهِ "
+                   "الرَّحْمٰنِ "
+                   "الرَّحِيْمِ ۝")
+AYA_END = "۝"
+
+
+def layout_tokens(pages):
+    """For a layout whose text is used as is (IndoPak: its spelling differs from
+    Tanzil's Uthmani text): tokens, (sura, aya, kind) per token and the lines.
+
+    Aya numbers follow the Kufan count used everywhere else, so sura/aya mean the
+    same verse in every layout. They agree with the IndoPak print's own numbers
+    except in Al-Fatiha, where the print leaves the basmala unnumbered (it is
+    aya 1 here) and marks the non-Kufan end after عَلَيْهِمْ with a sign inside
+    aya 7."""
+    tokens, meta, lines = [], [], []
+    sura, aya = 0, 1
+    for pi, page in enumerate(pages):
+        for li, text in enumerate(page):
+            if text.startswith(SURA_PREFIX):
+                sura, aya = sura + 1, 1
+                lines.append(LayoutLine(pi + 1, li + 1, "sura", text))
+                continue
+            is_bism = text.strip() == INDOPAK_BASMALA and sura != 1
+            line = LayoutLine(pi + 1, li + 1, "bism" if is_bism else "text", text)
+            for tok in text.split():
+                line.tokens.append(len(tokens))
+                tokens.append(tok)
+                if is_bism:
+                    meta.append((sura, 1, "bism"))
+                    continue
+                meta.append((sura, aya, "marker" if AYA_END in tok else "word"))
+                if AYA_END in tok:
+                    aya += 1
+            lines.append(line)
+    return tokens, meta, lines

@@ -219,6 +219,16 @@
   // count of countable words in whatever is about to be rendered, so a range can be
   // checked against what's actually displayed *before* the render pass builds it. Not
   // used for the render pass itself - words= mode already has its bound (words_range).
+  function ayaLastPage(aya){
+    // An aya's parts carry only their line: a part on a lower line than the one before it
+    // has moved on to the next page.
+    var page = aya.p, prev = null;
+    for(var i = 0; i < aya.r.length; i++){
+      if(prev !== null && aya.r[i].l < prev) page = page + 1;
+      prev = aya.r[i].l;
+    }
+    return page;
+  }
   function countVerseRangeWords(sura_idx, aya_from, aya_to){
     // Verse mode is always single-sura (parseSuraRange forces sura_to = sura_from).
     var ayas = madina_data.suras[sura_idx].ayas, n = 0;
@@ -927,6 +937,11 @@
   var doc_layout  = this_script.getAttribute('data-layout');
   var use_v2      = doc_layout != null || !this_script.hasAttribute('data-font');
   if(use_v2) doc_layout = doc_layout || "1441H";
+  // v2 layouts and their DB names (assets/db/v2/<stem>.json and <stem>/ shards)
+  var V2_STEMS = {"1441H": "Madina-1441H", "1405H": "Madina-1405H", "indopak": "IndoPak-15"};
+  if(use_v2 && V2_STEMS[doc_layout] === undefined && V2_STEMS[String(doc_layout).toLowerCase()] !== undefined){
+    doc_layout = String(doc_layout).toLowerCase();
+  }
   var doc_cdn     = this_script.getAttribute('data-cdn');
   if (doc_cdn) cdn = doc_cdn.replace(/\/?$/, "/"); // honor explicit base, ensure trailing slash
   print(use_v2 ? `v2 layout: ${doc_layout} size: ${doc_font_sz}`
@@ -1198,6 +1213,21 @@
             }
           }
         }
+        if(verse_mode && ayaLastPage(madina_data.suras[sura_to].ayas[aya_to]) != page){
+          // The ayas run onto the next page(s). The line loop below draws one page, so this
+          // goes through the words= renderer, which follows (page, line) across pages: every
+          // word of the range selected. A walk anchored at a sura's first aya also counts its
+          // basmala (collectWordParts), so the selection starts after those words.
+          var skip = (aya_from === 2 && sura_from > 0) ?
+            countAyaWords(madina_data.suras[sura_from].ayas[1]) : 0;
+          var total = countVerseRangeWords(sura_from, aya_from, aya_to);
+          var shift = function(r){ return r == null ? null : [r[0] + skip, r[1] + skip]; };
+          highlight_range = shift(clampedOrNull("highlight", highlight_range, [1, total]));
+          error_range = shift(clampedOrNull("error", error_range, [1, total]));
+          renderWordsSpan(tag, sura_from, aya_from, [skip + 1, skip + total], headless, noQuotes,
+                          inlineOpt, false, highlight_range, error_range);
+          return;
+        }
         // No words= selection (absent, ignored with page=, or malformed and falling back
         // here): highlight=/error= are validated against the full verse/page instead, with
         // word 1 = first word of aya_from (verse mode) or of the page's first aya (page
@@ -1416,7 +1446,7 @@
   function bootV2(){
     // v2 DBs size everything in em: one DB serves every font-size, no anchors/interpolation.
     // Sharded like v1 (manifest + juz' shards carrying their pages' line rows), monolith fallback.
-    var stem = `Madina-${doc_layout}`;
+    var stem = V2_STEMS[doc_layout] || `Madina-${doc_layout}`;
     var ready = function(){
       madina_data.font_size = doc_font_sz;
       madina_data.line_width_em = madina_data.line_width;

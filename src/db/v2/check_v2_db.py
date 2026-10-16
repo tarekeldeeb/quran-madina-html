@@ -49,7 +49,7 @@ def main():
     tt.save(data)
     font = hb.Font(hb.Face(data.getvalue()))
     errors = []
-    if len(db["lines"]) != 604:
+    if len(db["lines"]) != (610 if db.get("layout") == "IndoPak" else 604):
         errors.append(f"{len(db['lines'])} pages")
     for si, sura in enumerate(db["suras"]):
         if len(sura["ayas"]) < 3:
@@ -59,7 +59,13 @@ def main():
                 if len(part["t"].split()) != len(part["f"]):
                     errors.append(f"{si + 1}:{ai} words/features mismatch")
             last = aya["r"][-1]["t"].split()[-1]
-            if last != enc.aya_number(ai):
+            # IndoPak markers carry the pause sign that follows them, and Al-Fatiha's are
+            # numbered as in that print: there, only require an aya number at the end
+            ok = last.startswith(enc.aya_number(ai)) if db.get("layout") == "IndoPak" or \
+                str(db.get("font_url", "")).find("indopak") >= 0 else last == enc.aya_number(ai)
+            if db.get("layout") == "IndoPak" and si == 0:
+                ok = enc.AYA_MARK in last
+            if not ok:
                 errors.append(f"{si + 1}:{ai} ends with {last!r}")
     # rebuild lines with pages (parts carry only the line; page changes go with "p")
     lines = {}

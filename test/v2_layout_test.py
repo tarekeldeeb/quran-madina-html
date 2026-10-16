@@ -112,3 +112,25 @@ class PrintLayoutTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OtherLayoutsTest(unittest.TestCase):
+    """1405H and IndoPak DBs: structure shared with 1441H."""
+
+    def test_same_suras_and_ayas_in_every_layout(self):
+        counts = {}
+        for stem in ("Madina-1441H", "Madina-1405H", "IndoPak-15"):
+            with open(os.path.join(ROOT, "assets", "db", "v2", stem + ".json"), encoding="utf-8") as fh:
+                db = json.load(fh)
+            counts[stem] = [len(s["ayas"]) for s in db["suras"]]
+        self.assertEqual(sum(counts["Madina-1441H"]) - 2 * 114, 6236)
+        self.assertEqual(counts["Madina-1405H"], counts["Madina-1441H"])
+        self.assertEqual(counts["IndoPak-15"], counts["Madina-1441H"])
+
+    def test_indopak_ayas_end_with_their_marker(self):
+        with open(os.path.join(ROOT, "assets", "db", "v2", "IndoPak-15.json"), encoding="utf-8") as fh:
+            db = json.load(fh)
+        self.assertEqual(len(db["lines"]), 610)
+        for s, sura in enumerate(db["suras"], start=1):
+            for a, aya in enumerate(sura["ayas"][2:], start=1):
+                self.assertIn(MARKER, aya["r"][-1]["t"].split()[-1], f"{s}:{a}")

@@ -60,6 +60,13 @@ LAYOUTS = {
               "page_width": 16400, "widths": "oldMadinaLineWidths", "pause_marks_from_print": False,
               "family": "QMH Old Madina", "title": "مصحف المدينة - الإصدار القديم ١٤٠٥هـ",
               "published": 1405},
+    # IndoPak spelling differs from Tanzil's Uthmani text (no Tanzil IndoPak edition):
+    # the layout's own text is used, numbered with the Kufan count (layout_lines.layout_tokens)
+    "IndoPak": {"text": "app/services/quran_text_indopak_15.ts", "font": "assets/fonts/hb/indopak.otf",
+                "page_width": 16400, "widths": "indoPak15LineWidths", "pause_marks_from_print": False,
+                "text_source": "layout", "justifier": "simple", "stem": "IndoPak-15",
+                "family": "QMH IndoPak", "title": "مصحف ١٥ سطرًا - الخط الهندي (IndoPak)",
+                "published": None},
 }
 MARGIN, PAGE_WIDTH = 400, 17000          # DigitalKhatt page geometry (font units)
 
@@ -144,6 +151,8 @@ def line_width_ratios(dk_src, layout):
     ratios = {}
     for page, line, ratio in re.findall(r"\[(\d+) \* 15 \+ (\d+), ([\d.]+)\]", block):
         ratios[(int(page), int(line))] = float(ratio)
+    if layout == "IndoPak":
+        return ratios                  # DigitalKhatt sets no page 1-2 widths for IndoPak
     if layout == "1405H":
         r, first = 0.9, (0.5, 0.43)
     else:
@@ -158,34 +167,40 @@ def line_width_ratios(dk_src, layout):
 def build(args):
     cfg = LAYOUTS[args.layout]
     t0 = time.time()
-    ayas = read_tanzil(args.tanzil) if args.tanzil else tanzil_from_v1_db(args.from_v1_db)
-    tokens, meta = convert(*tanzil_tokens(ayas))
     pages = layout_lines.load_dk_pages(os.path.join(args.dk_src, cfg["text"]))
-    # a Tanzil text downloaded without marks (marks=false) has only the 2 sakta signs
-    bare = sum(1 for t in tokens if PAUSE_MARKS & set(t)) < 100
-    if cfg["pause_marks_from_print"] or bare:
-        ref = [w for p in pages for line in p if not line.startswith(layout_lines.SURA_PREFIX)
-               for w in line.split()]
-        tokens, changed = enc.apply_pause_marks(tokens, ref, signs=bare)
-        what = "pause marks, ۞ and ۩" if bare else "pause marks"
-        print(f"{what} from the {args.layout} print: {changed} tokens"
-              + (" (the Tanzil text has none: downloaded without marks)" if bare else ""))
-        if bare:
-            n_rub = sum(t.count(enc.RUB_EL_HIZB) for t in tokens)
-            n_sajda = sum(t.count(enc.SAJDA) for t in tokens)
-            print(f"  ۞ {n_rub}, ۩ {n_sajda}")
-    print_lines = cfg.get("print_lines") if args.line_breaks == "print" else None
-    if print_lines:
-        with open(os.path.join(os.path.dirname(__file__), print_lines), encoding="utf-8") as fh:
-            print_pages = json.load(fh)["pages"]
-        lines, problems = layout_lines.place_tokens_print(tokens, meta, pages, print_pages)
-        print(f"{len(tokens)} tokens on {len(lines)} print lines; problems: {problems[:5]}")
-        if problems:
-            sys.exit("line placement failed")
+    print_lines = None
+    if cfg.get("text_source") == "layout":
+        tokens, meta, lines = layout_lines.layout_tokens(pages)
+        print(f"{len(tokens)} tokens from the layout text on {len(lines)} lines")
     else:
-        lines, unmatched = layout_lines.place_tokens(tokens, pages)
-        print(f"{len(tokens)} tokens on {len(lines)} lines; unmatched: {len(unmatched)}")
-
+        if not (args.tanzil or args.from_v1_db):
+            sys.exit(f"{args.layout} needs --tanzil (or --from-v1-db)")
+        ayas = read_tanzil(args.tanzil) if args.tanzil else tanzil_from_v1_db(args.from_v1_db)
+        tokens, meta = convert(*tanzil_tokens(ayas))
+        # a Tanzil text downloaded without marks (marks=false) has only the 2 sakta signs
+        bare = sum(1 for t in tokens if PAUSE_MARKS & set(t)) < 100
+        if cfg["pause_marks_from_print"] or bare:
+            ref = [w for p in pages for line in p if not line.startswith(layout_lines.SURA_PREFIX)
+                   for w in line.split()]
+            tokens, changed = enc.apply_pause_marks(tokens, ref, signs=bare)
+            what = "pause marks, ۞ and ۩" if bare else "pause marks"
+            print(f"{what} from the {args.layout} print: {changed} tokens"
+                  + (" (the Tanzil text has none: downloaded without marks)" if bare else ""))
+            if bare:
+                n_rub = sum(t.count(enc.RUB_EL_HIZB) for t in tokens)
+                n_sajda = sum(t.count(enc.SAJDA) for t in tokens)
+                print(f"  ۞ {n_rub}, ۩ {n_sajda}")
+        print_lines = cfg.get("print_lines") if args.line_breaks == "print" else None
+        if print_lines:
+            with open(os.path.join(os.path.dirname(__file__), print_lines), encoding="utf-8") as fh:
+                print_pages = json.load(fh)["pages"]
+            lines, problems = layout_lines.place_tokens_print(tokens, meta, pages, print_pages)
+            print(f"{len(tokens)} tokens on {len(lines)} print lines; problems: {problems[:5]}")
+            if problems:
+                sys.exit("line placement failed")
+        else:
+            lines, unmatched = layout_lines.place_tokens(tokens, pages)
+            print(f"{len(tokens)} tokens on {len(lines)} lines; unmatched: {len(unmatched)}")
     font_path = os.path.join(args.dk_src, cfg["font"])
     with open(font_path, "rb") as fh:
         font = hb.Font(hb.Face(fh.read()))
@@ -197,9 +212,20 @@ def build(args):
         n_lines[ln.page] = max(n_lines[ln.page], ln.line)
     page_rows = [[None] * n_lines[p + 1] for p in range(len(n_lines))]
 
+    natural_ratio = {}
+
     def width_ratio(ln):
         if print_lines:
             return ln.width or 1.0
+        if cfg.get("text_source") == "layout" and ln.page <= 2 and ln.kind == "text":
+            # IndoPak pages 1-2: DigitalKhatt gives no widths, and a full-width line of 3-4
+            # words would gape; the lines keep their natural width (plus a little), centered
+            key = (ln.page, ln.line)
+            if key not in natural_ratio:
+                text = " ".join(tokens[i] for i in ln.tokens)
+                natural = justify.natural_width(font, text) * args.page_scale_min
+                natural_ratio[key] = min(1.0, 1.04 * natural / full)
+            return natural_ratio[key]
         return ratios.get((ln.page, ln.line), 1.0)
     word_css = {}                       # token index -> css string
     fit_stats = []
@@ -236,7 +262,8 @@ def build(args):
         info = justify.analyze_line(text)
         if args.fit == "print":
             res = justify.fit_line_print(font, text, full * ratio / z, full / z,
-                                         exhaustive=args.exhaustive)
+                                         exhaustive=args.exhaustive,
+                                         simple=cfg.get("justifier") == "simple")
             row["s"] = [round(sp / 1000, 4) for sp in res.dom_spaces()]
             if res.word_scale < 1:
                 row["c"] = round(res.word_scale, 4)
@@ -312,7 +339,7 @@ def build(args):
     db = {"version": 2, "layout": args.layout, "title": cfg["title"], "published": cfg["published"],
           "font_family": cfg["family"], "font_url": f"assets/db/v2/{font_name}",
           "line_width": round(full / 1000, 4), "lines": page_rows, "suras": suras}
-    db_path = os.path.join(args.out, f"Madina-{args.layout}.json")
+    db_path = os.path.join(args.out, cfg.get("stem", f"Madina-{args.layout}") + ".json")
     with open(db_path, "w", encoding="utf-8") as fh:
         json.dump(db, fh, ensure_ascii=False, separators=(",", ":"))
     if fit_stats:
@@ -330,7 +357,7 @@ def build(args):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--layout", choices=sorted(LAYOUTS), default="1441H")
-    src = ap.add_mutually_exclusive_group(required=True)
+    src = ap.add_mutually_exclusive_group()
     src.add_argument("--tanzil", help="Tanzil Uthmani 'sura|aya|text' file")
     src.add_argument("--from-v1-db", help="development fallback: a v1 JSON DB")
     ap.add_argument("--dk-src", required=True, help="digitalkhatt.org/ClientApp/src")

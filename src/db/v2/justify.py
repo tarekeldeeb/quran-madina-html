@@ -50,6 +50,20 @@ KASHIDA_REGEXPS = {
 }
 KASHIDA_REGEXPS = {k: [re.compile(p) for p in v] for k, v in KASHIDA_REGEXPS.items()}
 
+# applySimpleJust patterns (just.service.ts), used for layouts other than Madina
+_RIGHT_KASH = re.sub("[لك]", "", DUAL_JOIN)
+_LEFT_CHARS = DUAL_JOIN + RIGHT_NO_JOIN.replace("ء", "")
+_LEFT_KASH_MEDI = re.sub("[وهصضطظ]", "", _LEFT_CHARS).replace("ه", "")
+_ALT_FIN_PAT = "^.*([بتثفكنصضسشقيئى])$"
+_FINAL_KASH_END = rf"^.*([{_RIGHT_KASH}][آاٱأإملهة])$"
+_FINAL_KASH = rf"^.*([{_RIGHT_KASH}][دذآاٱأإملهة])$"
+_HAH_KASH = rf"^.*([جحخ][{_LEFT_KASH_MEDI}]).*$|^.*([جحخ][هة])$"
+_ALT_FINA = re.compile(_ALT_FIN_PAT)
+_HAH_FINA_ASCEN = re.compile(_HAH_KASH + "|" + _FINAL_KASH_END)
+_SIMPLE = re.compile("|".join([
+    _ALT_FIN_PAT, _HAH_KASH, _FINAL_KASH, r"^.+([بتثنيسشصض][بتثنيم]).+$",
+    rf".*([{_RIGHT_KASH}][رز])", rf".*([{_RIGHT_KASH}](?:[ل]|[{_LEFT_KASH_MEDI}]))", r"^.*([ك].).*$"]))
+
 
 # ------------------------------------------------------------- text model
 @dataclass
@@ -339,6 +353,58 @@ class _Justifier:
                     break
         return False
 
+    def run_simple(self, first_word_included=True, word_by_word=False, nb_alt=2, nb_kashida=2):
+        """applySimpleJust (DigitalKhatt, layouts other than Madina, e.g. IndoPak):
+        each word gets one candidate - a final alternate, a hah/final-ascendant
+        kashida, or the first simple pattern found from its last sub-word back -
+        applied level by level from the line's last word to its first."""
+        words = self.line.words
+        first = 0 if first_word_included else 1
+        found = []
+        for wi, word in enumerate(words):
+            res = None
+            if word.base_text and wi >= first:
+                last = len(word.subwords) - 1
+                sub = word.subwords[last]
+                m = _ALT_FINA.match(sub.base_text)
+                if m:
+                    res = (last, m, 1)
+                elif word.base_text[-1] not in "يئى":
+                    m = _HAH_FINA_ASCEN.match(sub.base_text)
+                    if m:
+                        res = (last, m, 2)
+                    else:
+                        for si in range(last, -1, -1):
+                            m = _SIMPLE.match(word.subwords[si].base_text)
+                            if m:
+                                res = (si, m, 3)
+                                break
+            found.append(res)
+        stretched = set()
+        for level in range(1, max(nb_alt, nb_kashida) + 1):
+            for wi in range(len(words) - 1, first - 1, -1):
+                if wi + 1 in stretched:
+                    continue
+                if not found[wi]:
+                    continue
+                si, m, kind = found[wi]
+                group = max(g for g in range(1, len(m.groups()) + 1) if m.group(g) is not None)
+                start = m.start(group)
+                result = None
+                if kind == 1 or (kind == 3 and group == 1):
+                    if level <= nb_alt:
+                        idx = words[wi].start + words[wi].subwords[si].base_indexes[start]
+                        result = self.apply_alternate(wi, idx)
+                elif level <= nb_kashida:
+                    if group == 8 and kind == 3:
+                        result = self.apply_kaf(wi, si, start, start + 1)
+                    else:
+                        result = self.apply_kashida(wi, si, start, start + 1)
+                if result == OVERFLOW:
+                    return
+                if result == POSITIVE and word_by_word:
+                    stretched.add(wi)
+
     def run(self):
         """Priority order of applyExperimentalJust (Madina layouts)."""
         steps = [
@@ -595,10 +661,11 @@ def is_marker_word(text):
     return "۝" in text
 
 
-def fit_line_print(font, text, desired, line_width, exhaustive=True):
+def fit_line_print(font, text, desired, line_width, exhaustive=True, simple=False):
     """Fit one line to `desired` font units the way the print does.
 
-    line_width: a full line in the same units (gaps are a share of it)."""
+    line_width: a full line in the same units (gaps are a share of it).
+    simple: stretch letters with DigitalKhatt's applySimpleJust (non-Madina layouts)."""
     line = analyze_line(text)
     words = line.words
     marker = [is_marker_word(w.text) for w in words]
@@ -661,7 +728,7 @@ def fit_line_print(font, text, desired, line_width, exhaustive=True):
         features = {}
         if current < desired:
             j = _Justifier(font, line, current, desired, exhaustive)
-            j.run()
+            j.run_simple() if simple else j.run()
             features = j.features
             bx = boxes(features)
             if width_at(bx, f) > desired:     # stretched ink moved a little
