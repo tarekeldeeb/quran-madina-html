@@ -1,6 +1,6 @@
 {
   "name": "quran-madina-html",
-  "version": "0.11.0",
+  "version": "1.0.1",
   "devDependencies": {
     "grunt": "^1.6.2",
     "grunt-contrib-clean": "^2.0.1",
@@ -18,7 +18,9 @@
   "files": [
     "dist/quran-madina-html.min.js",
     "dist/quran-madina-html.min.css",
-    "assets"
+    "assets/img",
+    "assets/db/v2/**/*.json",
+    "assets/db/v2/*.woff2"
   ],
   "scripts": {
     "build": "grunt",
@@ -34,7 +36,6 @@
   "keywords": [
     "quran",
     "html",
-    "x-tag",
     "madina"
   ],
   "author": "Tarek Eldeeb",
@@ -59,9 +60,6 @@
         "node scripts/publish-wrapper.mjs ${version}"
       ]
     }
-  },
-  "dependencies": {
-    "x-tag": "^1.5.11"
   },
   "overrides": {
     "minimatch": "3.1.5",

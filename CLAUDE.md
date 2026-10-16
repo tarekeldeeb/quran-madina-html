@@ -6,7 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A browser library that renders Quran pages visually similar to the printed Madina Mushaf
 **without images** — pure HTML/CSS driven by pre-computed JSON databases. It ships as a custom
-element (`<quran-madina-html>`) built on the X-Tag library, published to npm and served via unpkg.
+element (`<quran-madina-html>`) built on the native Custom Elements v1 browser API, published to
+npm and served via unpkg.
+
+**Since 2.0 every tag renders through the v2 path** (see the v2 section at the end):
+`data-font`/`data-name` are ignored with a console warning (`use_v2 = true` in the attribute
+block). The v1 sections below describe code that is still in the runtime but unreachable, and
+the 1.x DB builder; the npm `files` list ships only `assets/db/v2` (json + woff2) and `assets/img`.
 
 There are two distinct halves:
 
@@ -25,7 +31,7 @@ npm install              # install JS deps + the python deps are separate (see b
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 # thereafter run pytest as: .venv/bin/python -m pytest ...
 
-npm run build            # grunt: jshint, clean, concat (src + x-tag) into dist/, uglify, cssmin, json-minify
+npm run build            # grunt: jshint, clean, concat, uglify, cssmin, json-minify
 npm run build-db         # regenerate ALL assets/db/*.json (slow: downloads + headless Chrome). See below.
 npm run start            # http-server on localhost:8000 (required for render tests + demo)
 npm test                 # python -m pytest (runs both test/db_test.py and test/render_test.py)
@@ -169,10 +175,10 @@ slot 1 is blank (no basmala in the real text). Decoration slots are always cente
   which have no header of their own. Inline renders also get opening/closing quote marks (CSS
   `::before`/`::after` on `quran-madina-html-line`, gated by a `quran-madina-html-inline` class the
   render loop toggles) as their only visual cue that the text is a quoted excerpt; the optional
-  `quotes="no"` attribute opts a tag out of this. (Note: an attribute name used as an x-tag accessor
-  key must not contain a hyphen — `this['no-quotes']`-style hyphenated keys silently fail to register,
-  leaving the accessor permanently `undefined`; read hyphenated attributes via `getAttribute()`
-  directly instead, or avoid the hyphen as done here.)
+  `quotes="no"` attribute opts a tag out of this. (Note: a hyphenated attribute name can't be a
+  plain JS identifier/property name for a class getter/setter, so hyphenated attributes are read
+  via `getAttribute()` directly instead of via a same-named class getter, or avoid the hyphen as
+  done here.)
 - Stretch is applied as a CSS `scaleX()` transform on the line. There is no stored offset; a
   selection/line that starts mid-line reflows the preceding text invisibly (spacers) so the line's
   own stretch/centering positions the first visible word.
@@ -187,13 +193,43 @@ slot 1 is blank (no basmala in the real text). Decoration slots are always cente
   `applyLineStyle`. The overrides ride in module-level `sizeOverrides`, applied by both boot
   paths just before `initTag`; a missing anchor DB falls back to the default size like before.
 
+## v2 (letter stretching, `assets/db/v2`, `src/db/v2/`)
+
+Selected with `data-layout` on the script tag: `1441H` (default), `1405H`, `IndoPak` (case
+insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-name` are ignored
+(console warning) — 2.0 is a drop-in upgrade. Design notes and measurements: `docs/v2/design-decisions.md`.
+
+- **Fonts:** DigitalKhatt's `madina.otf` / `oldmadina.otf` / `indopak.otf` (OFL), patched by
+  `font_patch.py` with an AlternateSubst lookup + position features `jp01..jpNN` (`jpKK` swaps
+  the glyph at position KK of the word, the value picks the variant). HarfBuzz decides each
+  word's stretch at build time; the DOM gets one `font-feature-settings` per word span.
+- **Text:** Tanzil (`--tanzil`), converted to the fonts' encoding by `tanzil_encoding.py`
+  (1441H takes pause marks from the print; a Tanzil file without marks gets marks + ۞/۩ from the
+  layout text). IndoPak uses DigitalKhatt's own IndoPak text (`layout_lines.layout_tokens`),
+  numbered with the Kufan count so sura/aya address the same verse in every layout.
+- **Line breaks:** 1441H from the KFGQPC print (`src/db/v2/data/print-1441H-lines.json`, made by
+  `extract_print_lines.py`); 1405H and IndoPak from DigitalKhatt's layout texts.
+- **Fitting** (`justify.fit_line_print`): ink-to-ink gaps between words (band profiles,
+  `ink.py`) kept in the print's measured range; loose lines stretch letters (Madina:
+  `_Justifier.run`, a port of DigitalKhatt's experimental justifier; IndoPak:
+  `run_simple`, its applySimpleJust), dense lines narrow words (`c`, never aya numbers), the
+  whole line is scaled (`x`) only as a last resort. Never use `shr1`/`shrr` (they overlap letters).
+- **DB schema (version 2):** header + `lines[page][line] = {k, w, z, s[], x?, c?}` (em) +
+  `suras` (v1 shape, parts carry `f` = per-word feature strings). Spaces `s` may be negative.
+  `shard_db.py` splits v2 DBs too: line rows travel with the juz' shards of their pages.
+  Stems: `Madina-1441H`, `Madina-1405H`, `IndoPak-15` (`V2_STEMS` in the runtime).
+- **Runtime:** `isV2()` branches; `v2InitLine` (row geometry), `v2AppendWords` (word spans,
+  spaces, narrowing with transform-origin right/left for the line's first/last word). A
+  `sura`+`aya` range that runs onto another page renders through `renderWordsSpan`.
+- **Checks:** `check_v2_db.py <db>` (widths with the patched font), `test/v2_encoding_test.py`,
+  `test/v2_layout_test.py` (print line breaks, gaps). `render_test.py` runs against the
+  default 1441H layout (its template sets no attributes; `FontSizeTest` checks em scaling).
+
 ## Conventions
 
 - `src/db/test*.html` files are temp scratch files written/removed during DB builds — don't commit them.
 - `tmp_download/` caches the downloaded SQLite + Tanzil text; delete it to force a fresh download on
   the next `build-db`.
 - Distributables in `dist/` are generated by grunt — edit `src/`, never `dist/` directly.
-- `data-name` (default `Madina05`), `data-font` (default per README; runtime default `me_quran`),
-  and `data-font-size` (default 16) on the `<script>` tag select which `assets/db/*.json` is fetched.
-  A non-anchor font-size (anything other than 16/24) fetches the nearest anchor's DB and
-  interpolates its geometry — see the arbitrary-font-size bullet above.
+- `data-layout` (default `1441H`) and `data-font-size` (default 16, any size) on the `<script>`
+  tag select which `assets/db/v2/` DB is fetched and how it is scaled.

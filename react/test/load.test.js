@@ -33,6 +33,15 @@ describe("loadQuranMadinaHtml", () => {
     expect(script.getAttribute("data-cdn")).toBe("https://unpkg.com/quran-madina-html/");
   });
 
+  it("passes the v2 layout as data-layout", async () => {
+    const { loadQuranMadinaHtml } = await importFresh();
+    loadQuranMadinaHtml({ layout: "IndoPak", fontSize: 22 });
+    const script = document.querySelector(SELECTOR);
+    expect(script.getAttribute("data-layout")).toBe("IndoPak");
+    expect(script.hasAttribute("data-font")).toBe(false);
+    expect(script.getAttribute("data-font-size")).toBe("22");
+  });
+
   it("is idempotent: a second call reuses the promise and injects no new script", async () => {
     const { loadQuranMadinaHtml } = await importFresh();
     const first = loadQuranMadinaHtml({ font: "Hafs" });

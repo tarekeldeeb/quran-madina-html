@@ -17,9 +17,10 @@ Always upgrade to the most recent release before reporting an issue.
 What ships to consumers is intentionally small, which limits the attack surface:
 
 - **Core (`quran-madina-html`)** — the published package contains only the built
-  `dist/` runtime, the `assets/` (JSON databases, fonts), and a single runtime
-  dependency (`x-tag`). It renders pre-computed data into the DOM; it does not
-  execute remote code or evaluate user input as code.
+  `dist/` runtime and the `assets/` (JSON databases, fonts), with **no runtime
+  dependencies** (the custom element is registered via the native browser
+  Custom Elements v1 API). It renders pre-computed data into the DOM; it does
+  not execute remote code or evaluate user input as code.
 - **React wrapper (`@tarekeldeeb/quran-madina-react`)** — published as a thin
   built wrapper with **no runtime dependencies** (React is a peer dependency).
 

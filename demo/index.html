@@ -15,25 +15,27 @@
     // Font/size are read once by the runtime from this <script>'s data attributes, so switching
     // them at runtime requires a full page reload. The chooser below just persists the pick and
     // reloads; this reads it back before the runtime script is injected.
+    // "v2:<layout>" picks a layout (since 2.0 every layout stretches letters like the print).
     var FONT_CHOICES = [
-      { value: "Uthman", label: "عثمان طه" },
-      { value: "me_quran", label: "خط المصحف" },
-      { value: "Hafs", label: "حفص" },
-      { value: "Amiri Quran", label: "أميري" },
-      { value: "Amiri Quran Colored", label: "أميري ملون" }
+      { value: "v2:1441H", label: "مصحف المدينة ١٤٤١هـ" },
+      { value: "v2:1405H", label: "مصحف المدينة ١٤٠٥هـ" },
+      { value: "v2:IndoPak", label: "المصحف الهندي ١٥ سطرًا" }
     ];
-    // 16 and 24 have pre-built DBs; every other size is interpolated between them at load time.
+    // v2 databases are in em: any size works.
     var SIZE_CHOICES = [12, 14, 16, 18, 20, 22, 24, 28, 32];
     var savedFont = localStorage.getItem("quran-madina-html-font") || FONT_CHOICES[0].value;
+    // a v1 font saved by an older demo: fall back to the default layout
+    if (!FONT_CHOICES.some(function (c) { return c.value === savedFont; })) {
+      savedFont = FONT_CHOICES[0].value;
+    }
     var savedSize = localStorage.getItem("quran-madina-html-font-size") || "16";
 
+    // The demo always runs the build next to it (localhost, or the GitHub Pages copy of the repo),
+    // so it shows the current code, not whatever version unpkg serves.
     var script = document.createElement("script");
-    if (/localhost/.test(document.location.hostname)) {
-        script.setAttribute("src", "../dist/quran-madina-html.js");
-    } else {
-        script.setAttribute("src", "https://unpkg.com/quran-madina-html");
-    }
-    script.setAttribute("data-font", savedFont);
+    script.setAttribute("src", "../dist/quran-madina-html.js");
+    script.setAttribute("data-cdn", "../");
+    script.setAttribute("data-layout", savedFont.slice(3));
     script.setAttribute("data-font-size", savedSize);
     document.head.appendChild(script);
   </script>
@@ -156,7 +158,7 @@
             <table>
               <tr>
                 <td><button onclick='decrease("in_page")'>&nbsp;▶</button></td>
-                <td><input id="in_page" value="1" min="1" max="604" style="width:50px"></td>
+                <td><input id="in_page" value="1" min="1" max="610" style="width:50px"></td>
                 <td><button onclick='increase("in_page")'>◀&nbsp;</button> </td>
               </tr>
             </table>

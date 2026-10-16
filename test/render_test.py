@@ -14,9 +14,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 # The render_test.html template loads the dist with default attributes, so the page fetches the
-# default DB (name=Madina05, font=me_quran, size=16). Drive the words= expectations from that same
-# JSON so the assertions stay in sync with the data regardless of font.
-DEFAULT_DB = os.path.join("assets", "db", "Madina05-me_quran-16px.json")
+# default DB (v2, layout 1441H). Drive the words= expectations from that same JSON so the
+# assertions stay in sync with the data. In v2 every shown word is its own span (with its stretch
+# features) and the basmala always shows as its 4 words: there is no ﷽ ligature.
+DEFAULT_DB = os.path.join("assets", "db", "v2", "Madina-1441H.json")
 ARABIC_LETTER = re.compile("[ء-يٱ-ۓ]")  # a token is a word only if it carries an Arabic letter;
 # markers (﴿N﴾, ۝N), waqf/pause marks (ۖ ۗ ۚ …) and ornaments (۞ ۩) carry none and are not words.
 
@@ -159,6 +160,8 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         return self.web_driver.execute_script(
             "return Array.from(document.querySelectorAll('span.quran-madina-html-word'))"
             ".filter(w => !w.classList.contains('quran-madina-html-word-hidden'))"
+            # v2 renders the invisible context around a selection (spacers) as word spans too
+            ".filter(w => getComputedStyle(w).visibility !== 'hidden')"
             ".map(w => w.textContent);")
 
     def visible_words(self):
@@ -173,7 +176,8 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         excluded here just like in visible_words()/visible_tokens()."""
         raw = self.web_driver.execute_script(
             "return Array.from(document.querySelectorAll('span.quran-madina-html-word'))"
-            ".filter(w => !w.classList.contains('quran-madina-html-word-hidden')).map("
+            ".filter(w => !w.classList.contains('quran-madina-html-word-hidden'))"
+            ".filter(w => getComputedStyle(w).visibility !== 'hidden').map("
             "function(w){return {text:w.textContent,"
             "highlight:w.classList.contains('quran-madina-html-word-highlight'),"
             "error:w.classList.contains('quran-madina-html-word-error')};});")
@@ -220,15 +224,13 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
     def test_6_words_cross_sura_boundary(self):
         """words= keeps counting past the end of a sura into the next one: Al-Fatiha's last aya
-        (9 words), then the basmala (4 counted words, shown as the ligature since all 4 are in
-        range), then Al-Baqara's real aya 1"""
+        (9 words), then the basmala (4 counted words, shown as words), then Al-Baqara's real
+        aya 1"""
         self.set_attrs(sura=1, aya=7, words="1-14")
         expected = collect_words(self.db["suras"], 0, 8, 14)[0:14]
-        # words 10-13 are the complete basmala and collapse into the ﷽ ligature token
-        self.assertEqual(self.visible_words(), expected[0:9] + expected[13:14],
+        self.assertEqual(self.visible_words(), expected,
                          f"sura1 aya7 words=1-14 should cross into sura 2\n{self.dump_log()}")
-        self.assertIn("﷽", self.visible_tokens(),
-                      "the complete basmala must render as the ligature")
+        self.assertNotIn("﷽", self.visible_tokens(), "v2 shows the basmala as its words")
         # The crossed-into sura (Al-Baqara) renders its first aya and its name decoration line
         self.assertGreaterEqual(self.count(".quran-madina-html-002-001"), 1,
                                 "Al-Baqara aya 1 should be rendered after the boundary")
@@ -236,10 +238,10 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
                          "the crossed-into sura name carries the sura-start decoration")
 
     def test_7_words_ignored_with_page(self):
-        """words= is ignored when a full page is requested"""
+        """words= is ignored when a full page is requested: nothing is hidden"""
         self.set_attrs(page=5, words="1:2")
-        self.assertEqual(self.count("span.quran-madina-html-word"), 0,
-                         "page rendering must not split words")
+        self.assertEqual(self.count("span.quran-madina-html-word-hidden"), 0,
+                         "a page render must not hide words")
         self.assertEqual(self.count("quran-madina-html-line"), 15,
                          "page 5 still renders 15 lines")
 
@@ -283,22 +285,20 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertEqual(self.count("quran-madina-html-header"), 1, "headless=False keeps header")
 
     def test_12_words_invalid_range_falls_back(self):
-        """A reversed or zero words= range is rejected; the aya renders normally (no word spans)"""
+        """A reversed or zero words= range is rejected; the aya renders normally (all words)"""
+        aya1 = aya_word_list(self.db["suras"][0]["ayas"][2])
         for bad in ("3-1", "0", "0-2"):
             self.set_attrs(sura=1, aya=1, words=bad)
-            self.assertEqual(self.count("span.quran-madina-html-word"), 0,
-                             f"words={bad} should not split into word spans\n{self.dump_log()}")
-            self.assertGreaterEqual(self.count("quran-madina-html-line"), 1,
-                                    f"words={bad} should still render the aya")
+            self.assertEqual(self.count("span.quran-madina-html-word-hidden"), 0,
+                             f"words={bad} must not hide words\n{self.dump_log()}")
+            self.assertEqual(self.visible_words(), aya1,
+                             f"words={bad} should still render the whole aya")
 
     def test_13_words_capped_at_500(self):
-        """An over-long words= span is capped at 500 counted words. A complete basmala inside
-        the span (here Al-Baqara's, crossed into from Al-Fatiha) renders as one ligature token
-        that still accounts for its 4 counted words."""
+        """An over-long words= span is capped at 500 counted words (here crossing Al-Baqara's
+        basmala, whose 4 words count and show)"""
         self.set_attrs(sura=1, aya=1, words="1-1000")
-        ligatures = self.visible_tokens().count("﷽")
-        self.assertEqual(ligatures, 1, f"the span crosses one basmala\n{self.dump_log()}")
-        self.assertEqual(len(self.visible_words()) + 4 * ligatures, 500,
+        self.assertEqual(len(self.visible_words()), 500,
                          f"selection capped at 500\n{self.dump_log()}")
 
     def test_14_words_no_fully_hidden_leading_lines(self):
@@ -344,26 +344,20 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertNotIn("ۛ", self.visible_tokens(),
                          "a bare pause mark must never be its own visible token")
 
-    def test_17_basmala_counted_and_ligature_when_complete(self):
-        """Crossing into a new sura, the basmala counts as 4 real words; when all 4 fall inside
-        the selection they render as the traditional ﷽ ligature, not as individual tokens —
-        and the ligature still occupies all 4 word indices for anything that follows"""
+    def test_17_basmala_counted_as_four_words(self):
+        """Crossing into a new sura, the basmala counts as 4 real words and shows them; the next
+        word after them is Al-Baqara's first"""
         fatiha_last = aya_word_list(self.db["suras"][0]["ayas"][8])  # Al-Fatiha aya 7
         basmala = aya_word_list(self.db["suras"][1]["ayas"][1])  # Al-Baqara's basmala slot
         self.assertEqual(len(basmala), 4, "the basmala decoration must carry 4 real words")
         end = len(fatiha_last) + 4
         self.set_attrs(sura=1, aya=7, words=f"1-{end}")
-        self.assertEqual(self.visible_words(), fatiha_last,
-                         f"only Al-Fatiha's words render as word tokens\n{self.dump_log()}")
-        tokens = self.visible_tokens()
-        self.assertIn("﷽", tokens, "the complete basmala must render as the ligature")
-        for word in basmala:
-            self.assertNotIn(word, tokens, "no individual basmala token when complete")
-        # One more word proves the ligature consumed word indices 10-13: word 14 is Al-Baqara's
+        self.assertEqual(self.visible_words(), fatiha_last + basmala,
+                         f"Al-Fatiha's last aya, then the 4 basmala words\n{self.dump_log()}")
         baqara_first = aya_word_list(self.db["suras"][1]["ayas"][2])[0]
         self.set_attrs(sura=1, aya=7, words=f"1-{end + 1}")
-        self.assertEqual(self.visible_words(), fatiha_last + [baqara_first],
-                         f"the ligature must still occupy 4 word indices\n{self.dump_log()}")
+        self.assertEqual(self.visible_words(), fatiha_last + basmala + [baqara_first],
+                         f"the basmala occupies 4 word indices\n{self.dump_log()}")
 
     def test_18_partial_basmala_renders_words(self):
         """A words= range covering only 1-3 of the basmala's 4 words renders those individual
@@ -418,27 +412,23 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertEqual(self.count(".quran-madina-html-sura-start"), 1,
                          "At-Tawba's title decoration still renders")
 
-    def test_21_basmala_only_selection_is_ligature(self):
-        """A selection that is exactly the 4 basmala words shows only the ligature"""
+    def test_21_basmala_only_selection(self):
+        """A selection that is exactly the 4 basmala words shows exactly those words"""
         n = len(aya_word_list(self.db["suras"][0]["ayas"][8]))
+        basmala = aya_word_list(self.db["suras"][1]["ayas"][1])
         self.set_attrs(sura=1, aya=7, words=f"{n + 1}-{n + 4}")
-        self.assertEqual(self.visible_words(), [],
-                         f"no individual word tokens expected\n{self.dump_log()}")
-        self.assertEqual(self.visible_tokens(), ["﷽"],
-                         "exactly the ligature must be visible")
+        self.assertEqual(self.visible_words(), basmala,
+                         f"exactly the basmala words\n{self.dump_log()}")
 
     def test_22_anchor_sura_basmala_counted(self):
         """A words= walk anchored at a sura's first real aya counts that sura's OWN basmala:
-        words 1-4 are the basmala (complete here, so it renders as the ligature) and word 5 is
-        the first word of real aya 1"""
+        words 1-4 are the basmala and word 5 is the first word of real aya 1"""
         basmala = aya_word_list(self.db["suras"][107]["ayas"][1])  # Al-Kawthar's basmala slot
         aya1 = aya_word_list(self.db["suras"][107]["ayas"][2])     # Al-Kawthar real aya 1
         self.assertEqual(len(basmala), 4, "the basmala slot must carry 4 real words")
         self.set_attrs(sura=108, aya=1, words="1-5")
-        self.assertEqual(self.visible_words(), aya1[0:1],
+        self.assertEqual(self.visible_words(), basmala + aya1[0:1],
                          f"word 5 of an aya-1 anchor must be the aya's first word\n{self.dump_log()}")
-        self.assertIn("﷽", self.visible_tokens(),
-                      "the complete anchor basmala must render as the ligature")
 
     def test_23_anchor_partial_basmala_regression(self):
         """Anchored at aya 1, words=4-6 are basmala word 4 + the aya's first two words. This is
@@ -544,15 +534,13 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertIn(fatiha_name, probe["text"], "the name still occupies the line's layout")
         self.assertEqual(probe["visible"], "", "the name must not be visible under notitle")
 
-    def test_28_page_render_shows_basmala_ligature(self):
-        """A full page render always shows a complete basmala line, so it gets the ligature
-        (never the DB's 4 word tokens)"""
+    def test_28_page_render_shows_basmala_words(self):
+        """A full page render shows the basmala line as its 4 words, like the print"""
         self.set_page(2)
-        text = self.web_driver.execute_script(
-            "return document.querySelector('quran-madina-html').textContent;")
-        self.assertIn("﷽", text, f"page 2 must open with the basmala ligature\n{self.dump_log()}")
         basmala = aya_word_list(self.db["suras"][1]["ayas"][1])
-        self.assertNotIn(basmala[0], text, "the basmala's first token must not render on a page")
+        self.assertEqual(self.visible_words()[0:4], basmala,
+                         f"page 2 must open with the basmala\n{self.dump_log()}")
+        self.assertNotIn("﷽", self.visible_tokens(), "no ligature in v2")
 
     def test_29_highlight_marks_words_in_words_selection(self):
         """highlight= marks a sub-range of words within an existing words= selection"""
@@ -604,16 +592,13 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
                          f"words 3-4 should be error\n{self.dump_log()}")
 
     def test_34_highlight_out_of_range_plain_verse_ignored(self):
-        """A highlight= range beyond a plain verse's word count is ignored: with no valid
-        highlight/error left, the verse falls back to the plain (non-word-span) render path,
-        same as an invalid words= (test_12)"""
+        """A highlight= range beyond a plain verse's word count is ignored: nothing is marked
+        and the verse renders normally"""
         self.set_attrs(sura=1, aya=1, highlight="5-6")
-        self.assertEqual(self.count("span.quran-madina-html-word"), 0,
-                         "an out-of-range highlight must fall back to the plain render path")
-        text = self.web_driver.execute_script(
-            "return document.querySelector('quran-madina-html-line').textContent;")
-        self.assertIn(aya_word_list(self.db["suras"][0]["ayas"][2])[0], text,
-                     f"the verse must still render its text\n{self.dump_log()}")
+        self.assertEqual(self.count("span.quran-madina-html-word-highlight"), 0,
+                         "an out-of-range highlight must mark nothing")
+        self.assertEqual(self.visible_words(), aya_word_list(self.db["suras"][0]["ayas"][2]),
+                         f"the verse must still render its text\n{self.dump_log()}")
 
     def test_35_page_mode_highlight_anchors_first_aya(self):
         """On a page render, highlight= counts from the page's first (real) aya - here
@@ -629,17 +614,12 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertEqual([m["highlight"] for m in marks[0:4]], [True, True, False, False],
                          f"only the first two basmala words should be highlighted\n{self.dump_log()}")
 
-    def test_36_page_mode_highlight_full_basmala_keeps_ligature(self):
-        """A highlight= covering the complete basmala on a page render keeps the ligature,
-        with the highlight class on the ligature span itself"""
+    def test_36_page_mode_highlight_full_basmala(self):
+        """A highlight= covering the complete basmala on a page render marks its 4 words"""
         self.set_attrs(page=2, highlight="1-4")
-        self.assertIn("﷽", self.visible_tokens(),
-                     "a fully-highlighted basmala still renders as the ligature")
-        lig_highlighted = self.web_driver.execute_script(
-            "var s=document.querySelector('span.quran-madina-html-basmala');"
-            "return !!s && s.classList.contains('quran-madina-html-word-highlight');")
-        self.assertTrue(lig_highlighted,
-                        f"the ligature span should carry the highlight class\n{self.dump_log()}")
+        marks = self.visible_word_marks()
+        self.assertEqual([m["highlight"] for m in marks[0:5]], [True, True, True, True, False],
+                         f"exactly the 4 basmala words are highlighted\n{self.dump_log()}")
 
     def test_37_words_highlight_partial_basmala_forces_tokens(self):
         """Within a words= selection that fully covers the basmala, a highlight cutting into
@@ -654,27 +634,21 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertIn(basmala[0], tokens)
         self.assertIn(basmala[1], tokens)
 
-    def test_38_words_highlight_full_basmala_keeps_ligature_class(self):
-        """A highlight= covering the complete basmala within a words= selection keeps the
-        ligature, with the highlight class applied to it"""
+    def test_38_words_highlight_full_basmala(self):
+        """A highlight= covering the complete basmala within a words= selection marks its 4
+        words"""
         fatiha_last = aya_word_list(self.db["suras"][0]["ayas"][8])
         end = len(fatiha_last) + 4
         start_word = len(fatiha_last) + 1
         self.set_attrs(sura=1, aya=7, words=f"1-{end}", highlight=f"{start_word}-{start_word + 3}")
-        tokens = self.visible_tokens()
-        self.assertIn("﷽", tokens, "a fully-highlighted basmala still renders as the ligature")
-        lig_highlighted = self.web_driver.execute_script(
-            "var s=document.querySelector('span.quran-madina-html-basmala');"
-            "return !!s && s.classList.contains('quran-madina-html-word-highlight');")
-        self.assertTrue(lig_highlighted,
-                        f"the ligature span should carry the highlight class\n{self.dump_log()}")
+        marks = self.visible_word_marks()
+        self.assertEqual([m["highlight"] for m in marks],
+                         [False] * len(fatiha_last) + [True] * 4,
+                         f"exactly the basmala words are highlighted\n{self.dump_log()}")
 
-class InterpolatedFontSizeTest(unittest.TestCase):
-    """data-font-size values without a pre-built DB (anything besides the 16/24 anchors) boot
-    through bootInterpolated(): line_width is read off the line fitted through the two anchor
-    sizes' hand-tuned widths (they are NOT proportional to the size - Hafs is 270@16 / 410@24),
-    render data comes from the nearest anchor's DB, and every justified line's scaleX is
-    corrected by the single factor stretch_scale = lw(S)*anchor / (lw(anchor)*S)."""
+class FontSizeTest(unittest.TestCase):
+    """v2 sizes everything in em: any data-font-size gives the same layout, scaled. The tag is
+    line_width (em) x size wide, and each justified line is its row's width (w) x size."""
 
     test_file = os.path.join("template", "render_test.html")
     test_url = "http://localhost:8000/" + test_file
@@ -689,84 +663,53 @@ class InterpolatedFontSizeTest(unittest.TestCase):
         cls.web_driver = webdriver.Chrome(options=chrome_options)
         with open(cls.test_file, encoding="utf8") as tpl:
             cls.original_template = tpl.read()
-        with open(os.path.join("assets", "db", "Madina05-Hafs-16px.json"), encoding="utf8") as db:
-            cls.db16 = json.load(db)
-        with open(os.path.join("assets", "db", "Madina05-Hafs-24px.json"), encoding="utf8") as db:
-            cls.db24 = json.load(db)
+        with open(DEFAULT_DB, encoding="utf8") as db:
+            cls.db = json.load(db)
 
     @classmethod
     def tearDownClass(cls):
+        """Restore the template and close the browser."""
         with open(cls.test_file, "w", encoding="utf8") as tpl:
             tpl.write(cls.original_template)
         cls.web_driver.quit()
 
     def load_with_font_size(self, size):
-        """Point the template's loader <script> at Hafs at `size`px and (re)load the page."""
+        """Rewrite the template's script tag with data-font-size and load page PAGE."""
         soup = BeautifulSoup(self.original_template, 'html.parser')
-        script = soup.find("script")
-        script["data-font"] = "Hafs"  # type: ignore
-        script["data-font-size"] = str(size)  # type: ignore
-        with open(self.test_file, "w", encoding="utf8") as file:
-            file.write(str(soup))
+        soup.find("script")["data-font-size"] = str(size)  # type: ignore
+        soup.find("quran-madina-html")["page"] = str(self.PAGE)  # type: ignore
+        with open(self.test_file, "w", encoding="utf8") as tpl:
+            tpl.write(str(soup))
         self.web_driver.get(self.test_url)
         WebDriverWait(self.web_driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "quran-madina-html-line")))
+        time.sleep(1)
 
-    def page_stretches(self, db):
-        """line number -> stored stretch on self.PAGE (parts sharing a line share their s)."""
-        stretches = {}
-        for sura in db["suras"]:
-            for aya in sura["ayas"]:
-                if aya["p"] == self.PAGE:
-                    for part in aya["r"]:
-                        stretches[part["l"]] = part["s"]
-        return stretches
-
-    def dom_scale_x(self):
-        """scaleX of each rendered line in order (None for untransformed/centered lines)."""
-        return self.web_driver.execute_script(
-            "return Array.from(document.querySelectorAll('quran-madina-html-line')).map("
-            "function(l){var t=getComputedStyle(l).transform;"
-            "return t==='none'?null:parseFloat(t.slice(t.indexOf('(')+1));});")
-
-    def assert_geometry(self, size, expected_lw, source_db, scale):
-        """The tag must be sized for expected_lw at `size`px, with each line's scaleX being the
-        source DB's stored stretch times `scale` (1.0 for anchor sizes)."""
-        tag_probe = self.web_driver.execute_script(
+    def assert_geometry(self, size):
+        """Tag and line widths at `size`px, from the DB's em values."""
+        probe = self.web_driver.execute_script(
             "var t=document.querySelector('quran-madina-html');"
-            "return {width:t.style.width, fontSize:getComputedStyle(t).fontSize};")
-        self.assertEqual(tag_probe["width"], f"{expected_lw + 10}px",
-                         f"@{size}px the page width must be line_width+10")
-        self.assertEqual(tag_probe["fontSize"], f"{size}px",
-                         f"the tag must render at the requested {size}px")
-        expected = self.page_stretches(source_db)
-        rendered = self.dom_scale_x()
-        self.assertEqual(len(rendered), 15, f"page {self.PAGE} renders 15 lines")
-        for i, actual in enumerate(rendered):
-            stored = expected[i + 1]
-            if stored < 0:
-                self.assertIsNone(actual, f"line {i + 1} is centered, must not be stretched")
-            else:
-                self.assertIsNotNone(actual, f"line {i + 1} must carry a scaleX transform")
-                self.assertAlmostEqual(actual, stored * scale, delta=0.002,
-                                       msg=f"@{size}px line {i + 1}: scaleX {actual} should be "
-                                           f"stored {stored} * {scale}")
+            "return {width:t.style.width, fontSize:getComputedStyle(t).fontSize,"
+            " lines:Array.from(t.querySelectorAll('quran-madina-html-line')).map("
+            "function(l){return l.offsetWidth;})};")
+        self.assertAlmostEqual(float(probe["width"].rstrip("px")), self.db["line_width"] * size + 10,
+                               delta=0.01, msg=f"@{size}px the page width must be line_width*size+10")
+        self.assertEqual(probe["fontSize"], f"{size}px")
+        rows = self.db["lines"][self.PAGE - 1]
+        self.assertEqual(len(probe["lines"]), len(rows), f"page {self.PAGE} renders all lines")
+        for i, (actual, row) in enumerate(zip(probe["lines"], rows)):
+            self.assertAlmostEqual(actual, row["w"] * size, delta=1.0,
+                                   msg=f"@{size}px line {i + 1}: {actual}px")
 
-    def test_0_interpolated_size_20(self):
-        """Hafs@20 (no pre-built DB): width fitted between the anchors, stretch re-scaled"""
-        lw16 = self.db16["line_width"]
-        lw24 = self.db24["line_width"]
-        lw20 = int(lw16 + (lw24 - lw16) * (20 - 16) / (24 - 16) + 0.5)  # mirrors JS Math.round
-        # 20 is equidistant from both anchors; the runtime ties to the LOWER one (16px), so the
-        # rendered text/stretch comes from the 16px DB corrected by stretch_scale.
-        scale = (lw20 * 16) / (lw16 * 20)
+    def test_0_size_20(self):
+        """20px: every line is its em width x 20"""
         self.load_with_font_size(20)
-        self.assert_geometry(20, lw20, self.db16, scale)
+        self.assert_geometry(20)
 
-    def test_1_anchor_size_stays_exact(self):
-        """Hafs@24 has its own DB: no interpolation, stored stretch applied untouched"""
-        self.load_with_font_size(24)
-        self.assert_geometry(24, self.db24["line_width"], self.db24, 1.0)
+    def test_1_size_33(self):
+        """33px: any size works, no pre-built DB needed"""
+        self.load_with_font_size(33)
+        self.assert_geometry(33)
 
 
 if __name__ == '__main__':

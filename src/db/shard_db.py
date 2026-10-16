@@ -8,6 +8,11 @@ The manifest's `juz` table is the (sura,aya)->juz and page->juz mapper source us
 Shards carry each aya's (suraIdx, ayaIdx) so the runtime can merge partial suras into place.
 
 Usage: python src/db/shard_db.py assets/db/Madina05-me_quran-16px.json <out_dir>
+
+v2 DBs (version 2) also carry per-page line geometry (`lines`, 604 pages x 15 rows). It travels
+with the shards: each juz' shard holds, under "L", the rows of every page that has any of its
+ayas ({page: rows}), so whatever a render loads for its ayas brings their lines too. The
+manifest keeps every other header field of the DB as is.
 """
 import hashlib
 import json
@@ -39,12 +44,13 @@ def juz_of(sura0, aya_idx):
     return j
 
 
-def shard(src, out_root, console=None):
+def shard(src, out_root, console=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     """Split the DB JSON at `src` into a manifest + 30 juz' shards under `out_root`/<db-stem>/.
     `console`: a rich.console.Console to print the summary through when called while a Progress
     display is live elsewhere in the process (a plain print() would corrupt that display);
     defaults to a plain print() for standalone CLI use."""
-    db = json.load(open(src, encoding="utf8"))
+    with open(src, encoding="utf8") as fh:
+        db = json.load(fh)
     stem = os.path.splitext(os.path.basename(src))[0]
     out = os.path.join(out_root, stem)
     os.makedirs(out, exist_ok=True)
@@ -59,8 +65,13 @@ def shard(src, out_root, console=None):
             if juz_start_page[j] is None:
                 juz_start_page[j] = aya["p"]
 
-    manifest = {k: db[k] for k in
-                ("title", "published", "font_family", "font_url", "font_size", "line_width")}
+    if db.get("version") == 2:
+        # every header field (version, layout, font, line_width, ...), without the bulky data
+        manifest = {k: v for k, v in db.items() if k not in ("suras", "lines")}
+        manifest["n_pages"] = len(db["lines"])
+    else:
+        manifest = {k: db[k] for k in
+                    ("title", "published", "font_family", "font_url", "font_size", "line_width")}
     # Hashes the *whole* DB (not just the manifest's own header/skeleton fields), since the render
     # data that actually changes when the DB is rebuilt (stretch factors, text, ...) lives in the
     # juz shards, invisible to everything else in this manifest. The runtime always re-fetches
@@ -100,22 +111,54 @@ def shard(src, out_root, console=None):
             json.dump(obj, f, ensure_ascii=False, separators=(",", ":"))
         return os.path.getsize(path)
 
+    # v2: each shard carries the line rows of the pages its ayas sit on (a page shared by two
+    # juz' is in both). Aya parts give a page per part: a part on a lower line number than the
+    # previous one has moved to the next page.
+    rows = [{} for _ in range(30)]
+    if db.get("version") == 2:
+        for j in range(30):
+            pages_j = set()
+            for _, _, page, parts in shards[j]:
+                prev = None
+                for part in parts:
+                    if prev is not None and part["l"] < prev:
+                        page += 1
+                    prev = part["l"]
+                    pages_j.add(page)
+            rows[j] = {str(p): db["lines"][p - 1] for p in sorted(pages_j)}
+
     total = dump(manifest, os.path.join(out, "manifest.json"))
     for j in range(30):
-        total += dump({"j": j, "d": shards[j]}, os.path.join(out, f"juz-{j + 1:02d}.json"))
+        data = {"j": j, "d": shards[j]}
+        if rows[j]:
+            data["L"] = rows[j]
+        total += dump(data, os.path.join(out, f"juz-{j + 1:02d}.json"))
 
     # ---- lossless round-trip check: reassemble the original suras from manifest + shards ----
     rebuilt = [{"name": name, "ayas": [None] * n} for name, n in manifest["suras"]]
     for j in range(30):
-        shard = json.load(open(os.path.join(out, f"juz-{j + 1:02d}.json"), encoding="utf8"))
-        for s0, ai, page, parts in shard["d"]:
+        with open(os.path.join(out, f"juz-{j + 1:02d}.json"), encoding="utf8") as fh:
+            data = json.load(fh)
+        for s0, ai, page, parts in data["d"]:
             rebuilt[s0]["ayas"][ai] = {"p": page, "r": parts}
     assert rebuilt == db["suras"], "round-trip mismatch!"
+    if db.get("version") == 2:
+        lines = [None] * manifest["n_pages"]
+        for j in range(30):
+            with open(os.path.join(out, f"juz-{j + 1:02d}.json"), encoding="utf8") as fh:
+                data = json.load(fh)
+            for page, page_rows in data.get("L", {}).items():
+                lines[int(page) - 1] = page_rows
+        assert lines == db["lines"], "line rows round-trip mismatch!"
     message = f"{stem}: manifest + 30 shards, reassembles losslessly. total on disk={total} bytes"
-    console.print(message) if console else print(message)
+    if console:
+        console.print(message)
+    else:
+        print(message)
 
 
 def main():
+    """Command line: shard_db.py <db.json> <out_root>."""
     shard(sys.argv[1], sys.argv[2])
 
 
