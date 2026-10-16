@@ -259,7 +259,11 @@
   // DOM building blocks (icons, hover, header/copy chrome, classes)
   // ==========================================================================
 
-  function hoverByType(class_name, type="class", color_bg="lightgrey", color_out="transparent"){
+  function hoverByType(class_name, type="class",
+                       color_bg="var(--qmh-hover, color-mix(in srgb, currentColor 12%, transparent))",
+                       color_out="transparent"){
+    // the hover shade follows the text colour, so it stays subtle in dark mode too (iOS keeps
+    // it on after a tap)
     var elms = (type.toLowerCase() === "tag") ? document.getElementsByTagName(class_name)
                                               : document.getElementsByClassName(class_name);
     Array.from(elms).forEach(function(elm) {

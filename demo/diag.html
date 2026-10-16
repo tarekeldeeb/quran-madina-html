@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>quran-madina-html width check</title>
+  <script src="../dist/quran-madina-html.js" data-cdn="../" data-font-size="20"></script>
+  <style>
+    body { margin: 12px; font-family: system-ui, sans-serif; background: #fff; color: #111; }
+    #report { direction: ltr; text-align: left; white-space: pre-wrap; font: 12px/1.4 ui-monospace, monospace;
+              background: #f3f3f3; padding: 10px; border-radius: 6px; overflow-wrap: anywhere; }
+    button { font-size: 16px; padding: 8px 14px; margin: 8px 0; }
+    .wrap { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <p dir="ltr">Measures every word on this device and compares it with the widths the layout
+  was computed for (Chrome). Wait for the report, then tap <b>Copy report</b> and paste it back.</p>
+  <button id="copy" dir="ltr">Copy report</button>
+  <div id="report">measuring…</div>
+  <div class="wrap"><quran-madina-html id="q" page="6" headless="true"></quran-madina-html></div>
+  <script>
+  // Words of the justified lines, in reading order: [line, text, features, width in em]
+  function measure(){
+    var out = [];
+    document.querySelectorAll("#q quran-madina-html-line").forEach(function(line, li){
+      var fs = parseFloat(getComputedStyle(line).fontSize);
+      line.querySelectorAll(".quran-madina-html-word").forEach(function(w){
+        out.push([li + 1, w.textContent, w.style.fontFeatureSettings || "",
+                  +(w.offsetWidth / fs).toFixed(4)]);
+      });
+    });
+    return out;
+  }
+  function lines(){
+    // how far each line's ink box runs past (+) or stops short of (-) its own box, in em
+    return Array.from(document.querySelectorAll("#q quran-madina-html-line")).map(function(line, li){
+      var fs = parseFloat(getComputedStyle(line).fontSize), r = line.getBoundingClientRect();
+      var words = line.querySelectorAll(".quran-madina-html-word");
+      if (!words.length) return null;
+      var left = Math.min.apply(null, Array.from(words).map(function(w){ return w.getBoundingClientRect().left; }));
+      return [li + 1, +((r.left - left) / fs).toFixed(3)];
+    }).filter(Boolean);
+  }
+  function report(expected){
+    var got = measure(), rows = [], diffs = [], featDiffs = [], plainDiffs = [];
+    var n = Math.min(got.length, expected.length), mismatch = got.length !== expected.length;
+    for (var i = 0; i < n; i++) {
+      var d = got[i][3] - expected[i][3];
+      diffs.push(d); (got[i][2] ? featDiffs : plainDiffs).push(d);
+      rows.push({i: i, d: d, w: got[i]});
+    }
+    function stats(a){
+      if (!a.length) return "n=0";
+      var s = a.slice().sort(function(x, y){ return x - y; });
+      var big = a.filter(function(x){ return Math.abs(x) > 0.02; }).length;
+      return "n=" + a.length + " median=" + s[s.length >> 1].toFixed(4) + " min=" + s[0].toFixed(3) +
+             " max=" + s[s.length - 1].toFixed(3) + " |d|>0.02em: " + big;
+    }
+    rows.sort(function(a, b){ return Math.abs(b.d) - Math.abs(a.d); });
+    var probe = document.createElement("span");
+    probe.style.cssText = "font-family:'QMH New Madina';font-size:100px;position:absolute;visibility:hidden";
+    var withFeat = expected.filter(function(e){ return e[2]; })[0] || [0, "x", ""];
+    probe.textContent = withFeat[1];
+    document.body.appendChild(probe);
+    var plain = probe.offsetWidth;
+    probe.style.fontFeatureSettings = withFeat[2];
+    var feat = probe.offsetWidth;
+    probe.remove();
+    var txt = [
+      "UA: " + navigator.userAgent,
+      "words: device " + got.length + ", expected " + expected.length + (mismatch ? "  (COUNT MISMATCH)" : ""),
+      "font loaded: " + Array.from(document.fonts).filter(function(f){ return f.status === "loaded"; }).map(function(f){ return f.family; }).join(","),
+      "feature probe (100px, " + withFeat[1] + " " + withFeat[2] + "): plain " + plain + " / stretched " + feat,
+      "all words      " + stats(diffs),
+      "with features  " + stats(featDiffs),
+      "no features    " + stats(plainDiffs),
+      "line overflow em (+ past the left edge, - short): " + JSON.stringify(lines()),
+      "largest differences (em): line | device - expected | word | features"
+    ];
+    rows.slice(0, 25).forEach(function(r){
+      txt.push("  l" + r.w[0] + "  " + r.d.toFixed(3) + "  " + r.w[1] + "  " + r.w[2]);
+    });
+    document.getElementById("report").textContent = txt.join("\n");
+  }
+  function waitThenReport(expected){
+    var tries = 0;
+    (function poll(){
+      var ok = document.querySelectorAll("#q .quran-madina-html-word").length > 50 &&
+               document.fonts.check("20px 'QMH New Madina'");
+      if (ok || ++tries > 60) setTimeout(function(){ report(expected); }, 800);
+      else setTimeout(poll, 250);
+    })();
+  }
+  if (location.search.indexOf("dump") >= 0) {
+    window.dumpWords = measure;           // used once in Chrome to write diag-expected.json
+  } else {
+    fetch("diag-expected.json").then(function(r){ return r.json(); }).then(waitThenReport);
+  }
+  document.getElementById("copy").onclick = function(){
+    var t = document.getElementById("report").textContent;
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+      function(){ document.getElementById("copy").textContent = "Copied ✓"; },
+      function(){ var r = document.createRange(); r.selectNodeContents(document.getElementById("report"));
+                  getSelection().removeAllRanges(); getSelection().addRange(r); });
+  };
+  </script>
+</body>
+</html>
