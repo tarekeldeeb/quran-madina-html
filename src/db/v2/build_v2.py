@@ -217,6 +217,7 @@ def build(args):
     ratios = line_width_ratios(args.dk_src, args.layout)
     full = cfg["page_width"] * (1 - 2 * MARGIN / PAGE_WIDTH)
     table, positions = font_patch.AlternateTable(), 1
+    used_pairs = set()              # (jp tag, value) -> one on/off q-feature each (CoreText)
     n_lines = defaultdict(int)
     for ln in lines:
         n_lines[ln.page] = max(n_lines[ln.page], ln.line)
@@ -296,6 +297,7 @@ def build(args):
                 css.update(font_patch.css_for(reps, table))
                 if reps:
                     positions = max(positions, max(p for p, _, _ in reps) + 1)
+            used_pairs.update((k, v) for k, v in css.items() if k.startswith("jp"))
             if css:
                 word_css[ln.tokens[wi]] = ",".join(f"{k}={v}" for k, v in sorted(css.items()))
 
@@ -343,7 +345,7 @@ def build(args):
     os.makedirs(args.out, exist_ok=True)
     stem = f"{os.path.splitext(os.path.basename(cfg['font']))[0]}-qmh"
     font_out = os.path.join(args.out, stem + ".otf")
-    font_patch.patch_font(font_path, font_out, table, positions, cfg["family"])
+    font_patch.patch_font(font_path, font_out, table, positions, cfg["family"], used_pairs)
     font_name = stem + ".woff2"                     # what the browser loads
     woff2 = TTFont(font_out)
     woff2.flavor = "woff2"
