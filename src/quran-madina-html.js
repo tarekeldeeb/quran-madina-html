@@ -987,6 +987,12 @@
       var e = shard.d[i];
       madina_data.suras[e[0]].ayas[e[1]] = {p: e[2], r: e[3]};
     }
+    // v2: shard.L = {page: rows} - the line geometry of the pages its ayas sit on
+    if(shard.L && madina_data.lines){
+      for(var page in shard.L){
+        if(Object.prototype.hasOwnProperty.call(shard.L, page)) madina_data.lines[page - 1] = shard.L[page];
+      }
+    }
   }
   function ensureJuz(list, cb){
     // Fetch+merge any not-yet-loaded juz' shards in `list`, then call cb. Monolith mode: no-op.
@@ -1409,14 +1415,41 @@
   }
   function bootV2(){
     // v2 DBs size everything in em: one DB serves every font-size, no anchors/interpolation.
-    loadJSON(`${cdn}assets/db/v2/Madina-${doc_layout}.json`,
-      function(data){
-        madina_data = data;
-        madina_data.font_size = doc_font_sz;
-        madina_data.line_width = data.line_width * doc_font_sz; // px, for the tag's width
-        initTag();
+    // Sharded like v1 (manifest + juz' shards carrying their pages' line rows), monolith fallback.
+    var stem = `Madina-${doc_layout}`;
+    var ready = function(){
+      madina_data.font_size = doc_font_sz;
+      madina_data.line_width_em = madina_data.line_width;
+      madina_data.line_width = madina_data.line_width * doc_font_sz; // px, for the tag's width
+      initTag();
+    };
+    var monolith = function(){
+      shardBase = null;
+      loadJSON(`${cdn}assets/db/v2/${stem}.json`,
+        function(data){ madina_data = data; ready(); },
+        function(xhr){ console.error(`${name}> no v2 DB for layout ${doc_layout}`, xhr); });
+    };
+    shardBase = `${cdn}assets/db/v2/${stem}/`;
+    loadJSON(shardBase + "manifest.json",
+      function(m){
+        if(m.content_hash){
+          var hashKey = "quran-madina-html:hash:" + shardBase;
+          var prevHash = null;
+          try { prevHash = sessionStorage.getItem(hashKey); } catch(e) { /* ignore */ }
+          if(prevHash !== null && prevHash !== m.content_hash) clearShardCache(shardBase);
+          try { sessionStorage.setItem(hashKey, m.content_hash); } catch(e) { /* ignore */ }
+        }
+        madina_data = {};
+        Object.keys(m).forEach(function(k){
+          if(k !== "suras" && k !== "n_pages") madina_data[k] = m[k];
+        });
+        madina_data.suras = m.suras.map(function(e){ return {name: e[0], ayas: new Array(e[1])}; });
+        madina_data.lines = new Array(m.n_pages);
+        ready();
       },
-      function(xhr){ console.error(`${name}> no v2 DB for layout ${doc_layout}`, xhr); });
+      monolith,
+      true
+    );
   }
   if(use_v2){ bootV2(); }
   else if(ANCHOR_SIZES.indexOf(doc_font_sz) >= 0){ bootFromManifest(); } else { bootInterpolated(); }
