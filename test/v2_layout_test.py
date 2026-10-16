@@ -138,3 +138,19 @@ class OtherLayoutsTest(unittest.TestCase):
         for s, sura in enumerate(db["suras"], start=1):
             for a, aya in enumerate(sura["ayas"][2:], start=1):
                 self.assertIn(MARKER, aya["r"][-1]["t"].split()[-1], f"{s}:{a}")
+
+
+class BrowserFeaturesTest(unittest.TestCase):
+    """The browser gets on/off twins of the DB's jpKK=v features (CoreText ignores values)."""
+
+    def test_font_has_on_off_feature_for_every_pair(self):
+        """Each layout's font carries q<KK><v> for every (jpKK, v) its DB uses."""
+        from fontTools.ttLib import TTFont
+        import font_patch
+        for stem in ("Madina-1441H", "Madina-1405H", "IndoPak-15"):
+            with open(os.path.join(ROOT, "assets", "db", "v2", stem + ".json"), encoding="utf-8") as fh:
+                db = json.load(fh)
+            tags = {r.FeatureTag for r in
+                    TTFont(os.path.join(ROOT, db["font_url"]))["GSUB"].table.FeatureList.FeatureRecord}
+            missing = {font_patch.bool_tag(k, v) for k, v in font_patch.db_feature_pairs(db)} - tags
+            self.assertFalse(missing, f"{stem}: {sorted(missing)[:5]}")

@@ -58,7 +58,8 @@ So the fonts are extended (`src/db/v2/font_patch.py`):
    features `jp01`…`jpNN`: `jpKK` swaps the glyph at position KK of the word,
    the CSS value picking the variant. These lookups run after all others, so
    GPOS (kerning, cursive, marks) sees exactly HarfBuzz's glyphs.
-4. Each word is one span: `<span style='font-feature-settings: "jp04" 3'>…</span>`.
+4. Each word is one span: `<span style='font-feature-settings: "jp04" 3'>…</span>`
+   (since the CoreText finding below, written `"q043"`: an on/off twin of the same feature).
 
 Results (Chromium, 40px): every word within **0.015px** of HarfBuzz, every
 line within **0.08px** of its target, on 1441H pages 3, 50, 300 and 1405H page 3.
@@ -70,8 +71,13 @@ since the alternate lists depend on the corpus.
 
 ## Open
 
-- Firefox (not installable in this workspace) and Safari/CoreText: untested
-  with custom `jpNN` features. A tatweel DB remains the fallback.
+- Firefox (not installable in this workspace): untested; it shapes with HarfBuzz, like Chrome.
+- Safari/CoreText (iOS 18, measured with `demo/diag.html`): custom features work, but CoreText
+  ignores a feature's *value* in the nested AlternateSubst and always takes alternate 1, so
+  stretched words came out up to 0.76em off. Fixed by giving the font one on/off feature per
+  (position, alternate) pair (`q043` = `jp04` value 3); the runtime emits those everywhere.
+  Afterwards every stretched word is within a pixel of Chrome. Left: two words with a kashida
+  carrying hamza plus CGJ (`لِـٔ͏َادَمَ` +0.22em, `يَٰٓـٔ͏َادَمُ` −0.11em on page 6) still differ.
 - Pages 1-2, sura titles, basmala lines.
 
 ## Runtime (Phase 4)
