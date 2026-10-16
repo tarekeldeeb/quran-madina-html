@@ -20,6 +20,10 @@ on:
         description: "Dry run (show what would happen, publish nothing)"
         type: boolean
         default: true
+      wrapper_only:
+        description: "Only publish the React wrapper at the current version (no bump), e.g. after approving a staged core publish"
+        type: boolean
+        default: false
 
 permissions:
   contents: write   # release commit, tag and GitHub release
@@ -55,7 +59,17 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Release
+        if: ${{ !inputs.wrapper_only }}
         run: npm run release -- ${{ inputs.increment }} --ci ${{ inputs.dry_run && '--dry-run' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} 
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # the wrapper waits for the core version to show on npm: 2.0.0 took several minutes
+          WRAPPER_PUBLISH_RETRIES: ${{ inputs.dry_run && '1' || '60' }}
+          WRAPPER_PUBLISH_DELAY_MS: "10000"
+
+      - name: Publish the React wrapper only
+        if: ${{ inputs.wrapper_only && !inputs.dry_run }}
+        run: node scripts/publish-wrapper.mjs "$(node -p "require('./package.json').version")"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
