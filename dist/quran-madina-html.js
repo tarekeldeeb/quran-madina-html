@@ -259,17 +259,22 @@
   // DOM building blocks (icons, hover, header/copy chrome, classes)
   // ==========================================================================
 
-  function hoverByType(class_name, type="class",
-                       color_bg="var(--qmh-hover, color-mix(in srgb, currentColor 12%, transparent))",
-                       color_out="transparent"){
-    // the hover shade follows the text colour, so it stays subtle in dark mode too (iOS keeps
-    // it on after a tap)
+  function hoverShade(elm){
+    // A faint wash of the text's own colour: subtle on light and dark pages alike (iOS keeps
+    // the hover on after a tap). --qmh-hover on the tag overrides it.
+    var custom = getComputedStyle(elm).getPropertyValue("--qmh-hover").trim();
+    if(custom) return custom;
+    var rgb = (getComputedStyle(elm).color.match(/[\d.]+/g) || [128, 128, 128]).slice(0, 3);
+    return `rgba(${rgb.join(",")},0.12)`;
+  }
+  function hoverByType(class_name, type="class", color_bg=null, color_out="transparent"){
     var elms = (type.toLowerCase() === "tag") ? document.getElementsByTagName(class_name)
                                               : document.getElementsByClassName(class_name);
     Array.from(elms).forEach(function(elm) {
       elm.onmouseover = function() {
+        var bg = color_bg || hoverShade(elm);
         Array.from(elms).forEach(function(element) {
-          element.style.backgroundColor = color_bg;
+          element.style.backgroundColor = bg;
         });
       };
       elm.onmouseout = function() {
