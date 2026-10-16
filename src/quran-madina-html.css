@@ -10,6 +10,11 @@ quran-madina-html {
   background-color:color-mix(in srgb, var(--qmh-background) 10%, transparent);
   border-radius: 5px;
   overflow: hidden;
+  /* Mobile Safari (and every iOS browser) enlarges text it finds too small on pages wider than
+     the screen. The line geometry is pre-computed for the exact font size, so enlarged words
+     would spill out of the frame: keep the size we set. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 /* highlight=/error= need a bg+text pair that contrasts with whatever the host page's actual
    (ambient, inherited) text color is - not a guess based on prefers-color-scheme, which may not

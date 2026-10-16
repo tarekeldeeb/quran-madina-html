@@ -30,12 +30,11 @@
     }
     var savedSize = localStorage.getItem("quran-madina-html-font-size") || "16";
 
+    // The demo always runs the build next to it (localhost, or the GitHub Pages copy of the repo),
+    // so it shows the current code, not whatever version unpkg serves.
     var script = document.createElement("script");
-    if (/localhost/.test(document.location.hostname)) {
-        script.setAttribute("src", "../dist/quran-madina-html.js");
-    } else {
-        script.setAttribute("src", "https://unpkg.com/quran-madina-html");
-    }
+    script.setAttribute("src", "../dist/quran-madina-html.js");
+    script.setAttribute("data-cdn", "../");
     script.setAttribute("data-layout", savedFont.slice(3));
     script.setAttribute("data-font-size", savedSize);
     document.head.appendChild(script);
@@ -74,6 +73,37 @@
         border-radius: 0;
         padding: 20px 18px 32px;
       }
+    }
+    .playground {
+      color: #DDD;
+      background-color: #282828;
+      padding: 10px 14px 16px;
+      margin: 30px 0;
+      border-radius: 10px;
+    }
+    .playground .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      margin-bottom: 16px;
+    }
+    .playground .field {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .playground .stepper {
+      display: inline-flex;
+      gap: 4px;
+    }
+    .playground input {
+      width: 50px;
+      font-size: 16px; /* 16px+ stops iOS zooming in on focus */
+    }
+    .playground input.range {
+      width: 64px;
+      direction: ltr;
     }
     .font-chooser {
       display: flex;
@@ -140,71 +170,37 @@
   <quran-madina-html sura="2" aya="13-14" headless="true"></quran-madina-html>
   </p>
 
-  <div style="color:#DDD; background-color: #282828; padding: 10px; margin: 30px; border-radius: 10px;">
+  <div class="playground">
     <h2>منطقة التجارب</h2>
-    <table border="0" cellpadding="1" cellspacing="1" style="width:500px">
-      <thead>
-        <tr>
-          <th scope="col" style="border-left: solid 1px #000; ">الصفحة</th>
-          <th scope="col">السورة</th>
-          <th scope="col">الآية</th>
-          <th scope="col">الكلمات</th>
-          <th scope="col">تظليل</th>
-          <th scope="col">خطأ</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="border-left: solid 1px #000; ">
-            <table>
-              <tr>
-                <td><button onclick='decrease("in_page")'>&nbsp;▶</button></td>
-                <td><input id="in_page" value="1" min="1" max="610" style="width:50px"></td>
-                <td><button onclick='increase("in_page")'>◀&nbsp;</button> </td>
-              </tr>
-            </table>
-          </td>
-          <td>
-            <table>
-              <tr>
-                <td><button onclick='decrease("in_sura")'>&nbsp;▶</button></td>
-                <td><input id="in_sura" value="1" min="1" max="114" style="width:50px"></td>
-                <td><button onclick='increase("in_sura")'>◀&nbsp;</button> </td>
-              </tr>
-            </table>
-          </td>
-          <td>
-            <table>
-              <tr>
-                <td><button onclick='decrease("in_aya")'>&nbsp;▶</button></td>
-                <td><input id="in_aya" value="1" min="1" max="286" style="width:50px"></td>
-                <td><button onclick='increase("in_aya")'>◀&nbsp;</button> </td>
-              </tr>
-            </table>
-          </td>
-          <td>
-            <!-- words= range (e.g. 3 or 1-14): applies with sura/aya, ignored by page renders -->
-            <input id="in_words" value="" placeholder="1-14" style="width:60px;direction:ltr">
-          </td>
-          <td>
-            <!-- highlight= range: works in every mode (words=, sura/aya, or page) -->
-            <input id="in_highlight" value="" placeholder="1-2" style="width:60px;direction:ltr">
-          </td>
-          <td>
-            <!-- error= range: same format/scope as highlight=, wins on overlap -->
-            <input id="in_error" value="" placeholder="1-2" style="width:60px;direction:ltr">
-          </td>
-        </tr>
-        <tr>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="controls">
+      <div class="field">
+        <label for="in_page">الصفحة</label>
+        <span class="stepper"><button onclick='decrease("in_page")'>▶</button><input id="in_page" value="1" min="1" max="610" inputmode="numeric"><button onclick='increase("in_page")'>◀</button></span>
+      </div>
+      <div class="field">
+        <label for="in_sura">السورة</label>
+        <span class="stepper"><button onclick='decrease("in_sura")'>▶</button><input id="in_sura" value="1" min="1" max="114" inputmode="numeric"><button onclick='increase("in_sura")'>◀</button></span>
+      </div>
+      <div class="field">
+        <label for="in_aya">الآية</label>
+        <span class="stepper"><button onclick='decrease("in_aya")'>▶</button><input id="in_aya" value="1" min="1" max="286" inputmode="numeric"><button onclick='increase("in_aya")'>◀</button></span>
+      </div>
+      <div class="field">
+        <!-- words= range (e.g. 3 or 1-14): applies with sura/aya, ignored by page renders -->
+        <label for="in_words">الكلمات</label>
+        <input id="in_words" value="" placeholder="1-14" class="range">
+      </div>
+      <div class="field">
+        <!-- highlight= range: works in every mode (words=, sura/aya, or page) -->
+        <label for="in_highlight">تظليل</label>
+        <input id="in_highlight" value="" placeholder="1-2" class="range">
+      </div>
+      <div class="field">
+        <!-- error= range: same format/scope as highlight=, wins on overlap -->
+        <label for="in_error">خطأ</label>
+        <input id="in_error" value="" placeholder="1-2" class="range">
+      </div>
+    </div>
     <quran-madina-html id="test" page="1"></quran-madina-html>
   </div>
   </main>

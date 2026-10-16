@@ -203,6 +203,12 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   `font_patch.py` with an AlternateSubst lookup + position features `jp01..jpNN` (`jpKK` swaps
   the glyph at position KK of the word, the value picks the variant). HarfBuzz decides each
   word's stretch at build time; the DOM gets one `font-feature-settings` per word span.
+  **The browser never gets `jpKK` values:** Apple's CoreText (every iOS browser) ignores a
+  feature's value inside the nested AlternateSubst and always takes alternate 1. So the font
+  also carries one on/off feature per (position, alternate) pair the DB uses, `qKKv` (v in base
+  36; `add_boolean_features`), and `v2FeatureSettings` turns the DB's `jp04=3` into `"q043"`.
+  The DB keeps the `jp` form (HarfBuzz/build/checks use it). `demo/diag.html` measures every
+  word of page 6 on a device against `demo/diag-expected.json` (Chrome's widths).
 - **Text:** Tanzil (`--tanzil`), converted to the fonts' encoding by `tanzil_encoding.py`
   (1441H takes pause marks from the print; a Tanzil file without marks gets marks + ۞/۩ from the
   layout text). IndoPak uses DigitalKhatt's own IndoPak text (`layout_lines.layout_tokens`),
