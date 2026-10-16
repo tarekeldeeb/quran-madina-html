@@ -1,0 +1,61 @@
+# Release from anywhere (a phone included): GitHub -> Actions -> Release -> Run workflow.
+#
+# Runs the same `npm run release` (release-it) as a local release: builds dist with grunt, bumps the
+# version (the React wrapper follows in lockstep), commits + tags on main, creates the GitHub
+# release, publishes quran-madina-html and then @tarekeldeeb/quran-madina-react to npm.
+#
+# Needs one repository secret, NPM_TOKEN: an npm access token allowed to publish both packages
+# (granular token with read+write on them; "bypass 2FA" if the account requires 2FA to publish).
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: "Version bump"
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      dry_run:
+        description: "Dry run (show what would happen, publish nothing)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write   # release commit, tag and GitHub release
+
+concurrency: release
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # release-it reads the tags for the changelog
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Install
+        run: npm ci
+
+      - name: Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Check the npm token
+        if: ${{ !inputs.dry_run }}
+        run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Release
+        run: npm run release -- ${{ inputs.increment }} --ci ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
