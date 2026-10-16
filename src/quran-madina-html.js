@@ -487,7 +487,7 @@
   }
   // --------------------------------------------------------------------------
   // v2 DBs (version: 2). Lines are justified by stretching letters: each word carries its own
-  // font-feature-settings (position features jpNN of the v2 font, chosen by HarfBuzz at build
+  // font-feature-settings (position features of the v2 font, chosen by HarfBuzz at build
   // time) and each space its exact width. All widths are in em, so any font-size renders the same
   // layout. Line geometry lives in madina_data.lines[page-1][line-1] = {k, w, s, x, c}: c narrows
   // the words of a dense line (aya numbers excluded), x the whole line (rare last resort).
@@ -510,8 +510,13 @@
     if(row.x) line.style.setProperty("transform", `scaleX(${row.x})`, "");
   }
   function v2FeatureSettings(f){
-    // "jp04=3,jp06=1" -> '"jp04" 3, "jp06" 1'
-    return f.split(",").map(function(kv){ var p = kv.split("="); return `"${p[0]}" ${p[1]}`; }).join(", ");
+    // "jp04=3,jp06=1" -> '"q043", "q061"'. The DB keeps HarfBuzz's form (jpKK = alternate v);
+    // the browser gets the font's on/off twin of each pair, q<KK><v in base 36>, because Apple's
+    // CoreText (every iOS browser) ignores feature values there and always takes alternate 1.
+    return f.split(",").map(function(kv){
+      var p = kv.split("=");
+      return `"q${p[0].slice(2)}${Number(p[1] || 1).toString(36)}"`;
+    }).join(", ");
   }
   function v2InitPlainLine(line){
     // Inline (single-line quote) renders: natural spacing, no stretching.

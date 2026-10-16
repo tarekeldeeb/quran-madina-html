@@ -105,9 +105,13 @@ def _all_glyph_coverage(glyph_order):
     return otl.buildCoverage(glyph_order, {g: i for i, g in enumerate(glyph_order)})
 
 
+B36 = "0123456789abcdefghijklmnopqrstuvwxyz"
+
+
 def bool_tag(tag, value):
-    """("jp04", 3) -> "q043": the on/off feature doing what jp04 with value 3 does."""
-    return f"q{int(tag[2:]):02d}{int(value):x}" if value < 16 else f"q{int(tag[2:]):02d}{chr(87 + value)}"
+    """("jp04", 3) -> "q043": the on/off feature doing what jp04 with value 3 does
+    (value in base 36, as the runtime writes it with Number.toString(36))."""
+    return f"q{int(tag[2:]):02d}{B36[int(value)]}"
 
 
 def _chain_subtable(order, backtrack, lookup_index):
@@ -194,20 +198,19 @@ def add_boolean_features(font, pairs):
 
 def db_feature_pairs(db):
     """{(jp tag, value)} used by a v2 DB's per-word feature strings."""
+    strings = (f for sura in db["suras"] for aya in sura["ayas"] for part in aya["r"]
+               for f in part.get("f") or [] if f)
     pairs = set()
-    for sura in db["suras"]:
-        for aya in sura["ayas"]:
-            for part in aya["r"]:
-                for f in part.get("f") or []:
-                    for kv in filter(None, (f or "").split(",")):
-                        k, v = kv.split("=")
-                        if k.startswith("jp"):
-                            pairs.add((k, int(v)))
+    for f in strings:
+        for k, v in (kv.split("=") for kv in f.split(",") if kv):
+            if k.startswith("jp"):
+                pairs.add((k, int(v)))
     return pairs
 
 
-def patch_font(src_path, out_path, table, positions, family=None, pairs=None):
-    """Write a copy of the font with ALT + jp01..jpNN (NN = `positions`)."""
+def patch_font(src_path, out_path, table, positions, family=None, pairs=None):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    """Write a copy of the font with ALT + jp01..jpNN (NN = `positions`), plus the on/off
+    q-features of `pairs` (see add_boolean_features)."""
     font = TTFont(src_path)
     order = font.getGlyphOrder()
     gsub = font["GSUB"].table
@@ -271,13 +274,13 @@ if __name__ == "__main__":
         # font_patch.py --add-boolean DB.json patched.otf out.otf [out.woff2]
         with open(sys.argv[2], encoding="utf-8") as fh:
             used = db_feature_pairs(json.load(fh))
-        f = TTFont(sys.argv[3])
-        print(f"added {add_boolean_features(f, used)} on/off features")
-        f.save(sys.argv[4])
+        patched = TTFont(sys.argv[3])
+        print(f"added {add_boolean_features(patched, used)} on/off features")
+        patched.save(sys.argv[4])
         if len(sys.argv) > 5:
-            f = TTFont(sys.argv[4])
-            f.flavor = "woff2"
-            f.save(sys.argv[5])
+            patched = TTFont(sys.argv[4])
+            patched.flavor = "woff2"
+            patched.save(sys.argv[5])
         sys.exit(0)
     ap = argparse.ArgumentParser(description="Add jpNN position features to a font")
     ap.add_argument("font")
