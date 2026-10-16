@@ -54,6 +54,20 @@ class EncodingTest(unittest.TestCase):
         out, changed = E.apply_pause_marks(ours, ["\u0645\u064F\u0627\u06DA"])
         self.assertEqual((out, changed), (ours, 0))
 
+    def test_17_7_as_tanzil_ships_it(self):
+        # Tanzil 1.1 carries the small waw of 17:7 on a tatweel; both spellings map to the font's word
+        dk = "\u0644\u0650\u064A\u064E\u0633\u064F\u034F\u08F3\u0653\u0640\u0654\u034F\u064F\u0648\u0627\u06DF"
+        tanzil = "\u0644\u0650\u064A\u064E\u0633\u064F\u0640\u06E5\u0653\u0640\u0654\u064F\u0648\u0627\u06DF"
+        self.assertEqual(E.convert_word(tanzil, ""), dk)
+
+    def test_marks_and_signs_for_a_bare_tanzil_text(self):
+        # downloaded without marks: pause marks, ۞ and ۩ come from the layout text,
+        # whose spacing around ۞ and ۩ varies
+        ours = ["ذَٰلِكَ", "فِيهِ", "وَأَنَابَ", "\u06DD\u0662\u0664"]
+        ref = ["۞", "ذَٰلِكَ", "فِيهِۛ", "وَأَنَابَ", "۩\u06DD\u0662\u0664"]
+        out, _ = E.apply_pause_marks(ours, ref, signs=True)
+        self.assertEqual(out, ["۞ذَٰلِكَ", "فِيهِۛ", "وَأَنَابَ۩", "\u06DD\u0662\u0664"])
+
 
 if __name__ == "__main__":
     unittest.main()

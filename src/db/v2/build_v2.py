@@ -161,11 +161,19 @@ def build(args):
     ayas = read_tanzil(args.tanzil) if args.tanzil else tanzil_from_v1_db(args.from_v1_db)
     tokens, meta = convert(*tanzil_tokens(ayas))
     pages = layout_lines.load_dk_pages(os.path.join(args.dk_src, cfg["text"]))
-    if cfg["pause_marks_from_print"]:
+    # a Tanzil text downloaded without marks (marks=false) has only the 2 sakta signs
+    bare = sum(1 for t in tokens if PAUSE_MARKS & set(t)) < 100
+    if cfg["pause_marks_from_print"] or bare:
         ref = [w for p in pages for line in p if not line.startswith(layout_lines.SURA_PREFIX)
                for w in line.split()]
-        tokens, changed = enc.apply_pause_marks(tokens, ref)
-        print(f"pause marks from the {args.layout} print: {changed}")
+        tokens, changed = enc.apply_pause_marks(tokens, ref, signs=bare)
+        what = "pause marks, ۞ and ۩" if bare else "pause marks"
+        print(f"{what} from the {args.layout} print: {changed} tokens"
+              + (" (the Tanzil text has none: downloaded without marks)" if bare else ""))
+        if bare:
+            n_rub = sum(t.count(enc.RUB_EL_HIZB) for t in tokens)
+            n_sajda = sum(t.count(enc.SAJDA) for t in tokens)
+            print(f"  ۞ {n_rub}, ۩ {n_sajda}")
     print_lines = cfg.get("print_lines") if args.line_breaks == "print" else None
     if print_lines:
         with open(os.path.join(os.path.dirname(__file__), print_lines), encoding="utf-8") as fh:

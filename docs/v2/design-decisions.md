@@ -92,9 +92,20 @@ that sets `data-font` without `data-layout` keeps the v1 DBs.
 Screenshot: `img/v2-runtime-chromium.png` (page 3, highlight/error, words=,
 inline quote, page 1).
 
-The v2 DBs in `assets/db/v2` are currently built from the Tanzil text recovered
-from the v1 DB (tanzil.net is unreachable from the build sandbox); rebuild with
-`--tanzil` from the real download before release.
+**Checked against the real Tanzil file** (Uthmani 1.1, downloaded on
+2026-10-16 without marks). Its letters and vowels match the text recovered from
+the v1 DB on every aya; the only difference is 17:7 لِيَسُـۥٓـُٔوا۟, where
+Tanzil puts a tatweel under the small waw (now handled by
+`POST_CONVERSION`). Built from that file, the 1441H DB is **byte-identical** to
+the committed one.
+
+When the Tanzil text has no pause marks (`marks=false`), the builder takes the
+pause marks and the ۞ and ۩ signs from the layout's print text (they are not
+in the text itself either: ۞ 199, ۩ 15). For 1441H that changes nothing, since
+its pause marks come from the print anyway. For 1405H it differs in one
+place, 19:38 يَأْتُونَنَاۖ, where DigitalKhatt's 1405H text has no mark. The
+committed 1405H DB keeps Tanzil's mark; to rebuild it, download with marks:
+`index.php?quranType=uthmani&outType=txt-2&marks=true&sajdah=true&rub=true&tatweel=true&agree=true`.
 
 ## Matching the 1441H print (replaces the "hybrid" fitting)
 

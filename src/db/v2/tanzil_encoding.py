@@ -51,6 +51,9 @@ POST_CONVERSION = {
     # 17:7 — small waw written as the font's small high waw
     "\u0644\u0650\u064A\u064E\u0633\u064F\u06E5\u0653\u0640\u0654\u034F\u064F\u0648\u0627\u06DF":
     "\u0644\u0650\u064A\u064E\u0633\u064F\u034F\u08F3\u0653\u0640\u0654\u034F\u064F\u0648\u0627\u06DF",
+    # the same word as Tanzil ships it (a tatweel carries the small waw)
+    "\u0644\u0650\u064A\u064E\u0633\u064F\u0640\u06E5\u0653\u0640\u0654\u034F\u064F\u0648\u0627\u06DF":
+    "\u0644\u0650\u064A\u064E\u0633\u064F\u034F\u08F3\u0653\u0640\u0654\u034F\u064F\u0648\u0627\u06DF",
 }
 
 
@@ -145,16 +148,47 @@ def strip_pause_marks(token):
     return WAQF_MARKS.sub("", token)
 
 
-def apply_pause_marks(tokens, reference):
-    """Take pause marks (waqf, U+06D6-U+06DC) from `reference` tokens.
+def strip_marks_and_signs(token):
+    """Token without pause marks (and the CGJ the font encoding puts before a
+    sakta), ۞ or ۩."""
+    token = token.replace("\u034F\u06DC", "\u06DC")
+    return strip_pause_marks(token).replace(RUB_EL_HIZB, "").replace(SAJDA, "")
+
+
+def _attach_signs(reference):
+    """A standalone ۞ joins the next token and a standalone ۩ the previous one,
+    as convert_tokens() does (the layout texts space them inconsistently)."""
+    out = []
+    pending = ""
+    for tok in reference:
+        if tok == RUB_EL_HIZB:
+            pending += tok
+            continue
+        if tok.startswith(SAJDA) and out:
+            out[-1] += SAJDA
+            tok = tok[1:]
+            if not tok:
+                continue
+        out.append(pending + tok)
+        pending = ""
+    return out
+
+
+def apply_pause_marks(tokens, reference, signs=False):
+    """Take pause marks (waqf, U+06D6-U+06DC) from `reference` tokens; with
+    `signs`, also ۞ (rub el hizb) and ۩ (sajda), for a Tanzil text downloaded
+    without them.
 
     The 1441H print revised ~350 pause marks; Tanzil keeps the earlier ones.
     Tokens are aligned on their text without pause marks; wherever a token
     matches its reference token apart from pause marks, the reference's marks
     are used. Letters and vowels always stay Tanzil's. Returns (tokens, n_changed)."""
     import difflib
-    ours = [strip_pause_marks(t) for t in tokens]
-    theirs = [strip_pause_marks(t) for t in reference]
+    strip = strip_marks_and_signs if signs else strip_pause_marks
+    if signs:
+        reference = _attach_signs(reference)
+    ours = [strip(t) for t in tokens]
+    theirs = [strip(t) for t in reference]
     out = list(tokens)
     changed = 0
     for block in difflib.SequenceMatcher(None, ours, theirs, autojunk=False).get_matching_blocks():
