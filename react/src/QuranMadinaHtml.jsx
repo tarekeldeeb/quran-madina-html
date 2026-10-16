@@ -12,20 +12,17 @@ let loaderPromise = null;
 
 /**
  * Inject the quran-madina-html loader <script> exactly once and resolve when the custom element
- * is registered. The font / name / size / cdn config is global (one JSON DB per page), so only
+ * is registered. The layout / size / cdn config is global (one JSON DB per page), so only
  * the first call's values take effect — pass them on the first <QuranMadinaHtml> you render.
  *
  * @param {object} [opts]
  * @param {string} [opts.src]      URL of the library script (default: unpkg latest).
  * @param {string} [opts.cdn]      Base URL for the CSS + JSON assets (default: unpkg package root).
- * @param {string} [opts.layout]   data-layout (v2): "1441H" (default) | "1405H" | "IndoPak". Letters
+ * @param {string} [opts.layout]   data-layout: "1441H" (default) | "1405H" | "IndoPak". Letters
  *                                  stretched like the print, any font size, one DB per layout.
- * @param {string} [opts.font]     data-font (v1): Hafs | Uthman | "Amiri Quran" | "Amiri Quran Colored" |
- *                                  me_quran. Without `layout` it selects the v1 renderer; with neither,
- *                                  the v2 1441H layout is used.
- * @param {string} [opts.name]     data-name (default Madina05).
- * @param {number|string} [opts.fontSize] data-font-size in px (default 16). Any size 6-100 works:
- *                                  16/24 have pre-built DBs, others are interpolated between them.
+ * @param {string} [opts.font]     Deprecated, ignored since 2.0 (the library logs a warning).
+ * @param {string} [opts.name]     Deprecated, ignored since 2.0 (the library logs a warning).
+ * @param {number|string} [opts.fontSize] data-font-size in px (default 16). Any size works.
  * @returns {Promise<void>}
  */
 export function loadQuranMadinaHtml(opts = {}) {

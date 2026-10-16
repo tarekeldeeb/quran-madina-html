@@ -931,21 +931,30 @@
     print(`font-size ${doc_font_sz} outside ${FONT_SIZE_RANGE[0]}..${FONT_SIZE_RANGE[1]}, using ${DEFAULT_FONT_SIZE}`);
     doc_font_sz = DEFAULT_FONT_SIZE;
   }
-  // v2 (default): data-layout="1441H" (default) | "1405H" loads assets/db/v2/Madina-<layout>.json,
-  // whose lines are justified by stretching letters. A data-font attribute without data-layout
-  // keeps loading the v1 DBs (tatweel + scaleX) as before.
-  var doc_layout  = this_script.getAttribute('data-layout');
-  var use_v2      = doc_layout != null || !this_script.hasAttribute('data-font');
-  if(use_v2) doc_layout = doc_layout || "1441H";
+  // Since 2.0 every tag renders a v2 layout: data-layout="1441H" (default) | "1405H" | "IndoPak"
+  // loads assets/db/v2/<stem>.json, whose lines are justified by stretching letters. The v1
+  // attributes data-font / data-name are ignored (a drop-in upgrade: no page needs editing).
+  var doc_layout  = this_script.getAttribute('data-layout') || "1441H";
+  var use_v2      = true;
+  ['data-font', 'data-name'].forEach(function(attr){
+    if(this_script.hasAttribute(attr)){
+      console.warn(`${name}> ${attr} is ignored since 2.0: every tag uses the v2 fonts ` +
+                   `(choose a layout with data-layout="1441H" | "1405H" | "IndoPak")`);
+    }
+  });
   // v2 layouts and their DB names (assets/db/v2/<stem>.json and <stem>/ shards)
   var V2_STEMS = {"1441H": "Madina-1441H", "1405H": "Madina-1405H", "indopak": "IndoPak-15"};
-  if(use_v2 && V2_STEMS[doc_layout] === undefined && V2_STEMS[String(doc_layout).toLowerCase()] !== undefined){
-    doc_layout = String(doc_layout).toLowerCase();
+  if(V2_STEMS[doc_layout] === undefined){
+    if(V2_STEMS[String(doc_layout).toLowerCase()] !== undefined){
+      doc_layout = String(doc_layout).toLowerCase();
+    } else {
+      console.warn(`${name}> unknown data-layout "${doc_layout}", using 1441H`);
+      doc_layout = "1441H";
+    }
   }
   var doc_cdn     = this_script.getAttribute('data-cdn');
   if (doc_cdn) cdn = doc_cdn.replace(/\/?$/, "/"); // honor explicit base, ensure trailing slash
-  print(use_v2 ? `v2 layout: ${doc_layout} size: ${doc_font_sz}`
-               : `${doc_name} with font: ${doc_font} size: ${doc_font_sz}`);
+  print(`layout: ${doc_layout} size: ${doc_font_sz}`);
   const name_css = cdn+"dist/"+name+".min.css?v=1.1";
   if (!document.getElementById(name))
   {

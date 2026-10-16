@@ -6,21 +6,15 @@ export interface QuranMadinaHtmlLoaderOptions {
   /** Base URL for the CSS + JSON assets (default: https://unpkg.com/quran-madina-html/). */
   cdn?: string;
   /**
-   * data-layout (v2): "1441H" (default) | "1405H" | "IndoPak". Letters are stretched like the
+   * data-layout: "1441H" (default) | "1405H" | "IndoPak". Letters are stretched like the
    * print and any font size works with one DB per layout.
    */
   layout?: "1441H" | "1405H" | "IndoPak" | string;
-  /**
-   * data-font (v1): "Hafs" | "Uthman" | "Amiri Quran" | "Amiri Quran Colored" | "me_quran".
-   * Without `layout` it selects the v1 renderer; with neither, the v2 1441H layout is used.
-   */
+  /** @deprecated Ignored since 2.0 (every tag uses the v2 fonts; a warning is logged). */
   font?: string;
-  /** data-name (default "Madina05"). */
+  /** @deprecated Ignored since 2.0 (a warning is logged). */
   name?: string;
-  /**
-   * data-font-size in px (default 16). Any size from 6 to 100 works: 16 and 24 have pre-built
-   * databases, every other size is fitted at load time by linear interpolation between them.
-   */
+  /** data-font-size in px (default 16). Any size works. */
   fontSize?: number | string;
 }
 

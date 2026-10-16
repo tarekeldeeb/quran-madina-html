@@ -15,20 +15,19 @@
     // Font/size are read once by the runtime from this <script>'s data attributes, so switching
     // them at runtime requires a full page reload. The chooser below just persists the pick and
     // reloads; this reads it back before the runtime script is injected.
-    // "v2:<layout>" picks a v2 layout (letters stretched like the print); the others are v1 fonts.
+    // "v2:<layout>" picks a layout (since 2.0 every layout stretches letters like the print).
     var FONT_CHOICES = [
-      { value: "v2:1441H", label: "مصحف المدينة ١٤٤١هـ (v2)" },
-      { value: "v2:1405H", label: "مصحف المدينة ١٤٠٥هـ (v2)" },
-      { value: "v2:IndoPak", label: "المصحف الهندي ١٥ سطرًا (v2)" },
-      { value: "Uthman", label: "عثمان طه" },
-      { value: "me_quran", label: "خط المصحف" },
-      { value: "Hafs", label: "حفص" },
-      { value: "Amiri Quran", label: "أميري" },
-      { value: "Amiri Quran Colored", label: "أميري ملون" }
+      { value: "v2:1441H", label: "مصحف المدينة ١٤٤١هـ" },
+      { value: "v2:1405H", label: "مصحف المدينة ١٤٠٥هـ" },
+      { value: "v2:IndoPak", label: "المصحف الهندي ١٥ سطرًا" }
     ];
-    // 16 and 24 have pre-built DBs; every other size is interpolated between them at load time.
+    // v2 databases are in em: any size works.
     var SIZE_CHOICES = [12, 14, 16, 18, 20, 22, 24, 28, 32];
     var savedFont = localStorage.getItem("quran-madina-html-font") || FONT_CHOICES[0].value;
+    // a v1 font saved by an older demo: fall back to the default layout
+    if (!FONT_CHOICES.some(function (c) { return c.value === savedFont; })) {
+      savedFont = FONT_CHOICES[0].value;
+    }
     var savedSize = localStorage.getItem("quran-madina-html-font-size") || "16";
 
     var script = document.createElement("script");
@@ -37,11 +36,7 @@
     } else {
         script.setAttribute("src", "https://unpkg.com/quran-madina-html");
     }
-    if (savedFont.indexOf("v2:") === 0) {
-      script.setAttribute("data-layout", savedFont.slice(3));
-    } else {
-      script.setAttribute("data-font", savedFont);
-    }
+    script.setAttribute("data-layout", savedFont.slice(3));
     script.setAttribute("data-font-size", savedSize);
     document.head.appendChild(script);
   </script>

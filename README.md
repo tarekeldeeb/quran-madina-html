@@ -25,7 +25,7 @@ the snippet above once it's on your own page.)
 * **Pixel-faithful to the printed Madina Mushaf** — same line breaks, same justification, same page layout.
 * **Pure HTML/CSS, no images** — text stays selectable, searchable, and copy-pasteable; pages load fast.
 * **One HTML tag** — no build step, no framework required.
-* **Any font** — Hafs, Uthman, Amiri Quran (plain or tajweed-colored), or your own.
+* **Three layouts** — the 1441H and 1405H Madina prints and the 15-line IndoPak, at any font size.
 * **Word-level addressing** — render any word range, even across ayas, pages, and suras.
 
 ## New in 2.0: lines justified like the print
@@ -65,12 +65,15 @@ Three layouts, picked with `data-layout` on the script tag:
 * Spacing follows the print: words keep the print's ink-to-ink gaps, loose lines stretch
   letters, dense lines narrow their words (never the aya numbers). See
   [`docs/v2`](docs/v2/design-decisions.md) for how it was measured against the print.
-* **Changed default:** a script tag with neither `data-layout` nor `data-font` now renders the
-  v2 `1441H` layout. Set `data-font` (e.g. `data-font="Hafs"`) to keep the v1 renderer.
+* **Drop-in upgrade:** every tag renders with v2, no code changes needed. `data-font` and
+  `data-name` are ignored since 2.0 (a console warning says so); pick a layout with
+  `data-layout` instead. The v1 font databases are no longer shipped in the npm package — pin
+  `quran-madina-html@1` if you need them.
 
-## See it in action (v1)
+## History: the 1.x renderer
 
-Page 106, rendered by the library next to a scan of the actual printed page:
+Version 1 inserted tatweels and scaled whole lines to fit. Page 106, rendered by 1.x next to a
+scan of the actual printed page:
 
 <table>
 <tr>
@@ -79,11 +82,8 @@ Page 106, rendered by the library next to a scan of the actual printed page:
 </tr>
 </table>
 
-### One engine, any font
-
-The same JSON-driven layout engine re-flows for whichever font you point it at —
-`data-font="Hafs"` (default), `Uthman`, `Amiri Quran`, `Amiri Quran Colored` (tajweed rules
-color-coded), or the bundled `me_quran`.
+1.x supported several fonts through `data-font` — `Hafs`, `Uthman`, `Amiri Quran`,
+`Amiri Quran Colored` (tajweed rules color-coded) and `me_quran`:
 
 <table>
 <tr>
@@ -97,6 +97,8 @@ color-coded), or the bundled `me_quran`.
 <td></td>
 </tr>
 </table>
+
+## Features
 
 ### Verse ranges — framed or frameless
 
@@ -195,14 +197,9 @@ Or include directly via **CDN script tag** in your HTML `<head>`:
 <script type="text/javascript" src="https://unpkg.com/quran-madina-html"></script>
 ```
 
-* ``data-layout`` (v2): ``1441H`` (default), ``1405H``, ``IndoPak`` — see *New in 2.0* above
-* ``data-font`` (v1): Hafs, Uthman, Amiri Quran, Amiri Quran Colored, me_quran. Setting it without
-  ``data-layout`` selects the v1 renderer; with neither attribute, v2 ``1441H`` is used
-* ``data-name`` (v1): Madina05 (default)
-* ``data-font-size`` defaults to 16 (px). v2: any size. v1: any size from 6 to 100 works —
-  16 and 24 have pre-built databases, and every other size is fitted at load time by linear
-  interpolation between those two anchors (page/line width interpolated, letter stretching
-  re-scaled accordingly)
+* ``data-layout``: ``1441H`` (default), ``1405H``, ``IndoPak`` — see *New in 2.0* above
+* ``data-font-size`` defaults to 16 (px); any size works
+* ``data-font`` / ``data-name``: ignored since 2.0 (a console warning is logged)
 
 Then in your body, just add the tag.
 
@@ -289,10 +286,9 @@ By default a multiline render gets a header (sura name + copy/translate icons); 
 | `error` | `string` | - | 1-based word range to mark soft red (same format as `words`). Wins over `highlight` on overlap. |
 | `headless` | `boolean \| string` | `false` | Set to `"true"` to remove top sura header chrome and copy/translate icons. |
 | `notitle` | `boolean \| string` | `false` | Set to `"true"` to hide sura name text while retaining title frame decoration. |
-| `data-layout` | `string` | `"1441H"` | v2 layout: `1441H`, `1405H`, `IndoPak`. |
-| `data-font` | `string` | - | v1 font: `Hafs`, `Uthman`, `Amiri Quran`, `Amiri Quran Colored`, `me_quran`. Without `data-layout`, selects the v1 renderer. |
-| `data-name` | `string` | `"Madina05"` | v1 layout database dataset name. |
-| `data-font-size` | `number \| string` | `16` | Font size in px (v2: any; v1: 6–100, interpolated between 16 and 24). |
+| `data-layout` | `string` | `"1441H"` | Layout: `1441H`, `1405H`, `IndoPak`. |
+| `data-font-size` | `number \| string` | `16` | Font size in px; any size. |
+| `data-font`, `data-name` | `string` | - | Ignored since 2.0 (logs a warning). |
 | `data-cdn` | `string` | unpkg | Base URL for the CSS and databases (self-hosting, offline apps). |
 
 ## React wrapper
@@ -323,12 +319,13 @@ Alternatively, you can fork this repo, then clone it.
 ```bash
 apt install python3-distutils nodejs npm chromium-driver
 npm install // install components and scripts
-npm run build-db // build all json Db files
 npm run release // build the dist with dependencies
 
 ```
 
-v2 databases (`assets/db/v2`) are built from the Tanzil text and a checkout of
+(`npm run build-db` still rebuilds the 1.x databases in `assets/db/`; the runtime no longer reads them.)
+
+The databases (`assets/db/v2`) are built from the Tanzil text and a checkout of
 [digitalkhatt.org](https://github.com/DigitalKhatt/digitalkhatt.org) (fonts and layouts):
 
 ```bash
