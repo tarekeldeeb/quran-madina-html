@@ -80,7 +80,7 @@ quran-madina-html.quran-madina-html-inline quran-madina-html-line::after {
   -webkit-print-color-adjust: exact; print-color-adjust: exact; /* keep the marks in print */
 }
 /* letters= : single letters inside a word, in --qmh-letter (per group in letters=, default crimson)
-   with a halo of the same hue that blinks. Colour and text-shadow only (never size or position),
+   with a soft halo of the same hue, pulsing when the group says "blink". Colour and text-shadow only (never size or position),
    so the pre-computed line geometry is untouched. The halo must glow *behind* the surrounding
    ink, not over it: the letter stays in normal flow, while every other piece of ink on the tag
    (the rest of its word, and the other words) is lifted into a positioned layer above it. Word
@@ -96,8 +96,10 @@ quran-madina-html.quran-madina-html-lettered .quran-madina-html-ink{
 .quran-madina-html-letter{
   color: var(--qmh-letter);
   text-shadow: 0 0 0.1em color-mix(in srgb, currentColor 30%, transparent);
-  animation: quran-madina-html-letter-blink 1.4s ease-in-out infinite;
   -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.quran-madina-html-letter-blink{
+  animation: quran-madina-html-letter-blink 1.4s ease-in-out infinite;
 }
 quran-madina-html[data-qmh-text-scheme="dark"] .quran-madina-html-letter{
   color: color-mix(in srgb, var(--qmh-letter) 45%, white); /* lighter shade on dark pages */

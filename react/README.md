@@ -61,7 +61,7 @@ export default function App() {
 | `words`     | string              | 1-based word range: `"1:2"`, `"3-10"`, or a single index. |
 | `highlight` | string              | 1-based word range to mark soft yellow, e.g. `"5-8"`. |
 | `error`     | string              | 1-based word range to mark with built-in "error" highlight styling, e.g. `"10-13"`. |
-| `letters`   | string              | Letters to emphasise inside words: `"1:3 crimson, 4:3-5 emerald"` (word:letters, optional colour; crimson by default). |
+| `letters`   | string              | Letters to emphasise inside words: `"1:3 crimson, 4:3-5 emerald"` (word:letters, optional colour — crimson by default — and optional `blink`). |
 | `headless`  | boolean             | Drop the header/copy chrome. |
 | `quotes`    | string              | `"no"` (or `"false"`) drops the quote marks shown around inline (single-line) renders. |
 | `inline`    | string              | `"no"` forces the multiline/header layout even for a selection that fits one line. `"auto"` (default) is fit-based. `"yes"` (force a single line for an overflowing selection) is not implemented yet. |

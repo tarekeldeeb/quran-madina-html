@@ -46,9 +46,9 @@ SHOTS = [
     ("highlight", "1441H", 22, tag(sura=1, aya=1, highlight="2-3"), ""),
     ("letters", "1441H", 22,
      tag(sura=1, aya="2-4", headless="true", highlight="1", error="4",
-         letters="1:3, 4:3+5 lapis, 6:4 emerald"),
-     # the still frame: the blink only adds a halo, so this is how print and screenshots look
-     ".quran-madina-html-letter { animation: none !important; }"),
+         letters="1:3, 4:3+5 lapis blink, 6:4 emerald"),
+     # a still frame: blink only pulses the halo, the letters look like this at rest
+     ".quran-madina-html-letter-blink { animation: none !important; }"),
 ]
 
 

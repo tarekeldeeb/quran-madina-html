@@ -670,7 +670,11 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
             " getComputedStyle(s).color]);")]
 
     def word_geometry(self):
-        """{word number: (left, top, width, height)} relative to the tag, for the shown words"""
+        """{word number: (left, top, width, height)} relative to the tag, for the shown words,
+        measured once the font has loaded (fallback-font boxes would differ between renders)"""
+        WebDriverWait(self.web_driver, 10).until(
+            lambda d: d.execute_script("return document.fonts.status === 'loaded'"))
+        time.sleep(0.3)
         return {int(k): tuple(v) for k, v in self.web_driver.execute_script(
             "var t = document.querySelector('quran-madina-html').getBoundingClientRect(), out = {};"
             "document.querySelectorAll('[data-qmh-w]').forEach(function(w){"
@@ -683,7 +687,7 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         """letters= wraps the chosen letters of the chosen words; crimson by default, a named
         palette colour or any CSS colour per group"""
         words = aya_word_list(self.db["suras"][0]["ayas"][3])          # Al-Fatiha 2
-        self.set_attrs(sura=1, aya=2, letters="1:3, 3:1 emerald, 4:2-3 #123456")
+        self.set_attrs(sura=1, aya=2, letters="1:3, 3:1 emerald blink, 4:2-3 #123456")
         marks = self.letter_marks()
         self.assertEqual([(w, t) for w, t, _ in marks],
                          [(1, letters_of(words[0])[2]), (3, letters_of(words[2])[0]),
@@ -692,6 +696,11 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertEqual([c for _, _, c in marks],
                          ["rgb(163, 38, 58)", "rgb(15, 107, 79)",
                           "rgb(18, 52, 86)", "rgb(18, 52, 86)"])
+        animations = self.web_driver.execute_script(
+            "return Array.from(document.querySelectorAll('.quran-madina-html-letter'))"
+            ".map(s => getComputedStyle(s).animationName);")
+        self.assertEqual(animations[0], "none", "no animation unless the group says blink")
+        self.assertNotEqual(animations[1], "none", "blink animates the letter's halo")
 
     def test_40_letters_do_not_move_anything(self):
         """Marking letters changes colour only: every word keeps its exact place and size"""

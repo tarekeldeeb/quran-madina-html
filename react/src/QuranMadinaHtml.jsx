@@ -61,7 +61,7 @@ export function loadQuranMadinaHtml(opts = {}) {
  * Render an aya range:          <QuranMadinaHtml sura={2} aya="8-10" />
  * Restrict to words:            <QuranMadinaHtml sura={1} aya={1} words="1:2" />
  * Mark words:                   <QuranMadinaHtml sura={2} aya={255} highlight="5-8" error="1" />
- * Mark letters in words:        <QuranMadinaHtml sura={1} aya={2} letters="1:3, 4:3-5 emerald" />
+ * Mark letters in words:        <QuranMadinaHtml sura={1} aya={2} letters="1:3, 4:3-5 emerald blink" />
  * Pick the v2 layout:           <QuranMadinaHtml page={3} layout="1405H" />
  * Drop header/copy chrome:      <QuranMadinaHtml sura={2} aya="8-10" headless />
  * Drop the inline quote marks:  <QuranMadinaHtml sura={1} aya={3} quotes="no" />

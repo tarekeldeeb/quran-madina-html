@@ -634,10 +634,11 @@
     return counter;
   }
   // --------------------------------------------------------------------------
-  // letters= : emphasise single letters inside words (colour + a blinking halo behind the ink).
-  // Comma-separated groups "word:letters [colour]", e.g. "1:3 crimson, 4:3-5 emerald, 6:2+4":
+  // letters= : emphasise single letters inside words (colour + a soft halo behind the ink).
+  // Comma-separated groups "word:letters [colour] [blink]", e.g. "1:3, 4:3-5 emerald blink":
   // word number as in words=/highlight=/error=, letter numbers (n, n-m, or n+m+...), optional
-  // colour (a palette name below or any CSS colour; crimson when omitted). Each letter is wrapped
+  // colour (a palette name below or any CSS colour; crimson when omitted), optional "blink"
+  // (the halo pulses; no animation by default). Each letter is wrapped
   // in its own span inside the word span: only colour and shadow change, so the browser shapes
   // the word exactly as before (no re-layout).
   // --------------------------------------------------------------------------
@@ -645,7 +646,7 @@
     crimson: "#a3263a", emerald: "#0f6b4f", lapis: "#1f4fb0", gold: "#8a5a00", violet: "#5b2aa8"
   };
   function parseLetters(str){
-    // -> [{word, letters: [n...], color}] or null when nothing valid
+    // -> [{word, letters: [n...], color, blink}] or null when nothing valid
     if(str == null) return null;
     var out = [];
     String(str).split(",").forEach(function(group){
@@ -659,9 +660,11 @@
         for(var n = from; n <= to && n - from < 50; n++){ if(n >= 1) letters.push(n); }
       });
       if(!letters.length) return;
-      var color = m[3] ? m[3].trim() : null;
+      var rest = m[3] ? m[3].trim().split(/\s+/) : [], blink = false;
+      if(rest.length && rest[rest.length - 1].toLowerCase() === "blink"){ blink = true; rest.pop(); }
+      var color = rest.length ? rest.join(" ") : null;
       if(color && LETTER_COLORS[color.toLowerCase()]) color = LETTER_COLORS[color.toLowerCase()];
-      out.push({word: parseInt(m[1], 10), letters: letters, color: color});
+      out.push({word: parseInt(m[1], 10), letters: letters, color: color, blink: blink});
     });
     return out.length ? out : null;
   }
@@ -687,7 +690,7 @@
     return sp;
   }
   function wrapLetters(word, colors){
-    // colors: {letter number: CSS colour or null (default)}
+    // colors: {letter number: {color: CSS colour or null (default), blink: bool}}
     var text = word.textContent, starts = letterStarts(text), nodes = [], last = 0, any = false;
     Object.keys(colors).map(Number).filter(function(n){ return n < starts.length; })
       .sort(function(a, b){ return a - b; })
@@ -695,7 +698,8 @@
         if(starts[n - 1] > last) nodes.push(inkSpan(text.slice(last, starts[n - 1])));
         var sp = document.createElement("span");
         sp.className = `${name}-letter`;
-        if(colors[n]) sp.style.setProperty("--qmh-letter", colors[n]);
+        if(colors[n].color) sp.style.setProperty("--qmh-letter", colors[n].color);
+        if(colors[n].blink) sp.classList.add(`${name}-letter-blink`);
         sp.textContent = text.slice(starts[n - 1], starts[n]);
         nodes.push(sp);
         last = starts[n];
@@ -718,7 +722,7 @@
     });
     spec.forEach(function(g){             // later groups win on the same letter
       var colors = perWord[g.word] = perWord[g.word] || {};
-      g.letters.forEach(function(n){ colors[n] = g.color; });
+      g.letters.forEach(function(n){ colors[n] = {color: g.color, blink: g.blink}; });
     });
     var missing = [];
     Object.keys(perWord).forEach(function(k){
