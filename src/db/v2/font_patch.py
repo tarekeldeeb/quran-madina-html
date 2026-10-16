@@ -19,6 +19,8 @@ The new lookups are appended after every existing GSUB lookup, so they act on
 the final glyphs and GPOS (kerning, cursive attachment, marks) then runs on the
 exact sequence HarfBuzz produces with the original per-letter features.
 """
+# pylint: disable=too-many-locals
+# pylint: disable=no-member  # otTables classes are built dynamically by fontTools
 import argparse
 import json
 
@@ -62,16 +64,19 @@ class AlternateTable:
         self.alts = {}
 
     def value(self, src, dst):
+        """Feature value (1-based variant index) turning glyph src into dst; adds dst if new."""
         options = self.alts.setdefault(src, [])
         if dst not in options:
             options.append(dst)
         return options.index(dst) + 1
 
     def to_json(self):
+        """The table as JSON-serialisable data."""
         return {str(k): v for k, v in self.alts.items()}
 
     @classmethod
     def from_json(cls, data):
+        """Inverse of to_json()."""
         table = cls()
         table.alts = {int(k): list(v) for k, v in data.items()}
         return table
@@ -144,7 +149,8 @@ def patch_font(src_path, out_path, table, positions, family=None):
     feat_list.FeatureCount = len(feat_list.FeatureRecord)
 
     for script in gsub.ScriptList.ScriptRecord:
-        langsyses = [script.Script.DefaultLangSys] + [r.LangSys for r in script.Script.LangSysRecord]
+        langsyses = [script.Script.DefaultLangSys] + [
+            r.LangSys for r in script.Script.LangSysRecord]
         for ls in langsyses:
             if ls is None:
                 continue
@@ -165,7 +171,8 @@ def _sort_feature_list(gsub):
     remap = {old: new for new, old in enumerate(order)}
     gsub.FeatureList.FeatureRecord = [recs[i] for i in order]
     for script in gsub.ScriptList.ScriptRecord:
-        langsyses = [script.Script.DefaultLangSys] + [r.LangSys for r in script.Script.LangSysRecord]
+        langsyses = [script.Script.DefaultLangSys] + [
+            r.LangSys for r in script.Script.LangSysRecord]
         for ls in langsyses:
             if ls is None:
                 continue

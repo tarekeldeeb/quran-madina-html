@@ -13,6 +13,12 @@ Output of `justify_line()` is a `JustResult`:
 
 All widths are in font units (the fonts use 1000 units per em).
 """
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-instance-attributes,too-many-nested-blocks
+# pylint: disable=too-many-boolean-expressions
+# (a build pipeline and ports of DigitalKhatt's justifier: long, stateful routines
+#  kept in one piece so they read alongside the original)
 import re
 from dataclasses import dataclass, field
 
@@ -62,18 +68,21 @@ _ALT_FINA = re.compile(_ALT_FIN_PAT)
 _HAH_FINA_ASCEN = re.compile(_HAH_KASH + "|" + _FINAL_KASH_END)
 _SIMPLE = re.compile("|".join([
     _ALT_FIN_PAT, _HAH_KASH, _FINAL_KASH, r"^.+([بتثنيسشصض][بتثنيم]).+$",
-    rf".*([{_RIGHT_KASH}][رز])", rf".*([{_RIGHT_KASH}](?:[ل]|[{_LEFT_KASH_MEDI}]))", r"^.*([ك].).*$"]))
+    rf".*([{_RIGHT_KASH}][رز])", rf".*([{_RIGHT_KASH}](?:[ل]|[{_LEFT_KASH_MEDI}]))",
+    r"^.*([ك].).*$"]))
 
 
 # ------------------------------------------------------------- text model
 @dataclass
 class SubWord:
+    """Run of joined base letters within a word (breaks after non-joining letters)."""
     base_text: str = ""
     base_indexes: list = field(default_factory=list)
 
 
 @dataclass
 class Word:
+    """A word of the line: its span in the line text and its sub-words."""
     start: int
     end: int
     text: str = ""
@@ -84,6 +93,7 @@ class Word:
 
 @dataclass
 class LineInfo:
+    """A line split into words and spaces (analyzeLineForJust)."""
     text: str
     words: list
     spaces: dict          # char index -> "aya" | "simple"
@@ -91,6 +101,7 @@ class LineInfo:
 
 @dataclass
 class JustResult:
+    """Result of justify_line(): letter features, spacing and scale."""
     features: dict
     simple_spacing: float
     aya_spacing: float
@@ -108,6 +119,7 @@ AYA_SPACE = 1.5
 
 
 def is_aya_space(text, i):
+    """Is the space at i next to an aya number (an aya space)?"""
     prev_c = text[i - 1] if i > 0 else ""
     next_c = text[i + 1] if i + 1 < len(text) else ""
     return ("٠" <= prev_c <= "٩") or next_c == "۝"
@@ -141,6 +153,7 @@ def analyze_line(text):
 
 # ------------------------------------------------------------- shaping
 def shape(font, text, features=None):
+    """Shape `text` RTL as the DOM does; clusters are character indexes."""
     buf = hb.Buffer()
     buf.add_codepoints([ord(c) for c in text])  # clusters = char indexes
     buf.direction, buf.script, buf.language = "rtl", "Arab", "ar"
@@ -150,6 +163,7 @@ def shape(font, text, features=None):
 
 
 def width(font, text, features=None):
+    """Advance of `text` shaped with `features`, font units."""
     return sum(p.x_advance for p in shape(font, text, features).glyph_positions)
 
 
@@ -179,10 +193,12 @@ class _Justifier:
         self.applied = [{} for _ in line.words]
 
     def word_width(self, wi, feats):
+        """Width of word wi with the line-level per-character features `feats`."""
         w = self.line.words[wi]
         return width(self.font, w.text, to_hb_features(feats, w.start, w.start, w.end))
 
     def try_apply(self, wi, new_feats):
+        """Keep `new_feats` if word wi then still fits the line; report the outcome."""
         new_w = self.word_width(wi, new_feats)
         diff = new_w - self.word_widths[wi]
         if new_w != self.word_widths[wi] and self.text_width + diff < self.desired:
@@ -202,6 +218,7 @@ class _Justifier:
 
     # -- kashida between two joined letters (applyKashida)
     def apply_kashida(self, wi, si, first, second):
+        """Stretch the connection between two letters of a sub-word (applyKashida)."""
         text, word = self.line.text, self.line.words[wi]
         sub = word.subwords[si]
         first_m, second_m = sub.base_indexes[first], sub.base_indexes[second]
@@ -260,6 +277,7 @@ class _Justifier:
 
     # -- kaf alternate (applyKaf)
     def apply_kaf(self, wi, si, first, second):
+        """Use the wide kaf form, with its following letter (applyKaf)."""
         text, word = self.line.text, self.line.words[wi]
         sub = word.subwords[si]
         i1 = word.start + sub.base_indexes[first]
@@ -274,6 +292,7 @@ class _Justifier:
 
     # -- wider final/isolated alternate (applyAlternate)
     def apply_alternate(self, wi, idx):
+        """Widen the final/isolated letter at idx one level (applyAlternate)."""
         temp = {k: dict(v) for k, v in self.features.items()}
         prev = temp.get(idx, {})
         if prev.get("cv02", 0) > 0:
@@ -297,6 +316,7 @@ class _Justifier:
         return subword_indexes, matches
 
     def kashidas(self, stype, levels):
+        """Apply kashidas of one stretch type, level by level; True on overflow."""
         words = self.line.words
         found = [self._match_subwords(w, KASHIDA_REGEXPS[stype]) for w in words]
         for _ in range(levels):
@@ -336,6 +356,7 @@ class _Justifier:
         return False
 
     def alternates(self, chars, levels):
+        """Widen final `chars`, level by level; True on overflow."""
         rx = re.compile(rf"^.*([{chars}])$")
         words = self.line.words
         found = [self._match_subwords(w, [rx]) for w in words]
@@ -493,7 +514,8 @@ def justify_words(font, text, desired_width, space_stretch=0.5):
     # words are shaped separately in the DOM (one span each), so measure the
     # same way; whole-line shaping can differ slightly across spaces
     n_aya_spaces = sum(1 for t in line.spaces.values() if t == "aya")
-    natural = sum(word_w) + space_w * (len(line.spaces) - n_aya_spaces) + space_w * AYA_SPACE * n_aya_spaces
+    natural = (sum(word_w) + space_w * (len(line.spaces) - n_aya_spaces)
+               + space_w * AYA_SPACE * n_aya_spaces)
     if desired_width <= natural:
         res = _shrink(font, line, natural, desired_width, space_w)
         res.features, res.word_features = res.word_features, {}
@@ -622,6 +644,7 @@ MIN_WORD_SCALE = 0.8             # narrowest words; past that the whole line is 
 
 @dataclass
 class FitResult:
+    """Result of fit_line_print(): features, spaces and scales of one line."""
     features: dict                # {char index: {cvNN: v}} letter stretching
     spaces: list                  # advance of each space (font units), reading order
     word_scale: float = 1.0       # horizontal scale of the words (aya numbers excluded)
@@ -658,6 +681,7 @@ MIN_SPACE = -250      # a space may be negative (boxes overlap, ink never does)
 
 
 def is_marker_word(text):
+    """Is this token an aya number?"""
     return "۝" in text
 
 
@@ -679,7 +703,10 @@ def fit_line_print(font, text, desired, line_width, exhaustive=True, simple=Fals
         out = []
         for kind in kinds:
             lo, hi = GAP_RANGES[kind]
-            g = (1 - (1 - f) * (1 - lo) / (1 - lo_w)) if f < 1 else (1 + (f - 1) * (hi - 1) / (hi_w - 1))
+            if f < 1:
+                g = 1 - (1 - f) * (1 - lo) / (1 - lo_w)
+            else:
+                g = 1 + (f - 1) * (hi - 1) / (hi_w - 1)
             out.append(PRINT_GAPS[kind] * g * line_width)
         return out
 
@@ -728,7 +755,10 @@ def fit_line_print(font, text, desired, line_width, exhaustive=True, simple=Fals
         features = {}
         if current < desired:
             j = _Justifier(font, line, current, desired, exhaustive)
-            j.run_simple() if simple else j.run()
+            if simple:
+                j.run_simple()
+            else:
+                j.run()
             features = j.features
             bx = boxes(features)
             if width_at(bx, f) > desired:     # stretched ink moved a little

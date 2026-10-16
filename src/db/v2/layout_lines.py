@@ -10,6 +10,7 @@ Line kinds (as in DigitalKhatt's QuranTextService):
   * "bism"  — a standalone basmala line
   * "text"  — Quran text, justified (or centered if the layout says so)
 """
+# pylint: disable=too-many-locals,too-many-branches
 import difflib
 import re
 from dataclasses import dataclass, field
@@ -28,6 +29,7 @@ BASMALA_TEXTS = (
 
 @dataclass
 class LayoutLine:
+    """One line of a layout page and the Tanzil tokens placed on it."""
     page: int                 # 1-based
     line: int                 # 1-based
     kind: str                 # "sura" | "bism" | "text"
@@ -45,6 +47,7 @@ def load_dk_pages(path):
 
 
 def line_kind(text, page_index, line_index):
+    """'sura', 'bism' or 'text' for a layout line."""
     if text.startswith(SURA_PREFIX):
         return "sura"
     if text in BASMALA_TEXTS and not (page_index == 0 and line_index == 1):
@@ -73,7 +76,7 @@ def place_tokens(tokens, pages):
         if op in ("equal", "replace") and a2 - a1 == b2 - b1:
             for k in range(a2 - a1):
                 where[a1 + k] = owner[b1 + k]
-        elif op == "replace" or op == "delete":
+        elif op in ("replace", "delete"):
             target = owner[b1] if b1 < len(owner) else owner[-1]
             if op == "replace":
                 target = owner[b1]
@@ -117,7 +120,6 @@ def place_tokens_print(tokens, meta, pages, print_pages):
     bism_tokens = [i for i, k in enumerate(keys) if k is None]
     lines, problems = [], []
     title_it = iter(titles)
-    bism_pos = 0
     for pi, page in enumerate(print_pages):
         for li, pl in enumerate(page):
             if pl["k"] == "sura":

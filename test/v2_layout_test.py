@@ -4,6 +4,7 @@
 """
 import io
 import json
+# pylint: disable=line-too-long,wrong-import-position  # escaped Arabic literals; sys.path setup
 import os
 import sys
 import unittest
@@ -34,6 +35,7 @@ def db_lines(db):
 
 
 class PrintLayoutTest(unittest.TestCase):
+    """The 1441H DB against the print's line breaks and word gaps."""
     @classmethod
     def setUpClass(cls):
         with open(DB, encoding="utf-8") as fh:
@@ -118,6 +120,7 @@ class OtherLayoutsTest(unittest.TestCase):
     """1405H and IndoPak DBs: structure shared with 1441H."""
 
     def test_same_suras_and_ayas_in_every_layout(self):
+        """Every layout has the same suras and Kufan aya counts."""
         counts = {}
         for stem in ("Madina-1441H", "Madina-1405H", "IndoPak-15"):
             with open(os.path.join(ROOT, "assets", "db", "v2", stem + ".json"), encoding="utf-8") as fh:
@@ -128,6 +131,7 @@ class OtherLayoutsTest(unittest.TestCase):
         self.assertEqual(counts["IndoPak-15"], counts["Madina-1441H"])
 
     def test_indopak_ayas_end_with_their_marker(self):
+        """Every IndoPak aya ends with an aya number; 610 pages."""
         with open(os.path.join(ROOT, "assets", "db", "v2", "IndoPak-15.json"), encoding="utf-8") as fh:
             db = json.load(fh)
         self.assertEqual(len(db["lines"]), 610)

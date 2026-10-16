@@ -16,6 +16,7 @@ Output: {"source", "pages": [[line, ...15] x 604]} where a line is
   w:   only for text lines narrower than a full line (pages 1-2, sura ends),
        measured from the glyphs' advances.
 """
+# pylint: disable=too-many-locals
 import json
 import os
 import statistics
@@ -25,6 +26,7 @@ from fontTools.ttLib import TTFont
 
 
 def main(pkg, out):
+    """Read the package's page JSONs from `pkg`, write the line table to `out`."""
     fonts = {}
 
     def advance(font, code):

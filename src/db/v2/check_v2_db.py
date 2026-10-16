@@ -8,6 +8,9 @@ Checks:
   * every justified line: words (shaped one by one with the patched font and
     their features, as the browser does) + spaces == line width
 """
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=wrong-import-position
 import argparse
 import io
 import json
@@ -22,12 +25,14 @@ import tanzil_encoding as enc
 
 
 def css_to_features(css):
+    """'jp04=3,shr1=1' -> {'jp04': 3, 'shr1': 1}."""
     if not css:
         return {}
     return {k: int(v) for k, v in (item.split("=") for item in css.split(","))}
 
 
 def width(font, text, feats):
+    """Advance of `text` shaped with `feats`, font units."""
     buf = hb.Buffer()
     buf.add_str(text)
     buf.guess_segment_properties()
@@ -36,6 +41,7 @@ def width(font, text, feats):
 
 
 def main():
+    """Check the DB given on the command line; exit 1 on any problem."""
     ap = argparse.ArgumentParser()
     ap.add_argument("db")
     ap.add_argument("--font")

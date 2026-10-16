@@ -44,12 +44,13 @@ def juz_of(sura0, aya_idx):
     return j
 
 
-def shard(src, out_root, console=None):
+def shard(src, out_root, console=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     """Split the DB JSON at `src` into a manifest + 30 juz' shards under `out_root`/<db-stem>/.
     `console`: a rich.console.Console to print the summary through when called while a Progress
     display is live elsewhere in the process (a plain print() would corrupt that display);
     defaults to a plain print() for standalone CLI use."""
-    db = json.load(open(src, encoding="utf8"))
+    with open(src, encoding="utf8") as fh:
+        db = json.load(fh)
     stem = os.path.splitext(os.path.basename(src))[0]
     out = os.path.join(out_root, stem)
     os.makedirs(out, exist_ok=True)
@@ -113,7 +114,7 @@ def shard(src, out_root, console=None):
     # v2: each shard carries the line rows of the pages its ayas sit on (a page shared by two
     # juz' is in both). Aya parts give a page per part: a part on a lower line number than the
     # previous one has moved to the next page.
-    rows = [dict() for _ in range(30)]
+    rows = [{} for _ in range(30)]
     if db.get("version") == 2:
         for j in range(30):
             pages_j = set()
@@ -136,22 +137,28 @@ def shard(src, out_root, console=None):
     # ---- lossless round-trip check: reassemble the original suras from manifest + shards ----
     rebuilt = [{"name": name, "ayas": [None] * n} for name, n in manifest["suras"]]
     for j in range(30):
-        shard = json.load(open(os.path.join(out, f"juz-{j + 1:02d}.json"), encoding="utf8"))
-        for s0, ai, page, parts in shard["d"]:
+        with open(os.path.join(out, f"juz-{j + 1:02d}.json"), encoding="utf8") as fh:
+            data = json.load(fh)
+        for s0, ai, page, parts in data["d"]:
             rebuilt[s0]["ayas"][ai] = {"p": page, "r": parts}
     assert rebuilt == db["suras"], "round-trip mismatch!"
     if db.get("version") == 2:
         lines = [None] * manifest["n_pages"]
         for j in range(30):
-            shard = json.load(open(os.path.join(out, f"juz-{j + 1:02d}.json"), encoding="utf8"))
-            for page, page_rows in shard.get("L", {}).items():
+            with open(os.path.join(out, f"juz-{j + 1:02d}.json"), encoding="utf8") as fh:
+                data = json.load(fh)
+            for page, page_rows in data.get("L", {}).items():
                 lines[int(page) - 1] = page_rows
         assert lines == db["lines"], "line rows round-trip mismatch!"
     message = f"{stem}: manifest + 30 shards, reassembles losslessly. total on disk={total} bytes"
-    console.print(message) if console else print(message)
+    if console:
+        console.print(message)
+    else:
+        print(message)
 
 
 def main():
+    """Command line: shard_db.py <db.json> <out_root>."""
     shard(sys.argv[1], sys.argv[2])
 
 

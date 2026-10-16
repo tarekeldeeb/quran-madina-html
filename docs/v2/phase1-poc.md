@@ -60,6 +60,7 @@ Side by side with the real v1 runtime (Hafs, 24px): `img/page3-v1-vs-v2-chromium
 ## Files
 
 - `src/db/v2/justify.py` — `justify_words()` (DOM), `justify_line()` (per-letter, for SVG), shrink step
-- `src/db/v2/poc_page.py` — renders v1 vs v2 for a page as SVG (no browser)
-- `src/db/v2/browser_check.py` — builds the HTML, measures it in Playwright (`--mode word|char`)
-- `src/db/v2/render_svg.py` — glyph outlines → SVG
+- `poc_page.py` (v1 vs v2 page as SVG), `browser_check.py` (Playwright measurements,
+  `--mode word|char`), `render_svg.py` and `probe_font.py` were proof-of-concept tools; they
+  were removed once the builder replaced them and remain in the history (commit ebefd66). The
+  browser measurements continue in DigitalKhatt's `tools/textmode/src/browser-check.ts`.

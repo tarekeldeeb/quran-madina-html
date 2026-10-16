@@ -15,7 +15,8 @@ ROW = 20                 # font units per band / per column
 Y_MIN, Y_MAX = -1400, 2200
 
 
-class Profile:
+class Profile:  # pylint: disable=too-few-public-methods
+    """A word's leftmost/rightmost ink per horizontal band, plus its advance."""
     __slots__ = ("advance", "left", "right")
 
     def __init__(self, advance, left, right):
@@ -38,8 +39,7 @@ def from_pen(pen, advance, scale=1.0):
     cols = np.arange(width)
     left = np.where(has, np.where(arr, cols, width).min(axis=1), np.nan)
     right = np.where(has, np.where(arr, cols, -1).max(axis=1) + 1, np.nan)
-    to_units = lambda c: c / s - pad
-    return Profile(advance, to_units(left), to_units(right))
+    return Profile(advance, left / s - pad, right / s - pad)
 
 
 def shaped_profile(font, buf):

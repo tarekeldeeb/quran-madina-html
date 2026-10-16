@@ -8,6 +8,7 @@ Usage:
   python src/db/v2/validate_encoding.py assets/db/Madina05-Hafs-16px.json DK_TEXT.ts [...]
 Prints, per DigitalKhatt text, how many tokens match and every difference.
 """
+# pylint: disable=wrong-import-position
 import argparse
 import difflib
 import json
@@ -23,6 +24,7 @@ WAQF = re.compile("[ۖ-ۜ]")
 
 
 def tanzil_tokens_from_v1_db(path):
+    """Tanzil tokens (converted) recovered from a v1 DB."""
     with open(path, encoding="utf-8") as fh:
         db = json.load(fh)
     lines = {}
@@ -44,6 +46,7 @@ def tanzil_tokens_from_v1_db(path):
 
 
 def dk_tokens(path):
+    """Tokens of a DigitalKhatt layout text, sura titles left out."""
     with open(path, encoding="utf-8") as fh:
         src = fh.read()
     pages = re.findall(r"\[\s*((?:'[^']*',?\s*)+)\]", src)
@@ -52,6 +55,7 @@ def dk_tokens(path):
 
 
 def main():
+    """Compare Tanzil, converted, with each DigitalKhatt text; print the differences."""
     ap = argparse.ArgumentParser()
     ap.add_argument("v1_db")
     ap.add_argument("dk_texts", nargs="+")

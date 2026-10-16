@@ -30,6 +30,10 @@ DB schema (version 2) — all widths in em, so any font size works:
   }
   Each sura's ayas[0] is its title and ayas[1] its basmala (v1 invariant).
 """
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+# (one build routine kept in one piece; imports follow the sys.path setup)
+# pylint: disable=wrong-import-position
 import argparse
 import json
 import os
@@ -56,14 +60,17 @@ LAYOUTS = {
               "print_lines": "data/print-1441H-lines.json",
               "family": "QMH New Madina", "title": "مصحف المدينة - الإصدار الجديد ١٤٤١هـ",
               "published": 1441},
-    "1405H": {"text": "app/services/quran_text_old_madinah.ts", "font": "assets/fonts/hb/oldmadina.otf",
+    "1405H": {"text": "app/services/quran_text_old_madinah.ts",
+              "font": "assets/fonts/hb/oldmadina.otf",
               "page_width": 16400, "widths": "oldMadinaLineWidths", "pause_marks_from_print": False,
               "family": "QMH Old Madina", "title": "مصحف المدينة - الإصدار القديم ١٤٠٥هـ",
               "published": 1405},
     # IndoPak spelling differs from Tanzil's Uthmani text (no Tanzil IndoPak edition):
     # the layout's own text is used, numbered with the Kufan count (layout_lines.layout_tokens)
-    "IndoPak": {"text": "app/services/quran_text_indopak_15.ts", "font": "assets/fonts/hb/indopak.otf",
-                "page_width": 16400, "widths": "indoPak15LineWidths", "pause_marks_from_print": False,
+    "IndoPak": {"text": "app/services/quran_text_indopak_15.ts",
+                "font": "assets/fonts/hb/indopak.otf",
+                "page_width": 16400, "widths": "indoPak15LineWidths",
+                "pause_marks_from_print": False,
                 "text_source": "layout", "justifier": "simple", "stem": "IndoPak-15",
                 "family": "QMH IndoPak", "title": "مصحف ١٥ سطرًا - الخط الهندي (IndoPak)",
                 "published": None},
@@ -146,8 +153,9 @@ def convert(tokens, meta):
 def line_width_ratios(dk_src, layout):
     """{(page, line): ratio} as DigitalKhatt's QuranTextService computes them."""
     with open(os.path.join(dk_src, "app/services/qurantext.service.ts"), encoding="utf-8") as fh:
-        src = fh.read()
-    block = re.search(LAYOUTS[layout]["widths"] + r" = new Map\(\[(.*?)\]\);", src, re.DOTALL).group(1)
+        source = fh.read()
+    block = re.search(LAYOUTS[layout]["widths"] + r" = new Map\(\[(.*?)\]\);", source,
+                      re.DOTALL).group(1)
     ratios = {}
     for page, line, ratio in re.findall(r"\[(\d+) \* 15 \+ (\d+), ([\d.]+)\]", block):
         ratios[(int(page), int(line))] = float(ratio)
@@ -158,13 +166,15 @@ def line_width_ratios(dk_src, layout):
     else:
         r, first = 0.95, (0.5, 0.45)
     for page in (1, 2):
-        for line, f in ((2, first[page - 1]), (3, 0.7), (4, 0.9), (5, 1), (6, 0.9), (7, 0.7), (8, 0.4)):
+        for line, f in ((2, first[page - 1]), (3, 0.7), (4, 0.9), (5, 1), (6, 0.9), (7, 0.7),
+                        (8, 0.4)):
             ratios[(page, line)] = r * f
     return ratios
 
 
 # ----------------------------------------------------------------- build
 def build(args):
+    """Build one layout's DB, patched font and woff2 into args.out."""
     cfg = LAYOUTS[args.layout]
     t0 = time.time()
     pages = layout_lines.load_dk_pages(os.path.join(args.dk_src, cfg["text"]))
@@ -269,9 +279,11 @@ def build(args):
                 row["c"] = round(res.word_scale, 4)
             fit_stats.append((res.word_scale, res.x_scale))
         else:
-            res = justify.justify_line(font, text, full * ratio / z, space_stretch=args.space_stretch,
+            res = justify.justify_line(font, text, full * ratio / z,
+                                       space_stretch=args.space_stretch,
                                        exhaustive=args.exhaustive)
-            row["s"] = [round((res.aya_spacing if info.spaces[k] == "aya" else res.simple_spacing) / 1000, 4)
+            row["s"] = [round((res.aya_spacing if info.spaces[k] == "aya"
+                               else res.simple_spacing) / 1000, 4)
                         for k in sorted(info.spaces)]
         if res.x_scale < 1:
             row["x"] = round(res.x_scale, 4)
@@ -315,10 +327,10 @@ def build(args):
         a = 1
         while (s, a, False) in by_aya:
             idxs = by_aya[(s, a, False)]
-            parts, cur = [], None
+            parts, cur = [], {}
             for i in idxs:
                 ln = lines[owner[i]]
-                if cur is None or cur["l"] != ln.line or cur["_p"] != ln.page:
+                if not cur or cur["l"] != ln.line or cur["_p"] != ln.page:
                     cur = {"_p": ln.page, "l": ln.line, "t": [], "f": []}
                     parts.append(cur)
                 cur["t"].append(tokens[i])
@@ -346,7 +358,8 @@ def build(args):
         cs = sorted(c for c, _ in fit_stats)
         print(f"lines {len(cs)}: narrower words {sum(c < 1 for c in cs)} "
               f"(<0.9: {sum(c < 0.9 for c in cs)}, at {justify.MIN_WORD_SCALE}: "
-              f"{sum(c <= justify.MIN_WORD_SCALE for c in cs)}), line scaleX {sum(x < 1 for _, x in fit_stats)}")
+              f"{sum(c <= justify.MIN_WORD_SCALE for c in cs)}), "
+              f"line scaleX {sum(x < 1 for _, x in fit_stats)}")
     stretched = sum(1 for v in word_css.values() if "jp" in v)
     print(f"stretched words {stretched}, jp01..jp{positions:02d}, "
           f"{sum(len(v) for v in table.alts.values())} variants")
@@ -355,7 +368,7 @@ def build(args):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap = argparse.ArgumentParser(description=__doc__.split("\n", maxsplit=1)[0])
     ap.add_argument("--layout", choices=sorted(LAYOUTS), default="1441H")
     src = ap.add_mutually_exclusive_group()
     src.add_argument("--tanzil", help="Tanzil Uthmani 'sura|aya|text' file")
