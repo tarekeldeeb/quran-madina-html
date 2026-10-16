@@ -605,7 +605,7 @@
     // v2 DBs pass the `part` and its `line`, so words keep their stretch features and spaces.
     if(isV2() && part && line){
       v2AppendWords(parent, line, part, function(span, token){
-        if(isWordToken(token)) counter = counter + 1;
+        if(isWordToken(token)){ counter = counter + 1; span.setAttribute("data-qmh-w", counter); }
         if(range && (counter < range[0] || counter > range[1])) span.classList.add(`${name}-word-hidden`);
         applyMarkClass(span, counter, highlightRange, errorRange);
       });
@@ -625,12 +625,108 @@
         applyMarkClass(span, counter, highlightRange, errorRange);
       } else {
         counter = counter + 1;
+        span.setAttribute("data-qmh-w", counter); // the word number letters= refers to
         if(range && (counter < range[0] || counter > range[1])) span.classList.add(`${name}-word-hidden`);
         applyMarkClass(span, counter, highlightRange, errorRange);
       }
       parent.appendChild(span);
     });
     return counter;
+  }
+  // --------------------------------------------------------------------------
+  // letters= : emphasise single letters inside words (colour + a blinking halo behind the ink).
+  // Comma-separated groups "word:letters [colour]", e.g. "1:3 crimson, 4:3-5 emerald, 6:2+4":
+  // word number as in words=/highlight=/error=, letter numbers (n, n-m, or n+m+...), optional
+  // colour (a palette name below or any CSS colour; crimson when omitted). Each letter is wrapped
+  // in its own span inside the word span: only colour and shadow change, so the browser shapes
+  // the word exactly as before (no re-layout).
+  // --------------------------------------------------------------------------
+  var LETTER_COLORS = {          // tuned to read on plain, highlight= and error= words
+    crimson: "#a3263a", emerald: "#0f6b4f", lapis: "#1f4fb0", gold: "#8a5a00", violet: "#5b2aa8"
+  };
+  function parseLetters(str){
+    // -> [{word, letters: [n...], color}] or null when nothing valid
+    if(str == null) return null;
+    var out = [];
+    String(str).split(",").forEach(function(group){
+      var m = group.trim().match(/^(\d+)\s*:\s*([\d+\-\s]*\d)\s*(\S.*)?$/);
+      if(!m) return;
+      var letters = [];
+      m[2].replace(/\s+/g, "").split("+").forEach(function(item){
+        var r = item.match(/^(\d+)(?:-(\d+))?$/);
+        if(!r) return;
+        var from = parseInt(r[1], 10), to = r[2] ? parseInt(r[2], 10) : from;
+        for(var n = from; n <= to && n - from < 50; n++){ if(n >= 1) letters.push(n); }
+      });
+      if(!letters.length) return;
+      var color = m[3] ? m[3].trim() : null;
+      if(color && LETTER_COLORS[color.toLowerCase()]) color = LETTER_COLORS[color.toLowerCase()];
+      out.push({word: parseInt(m[1], 10), letters: letters, color: color});
+    });
+    return out.length ? out : null;
+  }
+  // Characters that ride on the letter before them: combining marks, Arabic harakat and Quranic
+  // annotation marks (not the aya end/rub/sajda signs), the font encoding's CGJ/ZWNJ/ZWJ, tatweel.
+  var LETTER_RIDER = /[\u0300-\u036F\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED\u08D3-\u08FF\u200C\u200D\u0640]/;
+  function letterStarts(text){
+    // Index where each letter begins. A letter is a base character plus everything that rides
+    // on it: harakat and other marks, the CGJ/ZWJ joiners of the font encoding, a tatweel.
+    var starts = [];
+    for(var i = 0; i < text.length; i++){
+      var ch = text[i];
+      if(!LETTER_RIDER.test(ch)) starts.push(i);
+    }
+    starts.push(text.length);
+    return starts;
+  }
+  function inkSpan(text){
+    // The rest of a lettered word, lifted above the letter so its halo sits behind this ink.
+    var sp = document.createElement("span");
+    sp.className = `${name}-ink`;
+    sp.textContent = text;
+    return sp;
+  }
+  function wrapLetters(word, colors){
+    // colors: {letter number: CSS colour or null (default)}
+    var text = word.textContent, starts = letterStarts(text), nodes = [], last = 0, any = false;
+    Object.keys(colors).map(Number).filter(function(n){ return n < starts.length; })
+      .sort(function(a, b){ return a - b; })
+      .forEach(function(n){
+        if(starts[n - 1] > last) nodes.push(inkSpan(text.slice(last, starts[n - 1])));
+        var sp = document.createElement("span");
+        sp.className = `${name}-letter`;
+        if(colors[n]) sp.style.setProperty("--qmh-letter", colors[n]);
+        sp.textContent = text.slice(starts[n - 1], starts[n]);
+        nodes.push(sp);
+        last = starts[n];
+        any = true;
+      });
+    if(!any) return false;
+    if(last < text.length) nodes.push(inkSpan(text.slice(last)));
+    word.textContent = "";
+    nodes.forEach(function(nd){ word.appendChild(nd); });
+    word.classList.add(`${name}-word-lettered`);
+    return true;
+  }
+  function applyLetters(tag, spec, shift){
+    tag.classList.remove(`${name}-lettered`);
+    if(!spec) return;
+    applyMarkTextScheme(tag); // dark pages get a lighter shade of the letter colour
+    var spans = {}, perWord = {};
+    tag.querySelectorAll(`.${name}-word[data-qmh-w]`).forEach(function(w){
+      spans[w.getAttribute("data-qmh-w")] = w;
+    });
+    spec.forEach(function(g){             // later groups win on the same letter
+      var colors = perWord[g.word] = perWord[g.word] || {};
+      g.letters.forEach(function(n){ colors[n] = g.color; });
+    });
+    var missing = [];
+    Object.keys(perWord).forEach(function(k){
+      var w = spans[parseInt(k, 10) + (shift || 0)];
+      if(!w || !wrapLetters(w, perWord[k])) missing.push(k);
+    });
+    if(missing.length) print(`letters: no such word/letter for word(s) ${missing.join(", ")}`);
+    tag.classList.add(`${name}-lettered`); // lifts the other ink above the letters (see CSS)
   }
   function basmalaRenderMode(counter, basmalaWords, displayRange, highlightRange, errorRange){
     // Decides whether a fully-displayed basmala renders as the single ligature glyph or
@@ -1086,7 +1182,7 @@
       static get observedAttributes() {
         return [
           "page", "page_param", "aya", "sura", "words", "highlight", "error", "headless", "quotes",
-          "inline", "notitle"
+          "inline", "notitle", "letters"
         ];
       }
 
@@ -1124,6 +1220,9 @@
       get error() { return this.getAttribute("error"); }
       set error(value) { this._data.error = value; }
 
+      get letters() { return this.getAttribute("letters"); }
+      set letters(value) { this._data.letters = value; }
+
       get headless() { return this.getAttribute("headless"); }
       set headless(value) { this._data.headless = value; }
 
@@ -1140,7 +1239,7 @@
         // Re-entrancy guard. Kept from the pre-native-Custom-Elements version, where the platform
         // watched every attribute mutation (including the `style`/class churn this build performs
         // mid-render) and could re-enter render() before the current build finished. observedAttributes
-        // now scopes attributeChangedCallback to just the 11 public attrs, so that particular re-entrancy
+        // now scopes attributeChangedCallback to just the public attrs, so that particular re-entrancy
         // source is gone - but the guard stays cheap insurance against any other overlapping render call.
         if(this._data.rendering){ return; }
         var self = this;
@@ -1150,7 +1249,12 @@
           if(self._data.rendering){ return; }
           self._data.rendering = true;
           try {
+            tag._qmhLetterShift = 0;
+            var letters = parseLetters(self.letters);
+            if(self.letters != null && letters == null) print(`Bad letters parameter: ${self.letters}`);
+            tag._qmhLetters = letters;
             self.doRender(tag);
+            applyLetters(tag, letters, tag._qmhLetterShift);
           } finally {
             self._data.rendering = false;
           }
@@ -1245,6 +1349,7 @@
             countAyaWords(madina_data.suras[sura_from].ayas[1]) : 0;
           var total = countVerseRangeWords(sura_from, aya_from, aya_to);
           var shift = function(r){ return r == null ? null : [r[0] + skip, r[1] + skip]; };
+          tag._qmhLetterShift = skip;
           highlight_range = shift(clampedOrNull("highlight", highlight_range, [1, total]));
           error_range = shift(clampedOrNull("error", error_range, [1, total]));
           renderWordsSpan(tag, sura_from, aya_from, [skip + 1, skip + total], headless, noQuotes,
@@ -1259,7 +1364,8 @@
           : countPageWords(sura_from, aya_from, sura_to, aya_to, parseInt(page, 10));
         highlight_range = clampedOrNull("highlight", highlight_range, [1, display_total]);
         error_range = clampedOrNull("error", error_range, [1, display_total]);
-        var wordMarkMode = (highlight_range != null || error_range != null);
+        // letters= needs numbered word spans too, so it takes the same word-by-word path
+        var wordMarkMode = (highlight_range != null || error_range != null || tag._qmhLetters != null);
         if(wordMarkMode) applyMarkTextScheme(tag);
         closeAyaPopup(); // the body-level popup outlives tag.innerHTML="", close on re-render
         tag.innerHTML = ""; //Remove all pre-existing elements

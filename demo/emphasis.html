@@ -14,6 +14,7 @@
     .intro { direction: ltr; text-align: left; }
     .intro h1 { font-size: 20px; margin: 0 0 6px; }
     .intro p { margin: 4px 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .intro code { font-size: 12.5px; }
     .controls { direction: ltr; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
                 margin: 12px 0 16px; font-size: 14px; }
     .controls .group { display: flex; gap: 4px; align-items: center; }
@@ -28,194 +29,89 @@
     .card h2 { direction: ltr; text-align: left; font-size: 15px; margin: 0 0 2px; }
     .card .note { direction: ltr; text-align: left; font-size: 12px; color: var(--muted); margin: 0 0 10px; }
     .card quran-madina-html { background: transparent; }
-
-    /* ================================================================================
-       Letter emphasis: what would ship in the library CSS.
-       Colour + a soft halo of the same hue. Never size, weight or position, so the
-       pre-computed line geometry is untouched. One hue everywhere, readable on plain
-       text, on highlight= and on error= words, light and dark.
-       ================================================================================ */
-    quran-madina-html {
-      --qmh-letter: #1f4fb0;                       /* lapis */
-      --qmh-letter-halo: rgba(31, 79, 176, 0.30);
-      --qmh-letter-halo-strong: rgba(31, 79, 176, 0.55);
-    }
-    quran-madina-html[data-qmh-text-scheme="dark"] {
-      --qmh-letter: #9cc0ff;
-      --qmh-letter-halo: rgba(156, 192, 255, 0.35);
-      --qmh-letter-halo-strong: rgba(156, 192, 255, 0.75);
-    }
-    .quran-madina-html-letter {
-      color: var(--qmh-letter);
-      text-shadow: 0 0 0.12em var(--qmh-letter-halo);
-      -webkit-print-color-adjust: exact; print-color-adjust: exact;
-    }
-    /* Optional animation (letters-animate="breathe" | "blink"). Both keep the letter in its
-       emphasis colour in every frame, so a screenshot taken at any moment still shows it. */
-    @keyframes qmh-letter-breathe {
-      0%, 100% { text-shadow: 0 0 0.12em var(--qmh-letter-halo); }
-      50%      { text-shadow: 0 0 0.12em var(--qmh-letter-halo), 0 0 0.45em var(--qmh-letter-halo-strong); }
-    }
-    @keyframes qmh-letter-blink {
-      0%, 55%, 100% { text-shadow: 0 0 0.12em var(--qmh-letter-halo); }
-      70%, 85%      { text-shadow: 0 0 0.08em var(--qmh-letter-halo-strong), 0 0 0.3em var(--qmh-letter-halo-strong),
-                                   0 0 0.6em var(--qmh-letter-halo-strong); }
-    }
-    .qmh-animate-breathe .quran-madina-html-letter { animation: qmh-letter-breathe 2.4s ease-in-out infinite; }
-    .qmh-animate-blink .quran-madina-html-letter   { animation: qmh-letter-blink 1.4s ease-in-out infinite; }
-    @media (prefers-reduced-motion: reduce) { .quran-madina-html-letter { animation: none !important; } }
-    @media print { .quran-madina-html-letter { animation: none !important; } }
-
-    /* demo only: try other hues */
-    .hue-crimson quran-madina-html { --qmh-letter: #a3263a; --qmh-letter-halo: rgba(163,38,58,.28); --qmh-letter-halo-strong: rgba(163,38,58,.55); }
-    .hue-crimson quran-madina-html[data-qmh-text-scheme="dark"] { --qmh-letter: #ff8fa0; --qmh-letter-halo: rgba(255,143,160,.35); --qmh-letter-halo-strong: rgba(255,143,160,.75); }
-    .hue-emerald quran-madina-html { --qmh-letter: #0f6b4f; --qmh-letter-halo: rgba(15,107,79,.28); --qmh-letter-halo-strong: rgba(15,107,79,.55); }
-    .hue-emerald quran-madina-html[data-qmh-text-scheme="dark"] { --qmh-letter: #6fe0b4; --qmh-letter-halo: rgba(111,224,180,.35); --qmh-letter-halo-strong: rgba(111,224,180,.75); }
-    .hue-violet quran-madina-html { --qmh-letter: #5b2aa8; --qmh-letter-halo: rgba(91,42,168,.28); --qmh-letter-halo-strong: rgba(91,42,168,.55); }
-    .hue-violet quran-madina-html[data-qmh-text-scheme="dark"] { --qmh-letter: #c9a8ff; --qmh-letter-halo: rgba(201,168,255,.35); --qmh-letter-halo-strong: rgba(201,168,255,.75); }
+    #twins { position: absolute; left: -9999px; top: 0; visibility: hidden; }
   </style>
 </head>
 <body>
-<div class="wrap" id="root">
+<div class="wrap">
   <div class="intro">
     <h1>Letter emphasis</h1>
-    <p>One style: the letter takes a lapis-blue ink with a soft halo of the same blue. It reads on
-      plain text, inside a <b>highlight</b> (yellow) word and inside an <b>error</b> (red) word, on
-      light and dark pages, and in print. Nothing changes size or position.</p>
+    <p><code>letters="1:3 crimson, 4:3-5 emerald"</code> marks letters inside words: comma-separated
+      groups of <i>word:letters colour</i>. The word number counts as in <code>highlight</code>/<code>error</code>;
+      letters are <code>3</code>, <code>3-5</code> or <code>3+5</code>; the colour is optional
+      (crimson by default): crimson, emerald, lapis, gold, violet or any CSS colour. Dark pages
+      get a lighter shade automatically. The letter blinks with a soft halo of its own colour, kept
+      behind the surrounding ink; it keeps its colour in every frame, and stays still in print and
+      with reduced motion.</p>
   </div>
   <div class="controls">
-    <div class="group"><span class="label">Animation</span>
-      <button data-anim="none" aria-pressed="true">Off</button>
-      <button data-anim="breathe">Breathe</button>
-      <button data-anim="blink">Blink</button></div>
     <div class="group"><span class="label">Page</span>
       <button data-mode="light" aria-pressed="true">Light</button>
       <button data-mode="dark">Dark</button></div>
-    <div class="group"><span class="label">Hue</span>
-      <button data-hue="lapis" aria-pressed="true">Lapis ★</button>
-      <button data-hue="violet">Violet</button>
-      <button data-hue="emerald">Emerald</button>
-      <button data-hue="crimson">Crimson</button></div>
   </div>
   <p id="check">checking…</p>
 
   <div class="card">
     <h2>Inside a highlighted word, inside an error word, and on plain text</h2>
-    <p class="note">highlight="1-2" · error="4" · letters: word 1 letter 3 (ح), word 4 letters 3 and 5 (ع, م), word 6 letter 4 (ح)</p>
+    <p class="note">highlight="1-2" error="4" letters="1:3, 4:3+5 lapis, 6:4"</p>
     <quran-madina-html sura="1" aya="2-4" headless="true" highlight="1-2" error="4"
-                       data-letters="1:3, 4:3,5, 6:4"></quran-madina-html>
+                       letters="1:3, 4:3+5 lapis, 6:4"></quran-madina-html>
   </div>
   <div class="card">
-    <h2>Plain text, several letters</h2>
-    <p class="note">letters: word 1 letters 2 and 4 (ل, م), word 3 letter 1 (ر), word 7 letters 1 and 3 (م, ك)</p>
+    <h2>Plain text, several letters and colours</h2>
+    <p class="note">letters="1:2+4 gold, 3:1 emerald, 6:2-4, 7:1+3 violet"</p>
     <quran-madina-html sura="1" aya="2-4" headless="true"
-                       data-letters="1:2,4, 3:1, 7:1,3"></quran-madina-html>
+                       letters="1:2+4 gold, 3:1 emerald, 6:2-4, 7:1+3 violet"></quran-madina-html>
   </div>
   <div class="card">
     <h2>Inline quote</h2>
-    <p class="note">lam-alef (لا) is one glyph in the font, so marking either letter colours both. sura="2" aya="255" words="1:4" highlight="2" · letters: word 2 letter 1 (ل), word 4 letter 2 (ل)</p>
-    <quran-madina-html sura="2" aya="255" words="1:4" highlight="2"
-                       data-letters="2:1, 4:2"></quran-madina-html>
+    <p class="note">words="1:4" highlight="2" letters="2:1, 4:2 emerald" · lam-alef (لا) is one
+      glyph, so marking either of its letters colours both</p>
+    <quran-madina-html sura="2" aya="255" words="1:4" highlight="2" letters="2:1, 4:2 emerald"></quran-madina-html>
   </div>
 </div>
+<div id="twins"></div>
 
 <script>
-  // ---- what the runtime would do for letters="w:l,l, w:l" (demo version) ----
-  function letterStarts(s) {
-    var starts = [];
-    for (var i = 0; i < s.length; i++) {
-      var ch = s[i];
-      // a letter = base character + harakat, hamza above, dagger alef, CGJ joiners, tatweel
-      if (!(/\p{M}/u.test(ch) || ch === "͏" || ch === "‍" || ch === "ـ")) starts.push(i);
-    }
-    starts.push(s.length);
-    return starts;
-  }
-  function wrapLetters(word, numbers) {
-    var s = word.textContent, starts = letterStarts(s), out = [], last = 0;
-    numbers.filter(function (n) { return n >= 1 && n < starts.length; })
-      .sort(function (a, b) { return a - b; })
-      .forEach(function (n) {
-        out.push(document.createTextNode(s.slice(last, starts[n - 1])));
-        var sp = document.createElement("span");
-        sp.className = "quran-madina-html-letter";
-        sp.textContent = s.slice(starts[n - 1], starts[n]);
-        out.push(sp);
-        last = starts[n];
-      });
-    out.push(document.createTextNode(s.slice(last)));
-    word.textContent = "";
-    out.forEach(function (n) { if (n.nodeType !== 3 || n.data) word.appendChild(n); });
-  }
-  function parseLetters(spec) {          // "1:3, 4:3,5" -> [[1,[3]], [4,[3,5]]]
-    var marks = [], cur = null;
-    spec.split(",").map(function (t) { return t.trim(); }).filter(Boolean).forEach(function (t) {
-      if (t.indexOf(":") > 0) { var p = t.split(":"); cur = [parseInt(p[0], 10), []]; marks.push(cur); t = p[1]; }
-      if (cur) cur[1].push(parseInt(t, 10));
-    });
-    return marks;
-  }
-  function words(tag) {
-    return Array.from(tag.querySelectorAll(".quran-madina-html-word")).filter(function (w) {
-      return w.textContent.indexOf("۝") < 0 && getComputedStyle(w).visibility !== "hidden";
-    });
-  }
-  function emphasize() {
+  var tags = Array.from(document.querySelectorAll(".card quran-madina-html"));
+  // The same tags without letters=, off-screen: their word widths are the reference.
+  var twins = tags.map(function (t) {
+    var c = t.cloneNode(false);
+    c.removeAttribute("letters");
+    // a mark keeps the word-by-word render (numbered words) without changing any width
+    if (!c.hasAttribute("highlight") && !c.hasAttribute("error")) c.setAttribute("highlight", "1");
+    document.getElementById("twins").appendChild(c);
+    return c;
+  });
+  function check() {
     var worst = 0, n = 0;
-    document.querySelectorAll("quran-madina-html[data-letters]").forEach(function (tag) {
-      var ws = words(tag);
-      parseLetters(tag.getAttribute("data-letters")).forEach(function (m) {
-        var w = ws[m[0] - 1];
-        if (!w) return;
-        var before = w.getBoundingClientRect().width;
-        wrapLetters(w, m[1]);
-        worst = Math.max(worst, Math.abs(w.getBoundingClientRect().width - before));
+    tags.forEach(function (t, i) {
+      t.querySelectorAll(".quran-madina-html-word-lettered").forEach(function (w) {
+        var ref = twins[i].querySelector('[data-qmh-w="' + w.getAttribute("data-qmh-w") + '"]');
+        if (!ref) return;
+        worst = Math.max(worst, Math.abs(w.getBoundingClientRect().width - ref.getBoundingClientRect().width));
         n++;
       });
     });
-    var check = document.getElementById("check");
-    check.textContent = "Width check: " + n + " words marked, largest width change " + worst.toFixed(2) +
-      "px " + (worst < 0.5 ? "— shaping unchanged ✓" : "— this browser re-shaped the words ✗");
-    check.className = worst < 0.5 ? "good" : "bad";
+    var el = document.getElementById("check");
+    if (!n) { el.textContent = "checking…"; return false; }
+    el.textContent = "Width check: " + n + " words with marked letters, largest width change " +
+      worst.toFixed(2) + "px " + (worst < 0.5 ? "— shaping unchanged ✓" : "— this browser re-shaped the words ✗");
+    el.className = worst < 0.5 ? "good" : "bad";
+    return true;
   }
-  (function wait(tries) {
-    var tags = Array.from(document.querySelectorAll("quran-madina-html[data-letters]"));
-    if (tags.every(function (t) { return words(t).length >= 4; }) || tries > 80) emphasize();
-    else setTimeout(function () { wait(tries + 1); }, 150);
-  })(0);
+  (function wait(k) { if (!check() && k < 80) setTimeout(function () { wait(k + 1); }, 150); })(0);
 
-  // ---- demo controls ----
-  function press(attr, value) {
-    document.querySelectorAll("button[" + attr + "]").forEach(function (b) {
-      b.setAttribute("aria-pressed", String(b.getAttribute(attr) === value));
-    });
-  }
-  document.querySelectorAll("button[data-anim]").forEach(function (b) {
-    b.onclick = function () {
-      var a = b.getAttribute("data-anim");
-      document.querySelectorAll("quran-madina-html").forEach(function (t) {
-        t.classList.remove("qmh-animate-breathe", "qmh-animate-blink");
-        if (a !== "none") t.classList.add("qmh-animate-" + a);
-      });
-      press("data-anim", a);
-    };
-  });
   document.querySelectorAll("button[data-mode]").forEach(function (b) {
     b.onclick = function () {
-      var dark = b.getAttribute("data-mode") === "dark";
-      document.documentElement.classList.toggle("dark", dark);
-      // the runtime picks highlight/error/letter colours from the text colour at render time
-      document.querySelectorAll("quran-madina-html").forEach(function (t) {
-        t.setAttribute("data-qmh-text-scheme", dark ? "dark" : "light");
+      var mode = b.getAttribute("data-mode");
+      document.documentElement.classList.toggle("dark", mode === "dark");
+      document.querySelectorAll("button[data-mode]").forEach(function (x) {
+        x.setAttribute("aria-pressed", String(x === b));
       });
-      press("data-mode", b.getAttribute("data-mode"));
-    };
-  });
-  document.querySelectorAll("button[data-hue]").forEach(function (b) {
-    b.onclick = function () {
-      var root = document.getElementById("root");
-      root.className = "wrap" + (b.getAttribute("data-hue") === "lapis" ? "" : " hue-" + b.getAttribute("data-hue"));
-      press("data-hue", b.getAttribute("data-hue"));
+      // the tag picks its light/dark shades from the text colour when it renders: re-render
+      tags.forEach(function (t) { t.setAttribute("letters", t.getAttribute("letters")); });
+      setTimeout(check, 300);
     };
   });
 </script>

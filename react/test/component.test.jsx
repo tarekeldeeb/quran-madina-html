@@ -44,6 +44,16 @@ describe("<QuranMadinaHtml>", () => {
     expect(el.hasAttribute("page")).toBe(false);
   });
 
+  it("sets letters as a plain string attribute, removed on rerender", () => {
+    const { container, rerender } = render(
+      <QuranMadinaHtml sura={1} aya={2} letters="1:3, 4:3-5 emerald" />
+    );
+    const el = container.querySelector("quran-madina-html");
+    expect(el.getAttribute("letters")).toBe("1:3, 4:3-5 emerald");
+    rerender(<QuranMadinaHtml sura={1} aya={2} />);
+    expect(el.hasAttribute("letters")).toBe(false);
+  });
+
   it("sets error as a plain string attribute, toggled on rerender", () => {
     const { container, rerender } = render(
       <QuranMadinaHtml sura={1} aya={1} words="1-14" error="10-13" />

@@ -76,6 +76,46 @@ quran-madina-html.quran-madina-html-inline quran-madina-html-line::after {
   background-color: var(--qmh-error);
   color: var(--qmh-error-text, currentColor);
 }
+.quran-madina-html-word-highlight, .quran-madina-html-word-error{
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; /* keep the marks in print */
+}
+/* letters= : single letters inside a word, in --qmh-letter (per group in letters=, default crimson)
+   with a halo of the same hue that blinks. Colour and text-shadow only (never size or position),
+   so the pre-computed line geometry is untouched. The halo must glow *behind* the surrounding
+   ink, not over it: the letter stays in normal flow, while every other piece of ink on the tag
+   (the rest of its word, and the other words) is lifted into a positioned layer above it. Word
+   backgrounds (highlight=/error=) of the lettered word stay in flow, under the letter. */
+quran-madina-html{
+  --qmh-letter: #a3263a;
+}
+quran-madina-html.quran-madina-html-lettered .quran-madina-html-word:not(.quran-madina-html-word-lettered),
+quran-madina-html.quran-madina-html-lettered .quran-madina-html-ink{
+  position: relative;
+  z-index: 1;
+}
+.quran-madina-html-letter{
+  color: var(--qmh-letter);
+  text-shadow: 0 0 0.1em color-mix(in srgb, currentColor 30%, transparent);
+  animation: quran-madina-html-letter-blink 1.4s ease-in-out infinite;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+quran-madina-html[data-qmh-text-scheme="dark"] .quran-madina-html-letter{
+  color: color-mix(in srgb, var(--qmh-letter) 45%, white); /* lighter shade on dark pages */
+}
+/* The pulse only adds light around the letter: it keeps its colour in every frame, so a
+   screenshot taken at any moment shows it. No animation in print or with reduced motion. */
+@keyframes quran-madina-html-letter-blink{
+  0%, 55%, 100% { text-shadow: 0 0 0.1em color-mix(in srgb, currentColor 30%, transparent); }
+  70%, 85%      { text-shadow: 0 0 0.08em color-mix(in srgb, currentColor 75%, transparent),
+                               0 0 0.28em color-mix(in srgb, currentColor 60%, transparent),
+                               0 0 0.55em color-mix(in srgb, currentColor 40%, transparent); }
+}
+@media (prefers-reduced-motion: reduce){
+  .quran-madina-html-letter{ animation: none; }
+}
+@media print{
+  .quran-madina-html-letter{ animation: none; }
+}
 /* The decorative frame is a static SVG asset referenced by URL, so plain CSS (fill,
    currentColor, custom properties) cannot recolor it directly. mask-image instead uses the SVG
    purely as a shape stencil, painted with background-color - here currentColor, so the frame
