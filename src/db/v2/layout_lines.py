@@ -33,6 +33,7 @@ class LayoutLine:
     kind: str                 # "sura" | "bism" | "text"
     text: str                 # the layout's own text for the line
     tokens: list = field(default_factory=list)   # indexes into the Tanzil token list
+    width: float = None       # print's width ratio for a narrower (centered) line
 
 
 def load_dk_pages(path):
@@ -88,3 +89,57 @@ def place_tokens(tokens, pages):
     for i, w in enumerate(where):
         lines[w].tokens.append(i)
     return lines, unmatched
+
+
+def token_keys(meta):
+    """'sura:aya:i' for every token: i counts the aya's words from 1, its
+    number marker last; basmala tokens of aya 1 get None (they sit on the
+    basmala line)."""
+    keys, count = [], {}
+    for sura, aya, kind in meta:
+        if kind == "bism":
+            keys.append(None)
+            continue
+        n = count.get((sura, aya), 0) + 1
+        count[(sura, aya)] = n
+        keys.append(f"{sura}:{aya}:{n}")
+    return keys
+
+
+def place_tokens_print(tokens, meta, pages, print_pages):
+    """Like place_tokens(), but every line takes its words from the print's own
+    line breaks (`print_pages`, see extract_print_lines.py) instead of the
+    DigitalKhatt text. Sura titles and basmala texts still come from `pages`
+    (in order). Returns (lines, problems)."""
+    titles = [t for p in pages for t in p if t.startswith(SURA_PREFIX)]
+    keys = token_keys(meta)
+    index = {k: i for i, k in enumerate(keys) if k}
+    bism_tokens = [i for i, k in enumerate(keys) if k is None]
+    lines, problems = [], []
+    title_it = iter(titles)
+    bism_pos = 0
+    for pi, page in enumerate(print_pages):
+        for li, pl in enumerate(page):
+            if pl["k"] == "sura":
+                lines.append(LayoutLine(pi + 1, li + 1, "sura", next(title_it)))
+                continue
+            line = LayoutLine(pi + 1, li + 1, pl["k"], "")
+            if pl["k"] == "bism":
+                line.text = BASMALA_TEXTS[0]
+                lines.append(line)
+                continue
+            a, b = index.get(pl["a"]), index.get(pl["b"])
+            if a is None or b is None or b < a:
+                problems.append((pi + 1, li + 1, pl["a"], pl["b"]))
+                lines.append(line)
+                continue
+            line.tokens = list(range(a, b + 1))
+            line.width = pl.get("w")
+            lines.append(line)
+    placed = sorted(i for ln in lines for i in ln.tokens)
+    missing = set(range(len(tokens))) - set(placed) - set(bism_tokens)
+    if missing:
+        problems.append(("unplaced tokens", sorted(missing)[:10], len(missing)))
+    if len(placed) != len(set(placed)):
+        problems.append(("tokens on two lines",))
+    return lines, problems

@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 
 import uharfbuzz as hb
 
+import ink
+
 # ---------------------------------------------------------------- constants
 RIGHT_NO_JOIN = "آاٱأإدذرزوؤءة"
 DUAL_JOIN = "بتثجحخسشصضطظعغفقكلمنهيئى"
@@ -533,3 +535,156 @@ def line_glyphs(font, text, result):
         out.append((info.codepoint, x + pos.x_offset, pos.y_offset))
         x += adv
     return out, x
+
+
+# ------------------------------------------------- print model (1441H)
+# Measured on the KFGQPC 1441H print (QCF4 glyphs, every 3rd page): closest ink
+# of neighbouring words, band by band (ink.py), as a share of the line width:
+#   word | word:   p1 0.0042  p5 0.0058  p25 0.0087  median 0.0109  p95 0.0181
+#   word | ۝N:     p5 0.0095  median 0.0102 (most lines exactly)  p95 0.0201
+#   ۝N | word:     p5 0.0078  median 0.0086  p95 0.0097
+# The print never lets two words touch. Lines are filled by changing the
+# *words* — stretched on loose lines, written narrower on dense ones (by up to
+# ~25%) — while the gaps stay in that band and aya numbers keep their size.
+# gap kinds: word|word, word|۝N (before an aya number), ۝N|word (after it)
+PRINT_GAPS = {"w": 0.0109, "b": 0.0102, "a": 0.0086}
+# how far each kind may tighten / open (print p5..p95 over the median)
+GAP_RANGES = {"w": (0.55, 1.65), "b": (0.93, 1.9), "a": (0.91, 1.13)}
+SPACE_FIRST = 1.2                # word gaps open this far before letters are stretched
+MIN_WORD_SCALE = 0.8             # narrowest words; past that the whole line is scaled
+
+
+@dataclass
+class FitResult:
+    features: dict                # {char index: {cvNN: v}} letter stretching
+    spaces: list                  # advance of each space (font units), reading order
+    word_scale: float = 1.0       # horizontal scale of the words (aya numbers excluded)
+    x_scale: float = 1.0          # whole-line scale, last resort
+    natural_width: float = 0.0
+    final_width: float = 0.0
+    advances: list = field(default_factory=list)   # each word's advance (unscaled)
+    markers: list = field(default_factory=list)    # word is an aya number
+
+    def dom_spaces(self):
+        """Spaces for a DOM that narrows words with a CSS transform, which keeps
+        each word's box: a word gives back what it lost on its inner sides — half
+        on each side for words scaled about their centre, all of it on the inner
+        side for the line's first and last words (scaled from the line's edges)."""
+        n = len(self.advances)
+        def inner(i, side):           # side: "right" (towards word i-1) or "left"
+            if self.markers[i] or self.word_scale >= 1:
+                return 0.0
+            lost = (1 - self.word_scale) * self.advances[i]
+            if i == 0:
+                return lost if side == "left" else 0.0
+            if i == n - 1:
+                return lost if side == "right" else 0.0
+            return lost / 2
+        return [sp - inner(k, "left") - inner(k + 1, "right") for k, sp in enumerate(self.spaces)]
+
+
+def word_profile(font, text, features=None):
+    """Ink profile (ink.Profile) of one word as the DOM shapes it."""
+    return ink.shaped_profile(font, shape(font, text, features))
+
+
+MIN_SPACE = -250      # a space may be negative (boxes overlap, ink never does)
+
+
+def is_marker_word(text):
+    return "۝" in text
+
+
+def fit_line_print(font, text, desired, line_width, exhaustive=True):
+    """Fit one line to `desired` font units the way the print does.
+
+    line_width: a full line in the same units (gaps are a share of it)."""
+    line = analyze_line(text)
+    words = line.words
+    marker = [is_marker_word(w.text) for w in words]
+    n = len(words)
+    kinds = ["b" if marker[k + 1] else "a" if marker[k] else "w" for k in range(n - 1)]
+    lo_w, hi_w = GAP_RANGES["w"]
+
+    def gaps_at(f):
+        """Gap targets when word gaps are f times the print's median; the
+        other kinds move proportionally within their own (narrower) range."""
+        out = []
+        for kind in kinds:
+            lo, hi = GAP_RANGES[kind]
+            g = (1 - (1 - f) * (1 - lo) / (1 - lo_w)) if f < 1 else (1 + (f - 1) * (hi - 1) / (hi_w - 1))
+            out.append(PRINT_GAPS[kind] * g * line_width)
+        return out
+
+    def boxes(feats):
+        return [word_profile(font, w.text, to_hb_features(feats, w.start, w.start, w.end))
+                for w in words]
+
+    def spaces_for(bx, gaps, c=1.0):
+        # word k sits right of word k+1 (RTL); the space makes their closest
+        # ink (band by band) exactly g apart
+        out = []
+        for k, g in enumerate(gaps):
+            ck = 1.0 if marker[k] else c
+            cn = 1.0 if marker[k + 1] else c
+            out.append(max(MIN_SPACE, g - ink.clearance_offset(bx[k], bx[k + 1], ck, cn)))
+        return out
+
+    def total(bx, sp, c=1.0):
+        return sum(b.advance * (1.0 if m else c) for b, m in zip(bx, marker)) + sum(sp)
+
+    def width_at(bx, f, c=1.0):
+        return total(bx, spaces_for(bx, gaps_at(f), c), c)
+
+    def result(features, bx, f, c, natural):
+        sp = spaces_for(bx, gaps_at(f), c)
+        current = total(bx, sp, c)
+        x = 1.0
+        if current > desired * 1.0005:
+            x = desired / current
+        elif current != desired and sp:
+            # what is left (either way) goes to the word gaps
+            weights = [1.0 if k == "w" else 0.25 for k in kinds]
+            extra = (desired - current) / sum(weights)
+            sp = [v + extra * wgt for v, wgt in zip(sp, weights)]
+            current = desired
+        return FitResult(features, sp, round(c, 4), x, natural, current * x,
+                         [b.advance for b in bx], marker)
+
+    bx = boxes({})
+    natural = width_at(bx, 1.0)
+    if natural <= desired:
+        # loose line: 1. gaps open a little, 2. letters stretch (kashida /
+        # alternates, as DigitalKhatt's justifier), 3. gaps take the rest
+        f = _solve(lambda v: width_at(bx, v), 1.0, SPACE_FIRST, desired)
+        current = width_at(bx, f)
+        features = {}
+        if current < desired:
+            j = _Justifier(font, line, current, desired, exhaustive)
+            j.run()
+            features = j.features
+            bx = boxes(features)
+            if width_at(bx, f) > desired:     # stretched ink moved a little
+                f = _solve(lambda v: width_at(bx, v), f, lo_w, desired)
+        return result(features, bx, f, 1.0, natural)
+    # dense line: 1. gaps tighten (word gaps most, aya gaps hardly),
+    # 2. words get narrower (aya numbers keep their size), 3. the line, rarely
+    f = _solve(lambda v: width_at(bx, v), 1.0, lo_w, desired)
+    c = 1.0
+    if width_at(bx, f) > desired:
+        c = _solve(lambda v: width_at(bx, f, v), 1.0, MIN_WORD_SCALE, desired)
+    return result({}, bx, f, c, natural)
+
+
+def _solve(fn, a, b, target, iters=30):
+    """Parameter between a and b where monotonic fn hits target (clamped to b)."""
+    fa, fb = fn(a), fn(b)
+    if (fb - target) * (fa - target) > 0:       # target not reachable: stop at b
+        return b if abs(fb - target) < abs(fa - target) else a
+    for _ in range(iters):
+        m = (a + b) / 2
+        if (fn(m) - target) * (fa - target) > 0:
+            a, fa = m, fn(m)
+        else:
+            b = m
+    return (a + b) / 2

@@ -470,7 +470,8 @@
   // v2 DBs (version: 2). Lines are justified by stretching letters: each word carries its own
   // font-feature-settings (position features jpNN of the v2 font, chosen by HarfBuzz at build
   // time) and each space its exact width. All widths are in em, so any font-size renders the same
-  // layout. Line geometry lives in madina_data.lines[page-1][line-1] = {k, w, s, x}.
+  // layout. Line geometry lives in madina_data.lines[page-1][line-1] = {k, w, s, x, c}: c narrows
+  // the words of a dense line (aya numbers excluded), x the whole line (rare last resort).
   // --------------------------------------------------------------------------
   function isV2(){ return madina_data.version === 2; }
   function v2InitLine(line, page, line_no){
@@ -511,7 +512,10 @@
           var sp = document.createElement("span");
           sp.className = `${name}-space`;
           sp.textContent = " ";
-          sp.style.cssText = `display:inline-block;width:${state.row.s[state.words - 1]}em`;
+          var w = state.row.s[state.words - 1];
+          // a negative space overlaps the word boxes (never the ink): pull the next word in
+          sp.style.cssText = w >= 0 ? `display:inline-block;width:${w}em`
+            : `display:inline-block;width:0;margin-left:${w}em`;
           parent.appendChild(sp);
         } else {
           parent.appendChild(document.createTextNode(" "));
@@ -522,6 +526,17 @@
       span.textContent = token;
       span.classList.add(`${name}-word`);
       if(justified && part.f && part.f[j]) span.style.fontFeatureSettings = v2FeatureSettings(part.f[j]);
+      if(justified && state.row.c && token.indexOf("\u06DD") < 0){
+        // dense line: the words (never the aya numbers) are written narrower, as in print;
+        // the box keeps its width, the spaces were computed for that
+        span.style.display = "inline-block";
+        span.style.transform = `scaleX(${state.row.c})`;
+        // the line's first and last words narrow from the line's edges, the others about
+        // their centre (the build computed the spaces for exactly this)
+        var index = state.words - 1;
+        if(index === 0) span.style.transformOrigin = "right";
+        else if(index === state.row.s.length) span.style.transformOrigin = "left";
+      }
       if(onWord) onWord(span, token);
       parent.appendChild(span);
     });

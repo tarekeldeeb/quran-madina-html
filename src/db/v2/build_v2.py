@@ -10,7 +10,9 @@ Steps:
   2. tokens: words, aya numbers; pause marks attached to their word
   3. convert to the font's encoding (tanzil_encoding.py); 1441H takes the
      1441H print's pause marks
-  4. place tokens on the layout's page lines (layout_lines.py)
+  4. place tokens on the page lines: the 1441H print's own line breaks
+     (data/print-1441H-lines.json, extract_print_lines.py), else the
+     DigitalKhatt layout text (layout_lines.py)
   5. justify every text line with HarfBuzz (justify.py), record per-word
      position features (font_patch.py), then write the patched font
   6. write the DB JSON (schema below) and a report
@@ -21,7 +23,8 @@ DB schema (version 2) — all widths in em, so any font size works:
     "font_family", "font_url", "line_width": <em>,
     "lines": [ [ {"k": "text"|"sura"|"bism", "w": <line width em>,
                   "z": <page font factor if < 1>, "s": [space widths, em of the line's
-                  font], "x": <scaleX if < 1>} ... 15 ] ... 604 pages ],
+                  font; may be negative: boxes overlap, ink never), "x": <scaleX if < 1>,
+                  "c": <scaleX of each word, aya numbers excluded, if < 1>} ... ] ... 604 pages ],
     "suras": [ {"name", "ayas": [ {"p": page, "r": [ {"l": line, "t": text,
                  "f": ["jp04=3,jp06=1" | "" per word of t]} ] } ] } ]
   }
@@ -50,6 +53,7 @@ PAUSE_MARKS = set("ۖۗۘۙۚۛۜ")
 LAYOUTS = {
     "1441H": {"text": "app/services/quran_text_madina.ts", "font": "assets/fonts/hb/madina.otf",
               "page_width": 16200, "widths": "newMadinaLineWidths", "pause_marks_from_print": True,
+              "print_lines": "data/print-1441H-lines.json",
               "family": "QMH New Madina", "title": "مصحف المدينة - الإصدار الجديد ١٤٤١هـ",
               "published": 1441},
     "1405H": {"text": "app/services/quran_text_old_madinah.ts", "font": "assets/fonts/hb/oldmadina.otf",
@@ -162,8 +166,17 @@ def build(args):
                for w in line.split()]
         tokens, changed = enc.apply_pause_marks(tokens, ref)
         print(f"pause marks from the {args.layout} print: {changed}")
-    lines, unmatched = layout_lines.place_tokens(tokens, pages)
-    print(f"{len(tokens)} tokens on {len(lines)} lines; unmatched: {len(unmatched)}")
+    print_lines = cfg.get("print_lines") if args.line_breaks == "print" else None
+    if print_lines:
+        with open(os.path.join(os.path.dirname(__file__), print_lines), encoding="utf-8") as fh:
+            print_pages = json.load(fh)["pages"]
+        lines, problems = layout_lines.place_tokens_print(tokens, meta, pages, print_pages)
+        print(f"{len(tokens)} tokens on {len(lines)} print lines; problems: {problems[:5]}")
+        if problems:
+            sys.exit("line placement failed")
+    else:
+        lines, unmatched = layout_lines.place_tokens(tokens, pages)
+        print(f"{len(tokens)} tokens on {len(lines)} lines; unmatched: {len(unmatched)}")
 
     font_path = os.path.join(args.dk_src, cfg["font"])
     with open(font_path, "rb") as fh:
@@ -171,8 +184,17 @@ def build(args):
     ratios = line_width_ratios(args.dk_src, args.layout)
     full = cfg["page_width"] * (1 - 2 * MARGIN / PAGE_WIDTH)
     table, positions = font_patch.AlternateTable(), 1
-    page_rows = [[None] * len(p) for p in pages]
+    n_lines = defaultdict(int)
+    for ln in lines:
+        n_lines[ln.page] = max(n_lines[ln.page], ln.line)
+    page_rows = [[None] * n_lines[p + 1] for p in range(len(n_lines))]
+
+    def width_ratio(ln):
+        if print_lines:
+            return ln.width or 1.0
+        return ratios.get((ln.page, ln.line), 1.0)
     word_css = {}                       # token index -> css string
+    fit_stats = []
     # Page font factor (hybrid fitting): the page's text may shrink uniformly, by at
     # most PAGE_SCALE_MIN, so its widest line fits without distorting letters; the
     # rest of an overfull line is then squeezed (scaleX) by the justifier.
@@ -180,16 +202,20 @@ def build(args):
     for ln in lines:
         if ln.kind != "text":
             continue
-        desired = full * ratios.get((ln.page, ln.line), 1.0)
+        desired = full * width_ratio(ln)
         natural = justify.natural_width(font, " ".join(tokens[i] for i in ln.tokens))
         page_scale[ln.page] = min(page_scale.get(ln.page, 1.0), desired / natural)
     page_scale = {p: max(args.page_scale_min, min(1.0, z)) for p, z in page_scale.items()}
+    if args.fit == "print":
+        # print model: the text keeps one size (the print's), lines are fitted
+        # by the words themselves (fit_line_print)
+        page_scale = {p: args.page_scale_min for p in page_scale}
     if args.page_scale == "global":
         # one factor for the whole mushaf: same text size on every page
         z_all = min(page_scale.values())
         page_scale = {p: z_all for p in page_scale}
     for ln in lines:
-        ratio = ratios.get((ln.page, ln.line), 1.0)
+        ratio = width_ratio(ln)
         row = {"k": ln.kind, "w": round(full * ratio / 1000, 4)}
         page_rows[ln.page - 1][ln.line - 1] = row
         if ln.kind != "text":
@@ -199,16 +225,24 @@ def build(args):
             row["z"] = round(z, 4)
         text = " ".join(tokens[i] for i in ln.tokens)
         # justified at the page's font size: the line is 1/z wider in that font's units
-        res = justify.justify_line(font, text, full * ratio / z, space_stretch=args.space_stretch,
-                                   exhaustive=args.exhaustive)
         info = justify.analyze_line(text)
-        row["s"] = [round((res.aya_spacing if info.spaces[k] == "aya" else res.simple_spacing) / 1000, 4)
-                    for k in sorted(info.spaces)]
+        if args.fit == "print":
+            res = justify.fit_line_print(font, text, full * ratio / z, full / z,
+                                         exhaustive=args.exhaustive)
+            row["s"] = [round(sp / 1000, 4) for sp in res.dom_spaces()]
+            if res.word_scale < 1:
+                row["c"] = round(res.word_scale, 4)
+            fit_stats.append((res.word_scale, res.x_scale))
+        else:
+            res = justify.justify_line(font, text, full * ratio / z, space_stretch=args.space_stretch,
+                                       exhaustive=args.exhaustive)
+            row["s"] = [round((res.aya_spacing if info.spaces[k] == "aya" else res.simple_spacing) / 1000, 4)
+                        for k in sorted(info.spaces)]
         if res.x_scale < 1:
             row["x"] = round(res.x_scale, 4)
         for wi, word in enumerate(info.words):
             css = {}
-            css.update(res.word_features.get(wi, {}))
+            css.update(getattr(res, 'word_features', {}).get(wi, {}))
             feats = justify.to_hb_features(res.features, word.start, word.start, word.end)
             if feats:
                 reps = font_patch.word_replacements(font, word.text, feats)
@@ -273,6 +307,11 @@ def build(args):
     db_path = os.path.join(args.out, f"Madina-{args.layout}.json")
     with open(db_path, "w", encoding="utf-8") as fh:
         json.dump(db, fh, ensure_ascii=False, separators=(",", ":"))
+    if fit_stats:
+        cs = sorted(c for c, _ in fit_stats)
+        print(f"lines {len(cs)}: narrower words {sum(c < 1 for c in cs)} "
+              f"(<0.9: {sum(c < 0.9 for c in cs)}, at {justify.MIN_WORD_SCALE}: "
+              f"{sum(c <= justify.MIN_WORD_SCALE for c in cs)}), line scaleX {sum(x < 1 for _, x in fit_stats)}")
     stretched = sum(1 for v in word_css.values() if "jp" in v)
     print(f"stretched words {stretched}, jp01..jp{positions:02d}, "
           f"{sum(len(v) for v in table.alts.values())} variants")
@@ -290,6 +329,12 @@ if __name__ == "__main__":
     ap.add_argument("--out", default="assets/db/v2")
     ap.add_argument("--space-stretch", type=float, default=0.5)
     ap.add_argument("--exhaustive", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--line-breaks", choices=("print", "dk"), default="print",
+                    help="print: the KFGQPC print's line breaks where the layout has them "
+                         "(1441H); dk: the DigitalKhatt text's")
+    ap.add_argument("--fit", choices=("print", "dk"), default="print",
+                    help="print: fixed print-like gaps, words stretch or narrow (justify."
+                         "fit_line_print); dk: DigitalKhatt's spaces-first justifier + shrink")
     ap.add_argument("--page-scale-min", type=float, default=0.92,
                     help="smallest font factor before lines get squeezed (1 = never)")
     ap.add_argument("--page-scale", choices=("global", "page"), default="global",

@@ -6,7 +6,7 @@
 |---|---|---|---|
 | Font | DigitalKhatt New Madina (`hb/madina.otf`) | DigitalKhatt Old Madina (`hb/oldmadina.otf`) | DigitalKhatt IndoPak (`hb/indopak.otf`) |
 | License | OFL 1.1, no Reserved Font Name | OFL 1.1, no Reserved Font Name | OFL 1.1, no Reserved Font Name |
-| Line breaks | DigitalKhatt `quran_text_madina.ts` (MIT) | DigitalKhatt `quran_text_old_madinah.ts` (MIT); same breaks as the v1 `Madina05` DB | DigitalKhatt `quran_text_indopak_15.ts` (MIT) |
+| Line breaks | **KFGQPC 1441H print** (`src/db/v2/data/print-1441H-lines.json`, see below) | DigitalKhatt `quran_text_old_madinah.ts` (MIT); same breaks as the v1 `Madina05` DB | DigitalKhatt `quran_text_indopak_15.ts` (MIT) |
 | Line width | 16200 font units | 16400 font units | 16400 font units |
 
 IndoPak was added at the user's request; its text and pause marks will need
@@ -64,8 +64,6 @@ Results (Chromium, 40px): every word within **0.015px** of HarfBuzz, every
 line within **0.08px** of its target, on 1441H pages 3, 50, 300 and 1405H page 3.
 See `img/1441h-page3-jp-chromium.png`.
 
-Shrinking (lines wider than the target) uses the fonts' own `shr1`/`shrr`
-as plain per-word CSS features, after tightening spaces.
 
 The patched fonts are renamed (OFL good practice) and rebuilt with the DB,
 since the alternate lists depend on the corpus.
@@ -74,8 +72,6 @@ since the alternate lists depend on the corpus.
 
 - Firefox (not installable in this workspace) and Safari/CoreText: untested
   with custom `jpNN` features. A tatweel DB remains the fallback.
-- Aya marker collides with the next word on tight lines (1441H p3 l8):
-  give aya spaces a higher minimum when shrinking.
 - Pages 1-2, sura titles, basmala lines.
 
 ## Runtime (Phase 4)
@@ -100,22 +96,66 @@ The v2 DBs in `assets/db/v2` are currently built from the Tanzil text recovered
 from the v1 DB (tanzil.net is unreachable from the build sandbox); rebuild with
 `--tanzil` from the real download before release.
 
-## Fitting overfull lines (hybrid)
+## Matching the 1441H print (replaces the "hybrid" fitting)
 
-With DigitalKhatt's line width, a third of 1441H lines (a fifth of 1405H) are
-wider than the line, mostly on the later pages where short ayas bring many
-markers. Options considered: squeeze lines (DigitalKhatt site: down to ~75%),
-per-page font size, wider lines, or a hybrid. **Decision: hybrid.**
+The first v2 pages had overlapping words and crowded lines. Compared with the
+1441H print (King Fahd Complex's own QCF4 data: one glyph per word, traced
+from the printed page, with the print's line breaks), three causes showed up:
 
-- The text is set 8% smaller than the line's nominal em (`z = 0.92`, one factor
-  for the whole mushaf so the size never jumps between pages; `--page-scale page`
-  gives per-page factors instead), and line height compensates so the page keeps
-  its proportions.
-- Overfull lines then use the fonts' shrink features (`shr1`, and `shrr` away
-  from aya numbers), and only the remainder is squeezed with scaleX.
+1. **Line breaks.** DigitalKhatt's "madina" text breaks 1,620 of 8,802 text
+   lines differently from the 1441H print. 573 of its lines start with an
+   aya number; the print never does that (0 lines). Lines that gain a word
+   become overfull.
+2. **`shrr`.** This shrink feature overlaps letters: ٱلرِّقَابِ goes from
+   2351 to 1141 units. DigitalKhatt's own renderer never uses it. v2 had put
+   it on 2,333 words.
+3. **Squeezed spaces.** On dense lines the print keeps its gaps and writes the
+   *words* narrower (up to ~25%), and never touches aya numbers. v2 cut the
+   spaces to 0.06 em, then scaled the whole line, aya numbers included.
 
-| | lines squeezed | squeezed below 95% | worst |
+The font size was not the cause: the DigitalKhatt font at `z = 0.92` is
+close to the print (0.96 would match it exactly).
+
+**What changed:**
+
+- **Line breaks** come from the print. `extract_print_lines.py` reduces the
+  page data of the [`quran-qcf4`](https://www.npmjs.com/package/quran-qcf4)
+  package (JSON: MIT) to the first and last token of each line, stored as
+  `sura:aya:index` with the print's separate ۩ folded into its word. No
+  glyphs or text are kept. Narrow lines (pages 1-2, some sura ends) take the
+  print's width. The 1405H layout keeps DigitalKhatt's breaks, which already
+  match the 1405H print.
+- **Gaps follow the print.** Gaps are measured ink to ink, band by band
+  (`ink.py`: a word's leftmost and rightmost ink per 20-unit band), as a
+  share of the line width. Values are from every 3rd page of the print:
+
+  | gap | p5 | median | p95 | may move |
+  |---|---|---|---|---|
+  | word / word | 0.0058 | 0.0109 | 0.0181 | 0.55–1.65× |
+  | word / ۝N | 0.0095 | 0.0102 | 0.0201 | 0.93–1.9× |
+  | ۝N / word | 0.0078 | 0.0086 | 0.0097 | 0.91–1.13× |
+
+  A space can be negative: the word boxes then overlap, but their ink never
+  does.
+- **Lines are fitted with the words** (`justify.fit_line_print`):
+  - *Loose line:* gaps open up to 1.2×, then letters stretch (DigitalKhatt's
+    kashida and alternates, unchanged), then the gaps take the rest.
+  - *Dense line:* gaps tighten within their range, then the words get
+    narrower (`c`, a `scaleX` on each word span, down to 0.8, never on aya
+    numbers). Only then is the whole line scaled (`x`).
+  - `shr1`/`shrr` are no longer used.
+
+| 1441H, every 10th page | word pairs touching | closest gaps (p1) | word gaps median / p95 |
 |---|---|---|---|
-| 1441H before | 2907 (33%) | 1616 | 74% |
-| 1441H hybrid | 993 (11%) | 389 | 81% |
-| 1405H hybrid | 575 (6.5%) | 206 | 82% |
+| print | 5 of 6,690 | 0.0050 | 0.0112 / 0.0188 |
+| v2 before | **100** of 6,697 | **0.0000** | 0.0106 / **0.0281** |
+| v2 now | 2 of 6,689 | 0.0056 | 0.0138 / 0.0181 |
+
+"Touching" means within 1px at a 1600px line. 1441H now has 1,438 lines with
+narrowed words (277 below 0.9) and 20 line-scaled lines; 1405H has 885 and 7.
+`test/v2_layout_test.py` checks that every line has the print's words, that
+no line starts with an aya number, that no word uses `shr*`, and the closest
+gaps on sample pages.
+
+![p579 print vs v2](img/1441h-p579-print-vs-v2.png)
+![p507 print vs v2](img/1441h-p507-print-vs-v2.png)
