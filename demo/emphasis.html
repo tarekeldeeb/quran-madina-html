@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>quran-madina-html — letter emphasis styles</title>
+  <script src="../dist/quran-madina-html.js" data-cdn="../" data-font-size="26"></script>
+  <style>
+    :root { --bg: #f6f3ea; --card: #fffdf7; --ink: #23211c; --muted: #7a7466; --line: #e6dfcd; }
+    html.dark { --bg: #15140f; --card: #1f1d17; --ink: #ece6d6; --muted: #9c9583; --line: #34302a; }
+    body { margin: 0; background: var(--bg); color: var(--ink);
+           font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    header { max-width: 980px; margin: 0 auto; padding: 18px 16px 4px; direction: ltr; text-align: left; }
+    header h1 { font-size: 20px; margin: 0 0 6px; }
+    header p { margin: 4px 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    header button { font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 6px;
+                    border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+    #check { font-size: 13px; }
+    #check.bad { color: #a3263a; } #check.good { color: #17785a; }
+    .grid { max-width: 980px; margin: 0 auto; padding: 12px 16px 40px; display: grid; gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+            padding: 14px 12px 12px; overflow-x: auto; }
+    .card h2 { direction: ltr; text-align: left; font-size: 15px; margin: 0 0 2px; }
+    .card .note { direction: ltr; text-align: left; font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+    .card quran-madina-html { background: transparent; }
+
+    /* ---- the styles: colour and shadow only, never size or position ---- */
+    /* 1. Gold leaf: illuminated-manuscript gold with a faint warm halo */
+    .em-gold { color: #a8741a; text-shadow: 0 0 0.12em rgba(214, 168, 66, 0.45); }
+    html.dark .em-gold { color: #e2b45a; text-shadow: 0 0 0.14em rgba(226, 180, 90, 0.5); }
+    /* 2. Red ink: the mushaf's own annotation red */
+    .em-red { color: #a3263a; }
+    html.dark .em-red { color: #e0707f; }
+    /* 3. Soft glow: the ink stays dark, light gathers around the letter */
+    .em-glow { color: #3a2a06; text-shadow: 0 0 0.16em rgba(255, 196, 70, 0.95), 0 0 0.38em rgba(255, 196, 70, 0.55); }
+    html.dark .em-glow { color: #fff6dc; text-shadow: 0 0 0.16em rgba(255, 205, 100, 0.9), 0 0 0.4em rgba(255, 205, 100, 0.5); }
+    /* 4. Spotlight: the rest of the word recedes, the letter stays full ink */
+    .em-dim { color: rgba(35, 33, 28, 0.32); }
+    html.dark .em-dim { color: rgba(236, 230, 214, 0.3); }
+    .em-spot { color: #23211c; }
+    html.dark .em-spot { color: #ece6d6; }
+    /* 5. Emerald: the green of tajweed prints, with a breath of shadow */
+    .em-emerald { color: #17785a; text-shadow: 0 0 0.1em rgba(23, 120, 90, 0.25); }
+    html.dark .em-emerald { color: #5cc7a0; text-shadow: 0 0 0.12em rgba(92, 199, 160, 0.35); }
+    /* 6. Lapis: the deep blue of illumination borders */
+    .em-lapis { color: #27509e; text-shadow: 0 0 0.1em rgba(39, 80, 158, 0.22); }
+    html.dark .em-lapis { color: #8fb0f0; text-shadow: 0 0 0.12em rgba(143, 176, 240, 0.35); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Letter emphasis — pick a style</h1>
+    <p>Each card marks the same letters: <b>ح</b> in ٱلْحَمْدُ, <b>ع</b> and <b>م</b> in ٱلْعَٰلَمِينَ
+      (two letters in one word), and <b>ح</b> in ٱلرَّحِيمِ. Only colour and shadow change, so the
+      stretched letters, joining and line layout should stay exactly as they are.</p>
+    <p id="check">checking…</p>
+    <p><button id="mode">Dark background</button></p>
+  </header>
+  <div class="grid" id="grid"></div>
+
+  <script>
+  var STYLES = [
+    ["gold", "Gold leaf", "Illuminated-manuscript gold, faint warm halo"],
+    ["red", "Red ink", "The mushaf's own annotation red, no effects"],
+    ["glow", "Soft glow", "Ink colour kept, light gathers around the letter"],
+    ["spot", "Spotlight", "The rest of the word recedes; the letter stays full ink"],
+    ["emerald", "Emerald", "Tajweed green with a breath of shadow"],
+    ["lapis", "Lapis", "Illumination blue, a touch of shadow"]
+  ];
+  // which letters to mark: [word number (1-based, aya numbers not counted), [letter numbers]]
+  var MARKS = [[1, [3]], [4, [3, 5]], [6, [4]]];
+
+  var grid = document.getElementById("grid");
+  STYLES.forEach(function (s) {
+    var card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = "<h2>" + s[1] + "</h2><p class='note'>" + s[2] + "</p>" +
+      "<quran-madina-html sura='1' aya='2-4' headless='true' data-style='" + s[0] + "'></quran-madina-html>";
+    grid.appendChild(card);
+  });
+
+  // A "letter" is a base character plus everything that rides on it: harakat, hamza above,
+  // the dagger alef, the joiners the font's encoding uses (CGJ) and a following tatweel.
+  function letterStarts(s) {
+    var starts = [];
+    for (var i = 0; i < s.length; i++) {
+      var ch = s[i];
+      if (!(/\p{M}/u.test(ch) || ch === "\u034F" || ch === "\u200D" || ch === "\u0640")) starts.push(i);
+    }
+    starts.push(s.length);
+    return starts;
+  }
+  // Wrap the chosen letters of a word span in <span class=cls>. Only colour/shadow change, and the
+  // word keeps its font-feature-settings, so the browser shapes it as before (checked below).
+  function wrapLetters(word, numbers, cls) {
+    var s = word.textContent, starts = letterStarts(s), out = [], last = 0;
+    numbers.filter(function (n) { return n >= 1 && n < starts.length; })
+      .sort(function (a, b) { return a - b; })
+      .forEach(function (n) {
+        out.push(document.createTextNode(s.slice(last, starts[n - 1])));
+        var sp = document.createElement("span");
+        sp.className = cls;
+        sp.textContent = s.slice(starts[n - 1], starts[n]);
+        out.push(sp);
+        last = starts[n];
+      });
+    out.push(document.createTextNode(s.slice(last)));
+    word.textContent = "";
+    out.forEach(function (n) { if (n.nodeType !== 3 || n.data) word.appendChild(n); });
+  }
+  function words(tag) {
+    return Array.from(tag.querySelectorAll(".quran-madina-html-word")).filter(function (w) {
+      return w.textContent.indexOf("\u06DD") < 0 && getComputedStyle(w).visibility !== "hidden";
+    });
+  }
+  function emphasize() {
+    var worst = 0, n = 0;
+    document.querySelectorAll("quran-madina-html[data-style]").forEach(function (tag) {
+      var style = tag.getAttribute("data-style"), ws = words(tag);
+      MARKS.forEach(function (m) {
+        var w = ws[m[0] - 1];
+        if (!w) return;
+        var before = w.getBoundingClientRect().width;
+        if (style === "spot") w.classList.add("em-dim");
+        wrapLetters(w, m[1], "em-" + style);
+        worst = Math.max(worst, Math.abs(w.getBoundingClientRect().width - before));
+        n++;
+      });
+    });
+    // If this browser stopped shaping the word as one piece, its width would change.
+    var check = document.getElementById("check");
+    check.textContent = "Width check: " + n + " words marked, largest width change " +
+      worst.toFixed(2) + "px " + (worst < 0.5 ? "— shaping unchanged ✓" : "— this browser re-shaped the words ✗");
+    check.className = worst < 0.5 ? "good" : "bad";
+  }
+  (function wait(tries) {
+    var tags = document.querySelectorAll("quran-madina-html[data-style]");
+    var ready = Array.from(tags).every(function (t) { return words(t).length >= 6; });
+    if (ready || tries > 80) emphasize(); else setTimeout(function () { wait(tries + 1); }, 150);
+  })(0);
+
+  document.getElementById("mode").onclick = function () {
+    var dark = document.documentElement.classList.toggle("dark");
+    this.textContent = dark ? "Light background" : "Dark background";
+  };
+  </script>
+</body>
+</html>

@@ -138,5 +138,25 @@ class BasicDBTest(unittest.TestCase):
                     self.assertEqual(part['s'], -1,
                                      f"basmala line must stay centered ({where})")
 
+    def test_7_every_aya_ends_with_its_marker(self):
+        """Each real aya's last token is its own aya-number marker. Guards against the OCR line
+        split shifting words by one (13:37 once lost its marker and pushed "مَا" to line 7)."""
+        hindi = str.maketrans('0123456789', '٠١٢٣٤٥٦٧٨٩')
+        for data in self.db:
+            for sura_index, sura in enumerate(data["data"]['suras']):
+                for aya_number, aya in enumerate(sura['ayas'][2:], start=1):
+                    tokens = " ".join(part['t'] for part in aya['r']).split()
+                    where = f"{data['name']} {sura_index + 1}:{aya_number}"
+                    self.assertTrue(tokens, f"empty aya ({where})")
+                    self.assertIn(tokens[-1], (f"﴿{str(aya_number).translate(hindi)}﴾",
+                                               f"۝{aya_number}"), f"aya marker ({where})")
+
+    def test_8_13_37_line_split(self):
+        """13:37 on page 254: "مَا" ends line 6 (OCR split regression)."""
+        for data in self.db:
+            parts = data["data"]['suras'][12]['ayas'][38]['r']
+            self.assertEqual([p['l'] for p in parts], [6, 7], data['name'])
+            self.assertEqual(parts[0]['t'].split()[-1].replace('ـ', ''), "مَا", data['name'])
+
 if __name__ == '__main__':
     unittest.main()
