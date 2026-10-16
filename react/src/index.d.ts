@@ -37,10 +37,11 @@ export interface QuranMadinaHtmlProps
    */
   error?: string;
   /**
-   * Letters to emphasise inside words: comma-separated groups "word:letters [colour]", e.g.
-   * "1:3 crimson, 4:3-5 emerald, 6:2+4". Word numbers count like highlight/error; letters are
-   * n, n-m or n+m; the colour is optional (crimson by default): crimson, emerald, lapis, gold,
-   * violet or any CSS colour. The letter blinks with a soft halo; nothing moves.
+   * Letters to emphasise inside words: comma-separated groups "word:letters [colour] [blink]",
+   * e.g. "1:3 crimson, 4:3-5 emerald blink, 6:2+4". Word numbers count like highlight/error;
+   * letters are n, n-m or n+m; the colour is optional (crimson by default): crimson, emerald,
+   * lapis, gold, violet or any CSS colour; "blink" makes the letter's halo pulse (no animation
+   * by default). Nothing moves.
    */
   letters?: string;
   /** Drop the header / copy chrome and render only the Quran text. */
