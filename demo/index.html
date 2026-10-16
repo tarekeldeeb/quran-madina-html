@@ -30,12 +30,11 @@
     }
     var savedSize = localStorage.getItem("quran-madina-html-font-size") || "16";
 
+    // The demo always runs the build next to it (localhost, or the GitHub Pages copy of the repo),
+    // so it shows the current code, not whatever version unpkg serves.
     var script = document.createElement("script");
-    if (/localhost/.test(document.location.hostname)) {
-        script.setAttribute("src", "../dist/quran-madina-html.js");
-    } else {
-        script.setAttribute("src", "https://unpkg.com/quran-madina-html");
-    }
+    script.setAttribute("src", "../dist/quran-madina-html.js");
+    script.setAttribute("data-cdn", "../");
     script.setAttribute("data-layout", savedFont.slice(3));
     script.setAttribute("data-font-size", savedSize);
     document.head.appendChild(script);
