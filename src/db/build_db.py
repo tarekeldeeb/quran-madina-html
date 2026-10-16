@@ -232,16 +232,20 @@ class Ayah:
     # decides whether a line is a short standalone line like Huroof Muqattaat).
     PAUSE_MARKS = "ۖۗۘۙۚۛۜ"
     @staticmethod
-    def join_tokens(tokens):
-        """Join word tokens with spaces, attaching a pause mark to the previous word instead of
-        leaving it as its own token."""
+    def attach_pause_marks(tokens):
+        """Token list with each standalone pause mark attached to the previous word."""
         joined = []
         for token in tokens:
             if joined and len(token) == 1 and token in Ayah.PAUSE_MARKS:
                 joined[-1] = joined[-1] + token
             else:
                 joined.append(token)
-        return " ".join(joined)
+        return joined
+    @staticmethod
+    def join_tokens(tokens):
+        """Join word tokens with spaces, attaching a pause mark to the previous word instead of
+        leaving it as its own token."""
+        return " ".join(Ayah.attach_pause_marks(tokens))
     @staticmethod
     def apply_font_tweaks(text):
         """Font-specific glyph substitutions, shared by ordinary aya text and the basmala
@@ -298,12 +302,20 @@ class Ayah:
             skip_words = 4 #Skip Basmala from first aya.
         else:
             skip_words = 0
-        if len(ayah_data) != len(self.text.split())-skip_words:
-            DbBuilder.error_logger.add_message(f'Mismatch at {self.sura_index}-{self.index}: '
-                  f'Glyphs={len(ayah_data)} for:{self.text}')
+        tokens = self.text.split()
+        if len(ayah_data) != len(tokens)-skip_words:
+            # The OCR data usually has a glyph row for each standalone pause mark, but not always
+            # (e.g. 13:37's "ۚ"). Counting the mark as a word then shifts every later word by one:
+            # a word lands on the next line and the aya marker falls off the end. When the counts
+            # agree with pause marks attached to their words, slice over those tokens instead.
+            attached = self.attach_pause_marks(tokens)
+            if len(ayah_data) == len(attached)-skip_words:
+                tokens = attached
+            else:
+                DbBuilder.error_logger.add_message(f'Mismatch at {self.sura_index}-{self.index}: '
+                      f'Glyphs={len(ayah_data)} for:{self.text}')
         for line_index, line in words_in_lines.items():
-            aya_text_part = self.join_tokens(self.text.split()
-                                        [skip_words:skip_words+line])
+            aya_text_part = self.join_tokens(tokens[skip_words:skip_words+line])
             if int(line_index) == self.prev_line_end:
                 aya_text_part = " " + aya_text_part # Add a space after prev aya on the same line
             aya_part_width = DbBuilder.html_helper.get_width(aya_text_part)
