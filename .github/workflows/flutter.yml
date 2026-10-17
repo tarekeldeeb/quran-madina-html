@@ -34,5 +34,17 @@ jobs:
       - name: Test
         run: flutter test
 
+      # Its findings also go to an annotation, so they show on the PR without opening the log.
       - name: Publish dry run
-        run: flutter pub publish --dry-run
+        shell: bash
+        run: |
+          set +e
+          flutter pub publish --dry-run > dry-run.txt 2>&1
+          code=$?
+          cat dry-run.txt
+          if [ $code -ne 0 ]; then
+            msg=$(grep -v '^\s*[├└│|]' dry-run.txt | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=pub publish --dry-run::$msg"
+          fi
+          rm -f dry-run.txt
+          exit $code
