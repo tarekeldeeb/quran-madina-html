@@ -1,0 +1,8 @@
+# Flutter/Dart build output (also kept out of the pub.dev archive)
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+# A package doesn't commit its lockfile; the example app is not published either
+pubspec.lock
