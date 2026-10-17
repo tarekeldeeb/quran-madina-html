@@ -44,6 +44,11 @@ SHOTS = [
     ("words-inline", "1441H", 22, tag(sura=1, aya=1, words="1:2"), ""),
     ("words-multiline", "1441H", 22, tag(sura=1, aya=7, words="1-14"), ""),
     ("highlight", "1441H", 22, tag(sura=1, aya=1, highlight="2-3"), ""),
+    ("letters", "1441H", 22,
+     tag(sura=1, aya="2-4", headless="true", highlight="1", error="4",
+         letters="1:3, 4:3+5 lapis blink, 6:4 emerald"),
+     # a still frame: blink only pulses the halo, the letters look like this at rest
+     ".quran-madina-html-letter-blink { animation: none !important; }"),
 ]
 
 

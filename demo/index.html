@@ -101,6 +101,9 @@
       width: 50px;
       font-size: 16px; /* 16px+ stops iOS zooming in on focus */
     }
+    .playground input.range.wide {
+      width: 150px;
+    }
     .playground input.range {
       width: 64px;
       direction: ltr;
@@ -165,6 +168,17 @@
   </p>
 
   <p>
+  ولإبراز حروف بعينها داخل الكلمات (لتعليم حرف أو للإشارة إلى خطأ) تُستخدم الخاصية <code>letters</code>
+  بصيغة <code>رقم الكلمة:أرقام الحروف اللون</code>، ويمكن إضافة <code>blink</code> لنبض خفيف
+  (بدون حركة افتراضياً)، ويعمل ذلك داخل الكلمات المظللة أيضاً:
+  <code>letters="1:3, 4:3+5 lapis blink, 6:4 emerald"</code>
+  <quran-madina-html sura="1" aya="2-4" headless="true" highlight="1" error="4"
+                     letters="1:3, 4:3+5 lapis blink, 6:4 emerald"></quran-madina-html>
+  الألوان المتاحة: crimson (الافتراضي) و emerald و lapis و gold و violet أو أي لون CSS.
+  <a href="emphasis.html">أمثلة أخرى</a>
+  </p>
+
+  <p>
   وباستخدام الخاصية <code>headless="true"</code> يُخفى رأس الإطار (اسم السورة وأزرار النسخ والترجمة)،
   فيُعرض نص الآيات فقط كما في نفس المثال السابق:
   <quran-madina-html sura="2" aya="13-14" headless="true"></quran-madina-html>
@@ -199,6 +213,11 @@
         <!-- error= range: same format/scope as highlight=, wins on overlap -->
         <label for="in_error">خطأ</label>
         <input id="in_error" value="" placeholder="1-2" class="range">
+      </div>
+      <div class="field">
+        <!-- letters= groups "word:letters colour blink": works in every mode, like highlight= -->
+        <label for="in_letters">حروف</label>
+        <input id="in_letters" value="" placeholder="1:2 emerald blink" class="range wide">
       </div>
     </div>
     <quran-madina-html id="test" page="1"></quran-madina-html>
@@ -284,6 +303,10 @@
     document.getElementById("in_error").addEventListener('input', function() {
         if (this.value.trim()) test.setAttribute("error", this.value.trim());
         else test.removeAttribute("error");
+      }, false);
+    document.getElementById("in_letters").addEventListener('input', function() {
+        if (this.value.trim()) test.setAttribute("letters", this.value.trim());
+        else test.removeAttribute("letters");
       }, false);
   </script>
 </body>

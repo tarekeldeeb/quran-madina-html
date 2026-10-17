@@ -54,7 +54,7 @@
       ],
       "after:bump": [
         "node scripts/sync-wrapper-version.mjs ${version}",
-        "git add react/package.json react/package-lock.json"
+        "git add react/package.json react/package-lock.json flutter/pubspec.yaml flutter/CHANGELOG.md flutter/lib/src/version.dart"
       ],
       "after:release": [
         "node scripts/publish-wrapper.mjs ${version}"

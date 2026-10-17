@@ -1,4 +1,4 @@
-// Lockstep versioning: set the React wrapper's version equal to the core library's new version.
+// Lockstep versioning: set the React and Flutter wrappers' versions equal to the core library's new version.
 // Run from the repo root during release (release-it `after:bump`), before the release commit, so
 // react/package.json + lockfile are committed together with the core bump.
 import { readFileSync, writeFileSync } from "node:fs";
@@ -20,4 +20,24 @@ for (const file of ["react/package.json", "react/package-lock.json"]) {
   } catch (err) {
     console.warn(`skip ${file}: ${err.message}`);
   }
+}
+
+// Flutter wrapper (pub.dev): the pubspec version line, and a CHANGELOG entry for it (pub.dev
+// expects the published version in the changelog).
+try {
+  const pubspec = "flutter/pubspec.yaml";
+  writeFileSync(pubspec, readFileSync(pubspec, "utf8").replace(/^version: .*$/m, `version: ${version}`));
+  console.log(`synced ${pubspec} -> ${version}`);
+  const versionDart = "flutter/lib/src/version.dart";
+  writeFileSync(versionDart, readFileSync(versionDart, "utf8")
+    .replace(/kLibraryVersion = '[^']*'/, `kLibraryVersion = '${version}'`));
+  console.log(`synced ${versionDart} -> ${version}`);
+  const changelog = "flutter/CHANGELOG.md";
+  const log = readFileSync(changelog, "utf8");
+  if (!log.startsWith(`## ${version}\n`)) {
+    writeFileSync(changelog, `## ${version}\n\n- Follows quran-madina-html ${version}.\n\n` + log);
+    console.log(`added ${changelog} entry for ${version}`);
+  }
+} catch (err) {
+  console.warn(`skip flutter: ${err.message}`);
 }

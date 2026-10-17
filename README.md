@@ -28,6 +28,19 @@ the snippet above once it's on your own page.)
 * **Three layouts** — the 1441H and 1405H Madina prints and the 15-line IndoPak, at any font size.
 * **Word-level addressing** — render any word range, even across ayas, pages, and suras.
 
+## New in 2.1: emphasise letters
+
+`letters` marks single letters inside words, in a colour of your choice, optionally blinking —
+on plain text and inside `highlight`/`error` words. See [Emphasising letters](#emphasising-letters).
+
+```html
+<quran-madina-html sura="1" aya="2-4" highlight="1" error="4"
+  letters="1:3, 4:3+5 lapis blink, 6:4 emerald"></quran-madina-html>
+```
+
+Also new: a [Flutter wrapper](#flutter-wrapper) for Android, iOS, macOS and the web, which
+can work offline.
+
 ## New in 2.0: lines justified like the print
 
 Version 2 stretches the **letters themselves** (kashida strokes and wider letter forms, the way a
@@ -166,6 +179,26 @@ a `words` selection, and even on a full `page` render:
 
 <img src="demo/img/highlight.png" width="216" alt="highlight attribute marking words 2-3 of Al-Fatiha's first aya">
 
+### Emphasising letters
+
+`letters` marks single letters inside words, for teaching a letter or pointing at a mistake:
+comma-separated groups of `word:letters colour blink`. Word numbers count like `highlight`/`error`;
+letters are `3`, `3-5` or `3+5`; the colour is optional — `crimson` (default), `emerald`, `lapis`,
+`gold`, `violet` or any CSS colour; `blink` is optional too (no animation by default). The letter
+gets a soft halo of its own colour that sits behind the surrounding ink; with `blink` the halo
+pulses gently while the letter keeps its colour in every frame (still in print and with reduced
+motion). It works inside `highlight`/`error` words and gets a lighter shade on dark pages.
+Nothing changes size or position.
+
+```html
+<quran-madina-html sura="1" aya="2-4" highlight="1" error="4"
+  letters="1:3, 4:3+5 lapis blink, 6:4 emerald"></quran-madina-html>
+```
+
+<img src="demo/img/letters.png" width="300" alt="letters attribute marking letters inside highlighted, error and plain words">
+
+Lam-alef (لا) is a single glyph, so marking either of its letters colours both.
+
 ## Getting Started
 
 ### Installation
@@ -268,6 +301,7 @@ By default a multiline render gets a header (sura name + copy/translate icons); 
 | `words` | `string` | - | 1-based word index or range (e.g., `"1:2"`, `"3-10"`, or single index `"5"`). |
 | `highlight` | `string` | - | 1-based word range to mark soft yellow (same format as `words`). Works with or without `words`, and with `page` too. |
 | `error` | `string` | - | 1-based word range to mark soft red (same format as `words`). Wins over `highlight` on overlap. |
+| `letters` | `string` | - | Letters to emphasise inside words: `"1:3 crimson, 4:3-5 emerald blink"` (word:letters, optional colour — crimson by default — and optional `blink`). Works with `highlight`/`error`, `words` and `page`. |
 | `headless` | `boolean \| string` | `false` | Set to `"true"` to remove top sura header chrome and copy/translate icons. |
 | `notitle` | `boolean \| string` | `false` | Set to `"true"` to hide sura name text while retaining title frame decoration. |
 | `data-layout` | `string` | `"1441H"` | Layout: `1441H`, `1405H`, `IndoPak`. |
@@ -293,6 +327,37 @@ import QuranMadinaHtml from "@tarekeldeeb/quran-madina-react";
 
 See [`react/README.md`](react/README.md) for the full prop reference and the Capacitor
 (iOS/Android) packaging guide.
+
+## Flutter wrapper
+
+For Flutter apps, use `quran_madina_flutter`, a widget with the same options as the React
+component. It lives in this repo's [`flutter/`](flutter) folder and is released in step with
+this package.
+
+- **Android, iOS, macOS:** the text renders in the platform's own WebView (WKWebView on Apple
+  devices), the same engine as a Capacitor app.
+- **Web:** no WebView; the `<quran-madina-html>` tag goes straight into the page.
+- **Offline:** `dart run quran_madina_flutter:bundle` copies the library, databases and fonts
+  into the app's assets. `bundled: true` then loads them from there instead of unpkg.
+
+```yaml
+dependencies:
+  quran_madina_flutter:
+    git:
+      url: https://github.com/tarekeldeeb/quran-madina-html
+      path: flutter
+```
+
+```dart
+import 'package:quran_madina_flutter/quran_madina_flutter.dart';
+
+QuranMadinaFlutter(sura: 1, aya: '2-4', letters: '1:3, 4:3-5 emerald blink')
+QuranMadinaFlutter(page: 106, bundled: true)   // offline
+```
+
+See [`flutter/README.md`](flutter/README.md) for the full option reference and the one-time
+platform settings for offline use. The example app's web build runs live at
+<https://tarekeldeeb.github.io/quran-madina-html/flutter/>.
 
 ## Dev Setup
 

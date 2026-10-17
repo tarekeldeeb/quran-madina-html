@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>quran-madina-html — letter emphasis</title>
+  <script src="../dist/quran-madina-html.js" data-cdn="../" data-font-size="28"></script>
+  <style>
+    :root { --bg: #f6f3ea; --card: #fffdf7; --ink: #23211c; --muted: #7a7466; --line: #e6dfcd; }
+    html.dark { --bg: #15140f; --card: #1f1d17; --ink: #ece6d6; --muted: #9c9583; --line: #34302a; }
+    body { margin: 0; background: var(--bg); color: var(--ink);
+           font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 18px 16px 40px; }
+    .intro { direction: ltr; text-align: left; }
+    .intro h1 { font-size: 20px; margin: 0 0 6px; }
+    .intro p { margin: 4px 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .intro code { font-size: 12.5px; }
+    .controls { direction: ltr; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
+                margin: 12px 0 16px; font-size: 14px; }
+    .controls .group { display: flex; gap: 4px; align-items: center; }
+    .controls .label { color: var(--muted); margin-right: 4px; }
+    .controls button { font: inherit; padding: 5px 10px; border-radius: 6px; cursor: pointer;
+                       border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+    .controls button[aria-pressed="true"] { border-color: var(--ink); font-weight: 600; }
+    #check { direction: ltr; text-align: left; font-size: 13px; margin: 0 0 12px; }
+    #check.good { color: #17785a; } #check.bad { color: #a3263a; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+            padding: 14px 12px; margin-bottom: 14px; overflow-x: auto; }
+    .card h2 { direction: ltr; text-align: left; font-size: 15px; margin: 0 0 2px; }
+    .card .note { direction: ltr; text-align: left; font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+    .card quran-madina-html { background: transparent; }
+    /* reference copies for the width check: laid out, never seen, no scroll area */
+    #twins { position: fixed; top: 0; left: 0; width: 100%; height: 0; overflow: hidden;
+             visibility: hidden; pointer-events: none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    <h1>Letter emphasis</h1>
+    <p><code>letters="1:3 crimson, 4:3-5 emerald blink"</code> marks letters inside words: comma-separated
+      groups of <i>word:letters colour blink</i>. The word number counts as in <code>highlight</code>/<code>error</code>;
+      letters are <code>3</code>, <code>3-5</code> or <code>3+5</code>; the colour is optional
+      (crimson by default): crimson, emerald, lapis, gold, violet or any CSS colour. Dark pages
+      get a lighter shade automatically. The letter has a soft halo of its own colour, kept behind
+      the surrounding ink. Add <code>blink</code> to make the halo pulse (no animation by default);
+      the letter keeps its colour in every frame, and stays still in print and with reduced motion.</p>
+  </div>
+  <div class="controls">
+    <div class="group"><span class="label">Page</span>
+      <button data-mode="light" aria-pressed="true">Light</button>
+      <button data-mode="dark">Dark</button></div>
+  </div>
+  <p id="check">checking…</p>
+
+  <div class="card">
+    <h2>Inside a highlighted word, inside an error word, and on plain text</h2>
+    <p class="note">highlight="1-2" error="4" letters="1:3 blink, 4:3+5 lapis blink, 6:4"</p>
+    <quran-madina-html sura="1" aya="2-4" headless="true" highlight="1-2" error="4"
+                       letters="1:3 blink, 4:3+5 lapis blink, 6:4"></quran-madina-html>
+  </div>
+  <div class="card">
+    <h2>Plain text, several letters and colours</h2>
+    <p class="note">letters="1:2+4 gold, 3:1 emerald, 6:2-4, 7:1+3 violet blink"</p>
+    <quran-madina-html sura="1" aya="2-4" headless="true"
+                       letters="1:2+4 gold, 3:1 emerald, 6:2-4, 7:1+3 violet blink"></quran-madina-html>
+  </div>
+  <div class="card">
+    <h2>Inline quote</h2>
+    <p class="note">words="1:4" highlight="2" letters="2:1, 4:2 emerald" · lam-alef (لا) is one
+      glyph, so marking either of its letters colours both</p>
+    <quran-madina-html sura="2" aya="255" words="1:4" highlight="2" letters="2:1, 4:2 emerald"></quran-madina-html>
+  </div>
+</div>
+<div id="twins"></div>
+
+<script>
+  var tags = Array.from(document.querySelectorAll(".card quran-madina-html"));
+  // The same tags without letters=, off-screen: their word widths are the reference.
+  var twins = tags.map(function (t) {
+    var c = t.cloneNode(false);
+    c.removeAttribute("letters");
+    // a mark keeps the word-by-word render (numbered words) without changing any width
+    if (!c.hasAttribute("highlight") && !c.hasAttribute("error")) c.setAttribute("highlight", "1");
+    document.getElementById("twins").appendChild(c);
+    return c;
+  });
+  function check() {
+    var worst = 0, n = 0;
+    tags.forEach(function (t, i) {
+      t.querySelectorAll(".quran-madina-html-word-lettered").forEach(function (w) {
+        var ref = twins[i].querySelector('[data-qmh-w="' + w.getAttribute("data-qmh-w") + '"]');
+        if (!ref) return;
+        worst = Math.max(worst, Math.abs(w.getBoundingClientRect().width - ref.getBoundingClientRect().width));
+        n++;
+      });
+    });
+    var el = document.getElementById("check");
+    if (!n) { el.textContent = "checking…"; return false; }
+    el.textContent = "Width check: " + n + " words with marked letters, largest width change " +
+      worst.toFixed(2) + "px " + (worst < 0.5 ? "— shaping unchanged ✓" : "— this browser re-shaped the words ✗");
+    el.className = worst < 0.5 ? "good" : "bad";
+    return true;
+  }
+  (function wait(k) { if (!check() && k < 80) setTimeout(function () { wait(k + 1); }, 150); })(0);
+
+  document.querySelectorAll("button[data-mode]").forEach(function (b) {
+    b.onclick = function () {
+      var mode = b.getAttribute("data-mode");
+      document.documentElement.classList.toggle("dark", mode === "dark");
+      document.querySelectorAll("button[data-mode]").forEach(function (x) {
+        x.setAttribute("aria-pressed", String(x === b));
+      });
+      // the tag picks its light/dark shades from the text colour when it renders: re-render
+      tags.forEach(function (t) { t.setAttribute("letters", t.getAttribute("letters")); });
+      setTimeout(check, 300);
+    };
+  });
+</script>
+</body>
+</html>

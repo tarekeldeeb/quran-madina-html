@@ -1,0 +1,114 @@
+# The Flutter wrapper (flutter/): analyze, test, and check it would publish to pub.dev.
+name: Flutter
+
+on:
+  push:
+    paths: ["flutter/**", ".github/workflows/flutter.yml"]
+  pull_request:
+    paths: ["flutter/**", ".github/workflows/flutter.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Dependencies
+        run: |
+          flutter pub get
+          (cd example && flutter pub get)
+
+      # Its findings also go to an annotation, so they show on the PR without opening the log.
+      - name: Publish dry run
+        shell: bash
+        run: |
+          set +e
+          flutter pub publish --dry-run > "$RUNNER_TEMP/dry-run.txt" 2>&1
+          code=$?
+          cat "$RUNNER_TEMP/dry-run.txt"
+          if [ $code -ne 0 ]; then
+            msg=$(grep -v '^\s*[├└│|]' "$RUNNER_TEMP/dry-run.txt" | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            diff=$(git diff -- . | head -40 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=pub publish --dry-run::$msg%0A%0Agit diff:%0A$diff"
+          fi
+          rm -f "$RUNNER_TEMP/dry-run.txt"
+          exit $code
+
+      - name: Test
+        run: flutter test
+
+      # The bundler for real, against the newest published library, then the example as a web
+      # app with those files (compiles the web view and checks the asset folders it declares).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Bundle into the example
+        working-directory: flutter/example
+        run: dart run quran_madina_flutter:bundle --layouts 1441H --version "$(npm view quran-madina-html version)"
+
+      # After the bundle, so the example's asset folders exist. Findings also go to annotations, so they show on the PR without opening the log.
+      - name: Analyze
+        shell: bash
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos > "$RUNNER_TEMP/analyze.txt" 2>&1
+          code=$?
+          cat "$RUNNER_TEMP/analyze.txt"
+          grep -E '^ *(info|warning|error) [•-] ' "$RUNNER_TEMP/analyze.txt" | head -40 | while read -r line; do
+            echo "::warning title=flutter analyze::$line"
+          done
+          exit $code
+
+      - name: Build the example for the web
+        working-directory: flutter/example
+        shell: bash
+        run: |
+          flutter create --platforms=web --no-pub .
+          set +e
+          flutter build web --base-href /quran-madina-html/flutter/ --no-web-resources-cdn > "$RUNNER_TEMP/web.txt" 2>&1
+          code=$?
+          cat "$RUNNER_TEMP/web.txt"
+          if [ $code -ne 0 ]; then
+            msg=$(grep -iE 'error|\.dart:[0-9]+' "$RUNNER_TEMP/web.txt" | head -30 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=flutter build web::$msg"
+          fi
+          exit $code
+
+  # The WebView side (webview_flutter + the local bundle server) compiled into an Android app.
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter/example
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Bundle
+        run: |
+          flutter pub get
+          dart run quran_madina_flutter:bundle --layouts 1441H --version "$(npm view quran-madina-html version)"
+
+      - name: Build an Android app
+        run: |
+          flutter create --platforms=android --no-pub .
+          flutter build apk --debug
