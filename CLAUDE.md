@@ -245,6 +245,19 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   `test/v2_layout_test.py` (print line breaks, gaps). `render_test.py` runs against the
   default 1441H layout (its template sets no attributes; `FontSizeTest` checks em scaling).
 
+## Wrappers
+
+- `react/` — `@tarekeldeeb/quran-madina-react` (npm), published by `scripts/publish-wrapper.mjs`.
+- `flutter/` — `quran_madina_flutter` (pub.dev; Dart forbids hyphens in package names). A
+  `WebViewWidget` loading `buildPage()` (`lib/src/page.dart`, pure and unit-tested): the script
+  tag + one `<quran-madina-html>`; the page reports its height and `window.open` calls over the
+  `QMH` JavaScript channel. Tag-option changes go through `qmhSet()` in place; loader changes
+  (layout, size, colours, src/cdn) reload. CI: `.github/workflows/flutter.yml` (analyze, test,
+  publish dry run). No local SDK is assumed.
+- `scripts/sync-wrapper-version.mjs` (release-it `after:bump`) keeps both at the core version,
+  including `flutter/pubspec.yaml` and a `flutter/CHANGELOG.md` entry. The first pub.dev
+  publish is manual (`flutter pub publish` in `flutter/`); until then, apps use a git dependency.
+
 ## Conventions
 
 - `src/db/test*.html` files are temp scratch files written/removed during DB builds — don't commit them.

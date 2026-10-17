@@ -1,0 +1,27 @@
+name: quran_madina_flutter
+description: >-
+  Render Quran pages like the printed Madina Mushaf in Flutter: real, selectable text with letters
+  stretched like the print, no images. A WebView wrapper around quran-madina-html.
+version: 2.1.0
+homepage: https://github.com/tarekeldeeb/quran-madina-html
+repository: https://github.com/tarekeldeeb/quran-madina-html/tree/main/flutter
+issue_tracker: https://github.com/tarekeldeeb/quran-madina-html/issues
+topics:
+  - quran
+  - arabic
+  - webview
+  - typography
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  webview_flutter: ^4.10.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0

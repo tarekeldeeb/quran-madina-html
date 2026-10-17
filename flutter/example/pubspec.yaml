@@ -1,0 +1,17 @@
+name: quran_madina_flutter_example
+description: Example app for the quran_madina_flutter package.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  quran_madina_flutter:
+    path: ../
+
+dev_dependencies:
+  flutter_lints: ^5.0.0

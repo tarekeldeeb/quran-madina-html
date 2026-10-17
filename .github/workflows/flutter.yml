@@ -1,0 +1,38 @@
+# The Flutter wrapper (flutter/): analyze, test, and check it would publish to pub.dev.
+name: Flutter
+
+on:
+  push:
+    paths: ["flutter/**", ".github/workflows/flutter.yml"]
+  pull_request:
+    paths: ["flutter/**", ".github/workflows/flutter.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Dependencies
+        run: |
+          flutter pub get
+          (cd example && flutter pub get)
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Publish dry run
+        run: flutter pub publish --dry-run

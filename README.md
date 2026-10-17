@@ -325,6 +325,28 @@ import QuranMadinaHtml from "@tarekeldeeb/quran-madina-react";
 See [`react/README.md`](react/README.md) for the full prop reference and the Capacitor
 (iOS/Android) packaging guide.
 
+## Flutter wrapper
+
+For Flutter apps (Android, iOS, macOS), use `quran_madina_flutter`, a widget wrapping the
+`<quran-madina-html>` tag in a WebView with the same options as the React component. It lives in
+this repo's [`flutter/`](flutter) folder and is released in lockstep with this package.
+
+```yaml
+dependencies:
+  quran_madina_flutter:
+    git:
+      url: https://github.com/tarekeldeeb/quran-madina-html
+      path: flutter
+```
+
+```dart
+import 'package:quran_madina_flutter/quran_madina_flutter.dart';
+
+QuranMadinaHtml(sura: 1, aya: '2-4', letters: '1:3, 4:3-5 emerald blink')
+```
+
+See [`flutter/README.md`](flutter/README.md) for the full option reference.
+
 ## Dev Setup
 
 The project is published on npm ``npm install quran-madina-html``, with sources, assets and distributables.
