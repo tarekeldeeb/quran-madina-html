@@ -41,7 +41,7 @@ class _ExampleAppState extends State<ExampleApp> {
               highlight: '1',
               error: '4',
               letters: '1:3, 4:3+5 lapis blink, 6:4 emerald',
-              fontSize: 22,
+              fontSize: 20,
               bundled: _offline,
             ),
             const SizedBox(height: 24),

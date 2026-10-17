@@ -356,7 +356,8 @@ QuranMadinaFlutter(page: 106, bundled: true)   // offline
 ```
 
 See [`flutter/README.md`](flutter/README.md) for the full option reference and the one-time
-platform settings for offline use.
+platform settings for offline use. The example app's web build runs live at
+<https://tarekeldeeb.github.io/quran-madina-html/flutter/>.
 
 ## Dev Setup
 

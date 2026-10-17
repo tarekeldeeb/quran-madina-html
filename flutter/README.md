@@ -153,4 +153,5 @@ options re-renders in place. Changing `layout`, `fontSize`, `textColor`, `backgr
 
 ## Example
 
-See [`example/`](example), which has an online/offline switch.
+See [`example/`](example), which has an online/offline switch. Its web build runs live at
+<https://tarekeldeeb.github.io/quran-madina-html/flutter/>.
