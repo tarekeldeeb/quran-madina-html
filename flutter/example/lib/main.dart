@@ -16,7 +16,7 @@ class ExampleApp extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           children: const [
             // A verse range with marked words and emphasised letters
-            QuranMadinaHtml(
+            QuranMadinaFlutter(
               sura: 1,
               aya: '2-4',
               headless: true,
@@ -27,7 +27,7 @@ class ExampleApp extends StatelessWidget {
             ),
             SizedBox(height: 24),
             // A full page
-            QuranMadinaHtml(page: 50, headless: true, fontSize: 20),
+            QuranMadinaFlutter(page: 50, headless: true, fontSize: 20),
           ],
         ),
       ),

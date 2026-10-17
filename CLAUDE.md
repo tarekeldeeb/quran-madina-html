@@ -249,7 +249,7 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
 
 - `react/` — `@tarekeldeeb/quran-madina-react` (npm), published by `scripts/publish-wrapper.mjs`.
 - `flutter/` — `quran_madina_flutter` (pub.dev; Dart forbids hyphens in package names). A
-  `WebViewWidget` loading `buildPage()` (`lib/src/page.dart`, pure and unit-tested): the script
+  `QuranMadinaFlutter` widget (a `WebViewWidget`) loading `buildPage()` (`lib/src/page.dart`, pure and unit-tested): the script
   tag + one `<quran-madina-html>`; the page reports its height and `window.open` calls over the
   `QMH` JavaScript channel. Tag-option changes go through `qmhSet()` in place; loader changes
   (layout, size, colours, src/cdn) reload. CI: `.github/workflows/flutter.yml` (analyze, test,

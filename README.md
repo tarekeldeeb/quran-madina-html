@@ -342,7 +342,7 @@ dependencies:
 ```dart
 import 'package:quran_madina_flutter/quran_madina_flutter.dart';
 
-QuranMadinaHtml(sura: 1, aya: '2-4', letters: '1:3, 4:3-5 emerald blink')
+QuranMadinaFlutter(sura: 1, aya: '2-4', letters: '1:3, 4:3-5 emerald blink')
 ```
 
 See [`flutter/README.md`](flutter/README.md) for the full option reference.

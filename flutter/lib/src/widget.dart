@@ -9,17 +9,17 @@ import 'page.dart';
 /// `<quran-madina-html>` tag. Same options as the React wrapper.
 ///
 /// ```dart
-/// QuranMadinaHtml(page: 106)
-/// QuranMadinaHtml(sura: 2, aya: '255', highlight: '5-8', error: '1')
-/// QuranMadinaHtml(sura: 1, aya: '2-4', letters: '1:3, 4:3-5 emerald blink')
+/// QuranMadinaFlutter(page: 106)
+/// QuranMadinaFlutter(sura: 2, aya: '255', highlight: '5-8', error: '1')
+/// QuranMadinaFlutter(sura: 1, aya: '2-4', letters: '1:3, 4:3-5 emerald blink')
 /// ```
 ///
 /// `page` and `sura`/`aya` are mutually exclusive (`page` wins if both are given). Changing a
 /// tag option re-renders in place; changing a loader option ([layout], [fontSize], [src], [cdn],
 /// [textColor], [backgroundColor]) reloads the WebView. The widget takes the height of the
 /// rendered text unless [height] is given.
-class QuranMadinaHtml extends StatefulWidget {
-  const QuranMadinaHtml({
+class QuranMadinaFlutter extends StatefulWidget {
+  const QuranMadinaFlutter({
     super.key,
     this.page,
     this.sura,
@@ -125,10 +125,10 @@ class QuranMadinaHtml extends StatefulWidget {
       );
 
   @override
-  State<QuranMadinaHtml> createState() => _QuranMadinaHtmlState();
+  State<QuranMadinaFlutter> createState() => _QuranMadinaFlutterState();
 }
 
-class _QuranMadinaHtmlState extends State<QuranMadinaHtml> {
+class _QuranMadinaFlutterState extends State<QuranMadinaFlutter> {
   late final WebViewController _controller;
   late Map<String, String> _shown;
   double _height = 1;
@@ -180,7 +180,7 @@ class _QuranMadinaHtmlState extends State<QuranMadinaHtml> {
   }
 
   @override
-  void didUpdateWidget(QuranMadinaHtml old) {
+  void didUpdateWidget(QuranMadinaFlutter old) {
     super.didUpdateWidget(old);
     final next = widget._attributes;
     if (widget._loader != old._loader) {

@@ -4,4 +4,4 @@ library;
 
 export 'src/page.dart'
     show QuranLoader, kDefaultCdn, kDefaultSrc, tagAttributes, attributeUpdates, buildPage;
-export 'src/widget.dart' show QuranMadinaHtml;
+export 'src/widget.dart' show QuranMadinaFlutter;

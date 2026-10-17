@@ -8,12 +8,12 @@ options as its React wrapper, released in lockstep with it.
 ```dart
 import 'package:quran_madina_flutter/quran_madina_flutter.dart';
 
-QuranMadinaHtml(page: 106)                                  // a full page
-QuranMadinaHtml(sura: 2, aya: '255')                        // a verse
-QuranMadinaHtml(sura: 1, aya: '1', words: '1:2')            // some words
-QuranMadinaHtml(sura: 2, aya: '255', highlight: '5-8', error: '1')
-QuranMadinaHtml(sura: 1, aya: '2-4', letters: '1:3, 4:3-5 emerald blink')
-QuranMadinaHtml(page: 50, layout: 'IndoPak', fontSize: 22)
+QuranMadinaFlutter(page: 106)                                  // a full page
+QuranMadinaFlutter(sura: 2, aya: '255')                        // a verse
+QuranMadinaFlutter(sura: 1, aya: '1', words: '1:2')            // some words
+QuranMadinaFlutter(sura: 2, aya: '255', highlight: '5-8', error: '1')
+QuranMadinaFlutter(sura: 1, aya: '2-4', letters: '1:3, 4:3-5 emerald blink')
+QuranMadinaFlutter(page: 50, layout: 'IndoPak', fontSize: 22)
 ```
 
 The widget sizes itself to the rendered text (or pass `height`), so it fits in a `ListView` or
