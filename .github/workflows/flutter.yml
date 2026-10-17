@@ -76,7 +76,7 @@ jobs:
         run: |
           flutter create --platforms=web --no-pub .
           set +e
-          flutter build web > "$RUNNER_TEMP/web.txt" 2>&1
+          flutter build web --base-href /quran-madina-html/flutter/ --no-web-resources-cdn > "$RUNNER_TEMP/web.txt" 2>&1
           code=$?
           cat "$RUNNER_TEMP/web.txt"
           if [ $code -ne 0 ]; then
@@ -112,3 +112,30 @@ jobs:
         run: |
           flutter create --platforms=android --no-pub .
           flutter build apk --debug
+
+  # TEMPORARY (preview): publish the example's web build to the flutter-web-build branch.
+  preview:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/letter-emphasis'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Build
+        working-directory: flutter/example
+        run: |
+          flutter pub get
+          dart run quran_madina_flutter:bundle --layouts 1441H --version "$(npm view quran-madina-html version)"
+          flutter create --platforms=web --no-pub .
+          flutter build web --base-href /quran-madina-html/flutter/ --no-web-resources-cdn
+      - name: Push
+        working-directory: flutter/example/build/web
+        run: |
+          git init -q -b flutter-web-build
+          git add -A
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "example web build ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" flutter-web-build
+
