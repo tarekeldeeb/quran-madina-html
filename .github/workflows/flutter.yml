@@ -72,9 +72,18 @@ jobs:
 
       - name: Build the example for the web
         working-directory: flutter/example
+        shell: bash
         run: |
           flutter create --platforms=web --no-pub .
-          flutter build web
+          set +e
+          flutter build web > "$RUNNER_TEMP/web.txt" 2>&1
+          code=$?
+          cat "$RUNNER_TEMP/web.txt"
+          if [ $code -ne 0 ]; then
+            msg=$(grep -iE 'error|\.dart:[0-9]+' "$RUNNER_TEMP/web.txt" | head -30 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=flutter build web::$msg"
+          fi
+          exit $code
 
   # The WebView side (webview_flutter + the local bundle server) compiled into an Android app.
   android:
