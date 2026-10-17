@@ -44,8 +44,18 @@ jobs:
           rm -f "$RUNNER_TEMP/dry-run.txt"
           exit $code
 
+      # Findings also go to annotations, so they show on the PR without opening the log.
       - name: Analyze
-        run: flutter analyze
+        shell: bash
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos > "$RUNNER_TEMP/analyze.txt" 2>&1
+          code=$?
+          cat "$RUNNER_TEMP/analyze.txt"
+          grep -E '^ *(info|warning|error) [•-] ' "$RUNNER_TEMP/analyze.txt" | head -40 | while read -r line; do
+            echo "::warning title=flutter analyze::$line"
+          done
+          exit $code
 
       - name: Test
         run: flutter test
