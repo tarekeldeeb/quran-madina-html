@@ -36,6 +36,25 @@ Map<String, List<int>> readTar(List<int> tar) {
   return out;
 }
 
+const _bundleRoots = ['dist/', 'assets/img/', 'assets/db/v2/'];
+
+/// The files under [dir] (an unpacked package or a built checkout), by path, laid out like
+/// [readTarGz] reads an npm package: each path starts with `package/`. Only the folders a
+/// bundle draws from are read.
+Map<String, List<int>> readFolder(Directory dir) {
+  final root = dir.absolute.path;
+  final out = <String, List<int>>{};
+  for (final entity in dir.listSync(recursive: true, followLinks: false)) {
+    if (entity is! File) continue;
+    final rel = entity.absolute.path.substring(root.length).replaceAll('\\', '/');
+    final path = rel.startsWith('/') ? rel.substring(1) : rel;
+    // only what a bundle can use (a checkout also holds sources, node_modules, ...)
+    if (!_bundleRoots.any(path.startsWith)) continue;
+    out['package/$path'] = entity.readAsBytesSync();
+  }
+  return out;
+}
+
 /// The stem for a layout name, any case; null if the library has no such layout.
 String? layoutStem(String layout) {
   for (final e in kLayoutStems.entries) {

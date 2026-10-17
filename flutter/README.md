@@ -84,7 +84,9 @@ Then pass `bundled: true`:
 QuranMadinaFlutter(page: 106, bundled: true)
 ```
 
-Run the command again after upgrading this package, so the files match its version.
+Run the command again after upgrading this package, so the files match its version. It
+downloads the matching library version from npm. `--version` picks another version, and
+`--from <folder>` copies from a built checkout of quran-madina-html instead.
 
 On the web, the bundled files are served with the app's own assets, with no other setup.
 

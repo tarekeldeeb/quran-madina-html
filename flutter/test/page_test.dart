@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:quran_madina_flutter/quran_madina_flutter.dart';
-import 'package:quran_madina_flutter/src/page.dart' show updateScript;
+import 'package:quran_madina_flutter/src/page.dart' show isLibraryScript, updateScript;
 
 void main() {
   group('tagAttributes', () {
@@ -93,5 +93,14 @@ void main() {
       expect(loader.bundled, isFalse);
       expect(loader.resolveBundle('http://127.0.0.1:1/'), loader);
     });
+  });
+
+  test('isLibraryScript knows the library from other scripts', () {
+    expect(isLibraryScript(kDefaultSrc), isTrue);
+    expect(isLibraryScript('https://unpkg.com/quran-madina-html@2.1.0/'), isTrue);
+    expect(isLibraryScript('https://cdn.example/dist/quran-madina-html.min.js?v=2'), isTrue);
+    expect(isLibraryScript('http://127.0.0.1:9/dist/quran-madina-html.min.js'), isTrue);
+    expect(isLibraryScript('/quran-madina-html/flutter/main.dart.js'), isFalse);
+    expect(isLibraryScript('https://x.github.io/quran-madina-html/flutter/flutter.js'), isFalse);
   });
 }

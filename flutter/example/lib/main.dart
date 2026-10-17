@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:quran_madina_flutter/quran_madina_flutter.dart';
 
@@ -12,7 +13,8 @@ class ExampleApp extends StatefulWidget {
 
 class _ExampleAppState extends State<ExampleApp> {
   // Offline needs the bundled files: `dart run quran_madina_flutter:bundle` (see README.md).
-  bool _offline = false;
+  // On the web the library is set up once per page, so the web build always uses the bundle.
+  bool _offline = kIsWeb;
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +24,10 @@ class _ExampleAppState extends State<ExampleApp> {
         appBar: AppBar(
           title: const Text('quran_madina_flutter'),
           actions: [
-            const Center(child: Text('offline')),
-            Switch(value: _offline, onChanged: (v) => setState(() => _offline = v)),
+            if (!kIsWeb) ...[
+              const Center(child: Text('offline')),
+              Switch(value: _offline, onChanged: (v) => setState(() => _offline = v)),
+            ],
           ],
         ),
         body: ListView(

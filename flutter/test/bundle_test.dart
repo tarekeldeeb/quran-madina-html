@@ -65,6 +65,19 @@ void main() {
     });
   });
 
+  test('readFolder reads a checkout like a package, only the bundle folders', () {
+    final dir = Directory.systemTemp.createTempSync('qmh');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    for (final path in ['dist/a.js', 'assets/db/v2/X/manifest.json', 'src/big.py', 'README.md']) {
+      File('${dir.path}/$path')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(path);
+    }
+    final files = readFolder(dir);
+    expect(files.keys.toSet(), {'package/dist/a.js', 'package/assets/db/v2/X/manifest.json'});
+    expect(utf8.decode(files['package/dist/a.js']!), 'dist/a.js');
+  });
+
   group('selectBundle', () {
     final files = readTar(tarOf(package));
 

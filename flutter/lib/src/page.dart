@@ -137,6 +137,14 @@ Map<String, String?> attributeUpdates(Map<String, String> from, Map<String, Stri
 /// The JavaScript call that applies [updates] to the tag on the page.
 String updateScript(Map<String, String?> updates) => 'qmhSet(${jsonEncode(updates)});';
 
+/// Whether [src] loads the quran-madina-html library itself (not just any URL with that name
+/// in it, such as the app's own scripts on a site called quran-madina-html).
+bool isLibraryScript(String src) {
+  final path = src.split('?').first.split('#').first;
+  return RegExp(r'quran-madina-html(\.min)?\.js$').hasMatch(path) ||
+      RegExp(r'/quran-madina-html@[^/]*/?$').hasMatch(path);
+}
+
 String _escape(String s) => const HtmlEscape(HtmlEscapeMode.attribute).convert(s);
 
 /// The page the WebView loads: the library script and one `<quran-madina-html>` tag. The page

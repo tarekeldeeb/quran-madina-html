@@ -4,6 +4,7 @@
 //   dart run quran_madina_flutter:bundle                    # the 1441H layout
 //   dart run quran_madina_flutter:bundle --layouts 1441H,IndoPak
 //   dart run quran_madina_flutter:bundle --version 2.1.0    # another library version
+//   dart run quran_madina_flutter:bundle --from ../quran-madina-html   # a local checkout (built)
 import 'dart:io';
 
 import 'package:quran_madina_flutter/src/bundle.dart';
@@ -13,6 +14,7 @@ import 'package:quran_madina_flutter/src/version.dart';
 Future<void> main(List<String> args) async {
   var layouts = ['1441H'];
   var version = kLibraryVersion;
+  String? from;
   for (var i = 0; i < args.length; i++) {
     final arg = args[i];
     String value() {
@@ -25,9 +27,11 @@ Future<void> main(List<String> args) async {
       layouts = value().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
     } else if (arg.startsWith('--version')) {
       version = value();
+    } else if (arg.startsWith('--from')) {
+      from = value();
     } else if (arg == '-h' || arg == '--help') {
       stdout.writeln('usage: dart run quran_madina_flutter:bundle '
-          '[--layouts 1441H,1405H,IndoPak] [--version $kLibraryVersion]');
+          '[--layouts 1441H,1405H,IndoPak] [--version $kLibraryVersion | --from <folder>]');
       return;
     } else {
       _fail('unknown option $arg');
@@ -35,21 +39,19 @@ Future<void> main(List<String> args) async {
   }
   if (!File('pubspec.yaml').existsSync()) _fail('run this from your app\'s folder');
 
-  final url = 'https://registry.npmjs.org/quran-madina-html/-/quran-madina-html-$version.tgz';
-  stdout.writeln('Downloading $url');
-  final client = HttpClient();
-  final List<int> tgz;
-  try {
-    final response = await (await client.getUrl(Uri.parse(url))).close();
-    if (response.statusCode != 200) _fail('download failed: HTTP ${response.statusCode}');
-    tgz = [for (final chunk in await response.toList()) ...chunk];
-  } finally {
-    client.close();
+  final Map<String, List<int>> package;
+  if (from != null) {
+    final dir = Directory(from);
+    if (!dir.existsSync()) _fail('no folder $from');
+    stdout.writeln('Reading ${dir.path}');
+    package = readFolder(dir);
+  } else {
+    package = readTarGz(await _download(version));
   }
 
   final Map<String, List<int>> files;
   try {
-    files = selectBundle(readTarGz(tgz), layouts);
+    files = selectBundle(package, layouts);
   } on Object catch (e) {
     _fail('$e');
   }
@@ -72,6 +74,19 @@ Future<void> main(List<String> args) async {
     ..writeln('  assets:');
   for (final folder in assetFolders(kBundleDir, files.keys)) {
     stdout.writeln('    - $folder');
+  }
+}
+
+Future<List<int>> _download(String version) async {
+  final url = 'https://registry.npmjs.org/quran-madina-html/-/quran-madina-html-$version.tgz';
+  stdout.writeln('Downloading $url');
+  final client = HttpClient();
+  try {
+    final response = await (await client.getUrl(Uri.parse(url))).close();
+    if (response.statusCode != 200) _fail('download failed: HTTP ${response.statusCode}');
+    return [for (final chunk in await response.toList()) ...chunk];
+  } finally {
+    client.close();
   }
 }
 

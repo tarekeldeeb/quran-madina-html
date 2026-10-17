@@ -124,11 +124,15 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Build the library (dist/) from this branch
+        run: |
+          npm ci
+          npx grunt
       - name: Build
         working-directory: flutter/example
         run: |
           flutter pub get
-          dart run quran_madina_flutter:bundle --layouts 1441H --version "$(npm view quran-madina-html version)"
+          dart run quran_madina_flutter:bundle --layouts 1441H --from ../..
           flutter create --platforms=web --no-pub .
           flutter build web --base-href /quran-madina-html/flutter/ --no-web-resources-cdn
       - name: Push

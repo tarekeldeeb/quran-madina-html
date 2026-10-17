@@ -37,7 +37,11 @@ void _ensureScript(QuranLoader loader) {
     return;
   }
   _pageLoader = loader;
-  if (web.document.querySelector('script[src*="quran-madina-html"]') != null) return;
+  final scripts = web.document.getElementsByTagName('script');
+  for (var i = 0; i < scripts.length; i++) {
+    final src = scripts.item(i)?.getAttribute('src');
+    if (src != null && isLibraryScript(src)) return;
+  }
   final script = web.HTMLScriptElement()..src = loader.src;
   script.setAttribute('data-cdn', loader.cdn);
   if (loader.layout != null) script.setAttribute('data-layout', loader.layout!);
@@ -125,3 +129,4 @@ class _WebQuranState extends State<QuranMadinaFlutter> {
     );
   }
 }
+
