@@ -1,0 +1,10 @@
+# Made by `dart run quran_madina_flutter:bundle`
+assets/quran_madina/
+# Made by `flutter create .`
+android/
+ios/
+macos/
+web/
+linux/
+windows/
+test/

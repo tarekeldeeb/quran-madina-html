@@ -38,6 +38,9 @@ on plain text and inside `highlight`/`error` words. See [Emphasising letters](#e
   letters="1:3, 4:3+5 lapis blink, 6:4 emerald"></quran-madina-html>
 ```
 
+Also new: a [Flutter wrapper](#flutter-wrapper) for Android, iOS, macOS and the web, which
+can work offline.
+
 ## New in 2.0: lines justified like the print
 
 Version 2 stretches the **letters themselves** (kashida strokes and wider letter forms, the way a
@@ -327,9 +330,15 @@ See [`react/README.md`](react/README.md) for the full prop reference and the Cap
 
 ## Flutter wrapper
 
-For Flutter apps (Android, iOS, macOS), use `quran_madina_flutter`, a widget wrapping the
-`<quran-madina-html>` tag in a WebView with the same options as the React component. It lives in
-this repo's [`flutter/`](flutter) folder and is released in lockstep with this package.
+For Flutter apps, use `quran_madina_flutter`, a widget with the same options as the React
+component. It lives in this repo's [`flutter/`](flutter) folder and is released in step with
+this package.
+
+- **Android, iOS, macOS:** the text renders in the platform's own WebView (WKWebView on Apple
+  devices), the same engine as a Capacitor app.
+- **Web:** no WebView; the `<quran-madina-html>` tag goes straight into the page.
+- **Offline:** `dart run quran_madina_flutter:bundle` copies the library, databases and fonts
+  into the app's assets. `bundled: true` then loads them from there instead of unpkg.
 
 ```yaml
 dependencies:
@@ -343,9 +352,11 @@ dependencies:
 import 'package:quran_madina_flutter/quran_madina_flutter.dart';
 
 QuranMadinaFlutter(sura: 1, aya: '2-4', letters: '1:3, 4:3-5 emerald blink')
+QuranMadinaFlutter(page: 106, bundled: true)   // offline
 ```
 
-See [`flutter/README.md`](flutter/README.md) for the full option reference.
+See [`flutter/README.md`](flutter/README.md) for the full option reference and the one-time
+platform settings for offline use.
 
 ## Dev Setup
 

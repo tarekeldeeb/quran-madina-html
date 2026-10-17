@@ -3,18 +3,32 @@ import 'package:quran_madina_flutter/quran_madina_flutter.dart';
 
 void main() => runApp(const ExampleApp());
 
-class ExampleApp extends StatelessWidget {
+class ExampleApp extends StatefulWidget {
   const ExampleApp({super.key});
+
+  @override
+  State<ExampleApp> createState() => _ExampleAppState();
+}
+
+class _ExampleAppState extends State<ExampleApp> {
+  // Offline needs the bundled files: `dart run quran_madina_flutter:bundle` (see README.md).
+  bool _offline = false;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'quran_madina_flutter',
       home: Scaffold(
-        appBar: AppBar(title: const Text('quran_madina_flutter')),
+        appBar: AppBar(
+          title: const Text('quran_madina_flutter'),
+          actions: [
+            const Center(child: Text('offline')),
+            Switch(value: _offline, onChanged: (v) => setState(() => _offline = v)),
+          ],
+        ),
         body: ListView(
           padding: const EdgeInsets.all(16),
-          children: const [
+          children: [
             // A verse range with marked words and emphasised letters
             QuranMadinaFlutter(
               sura: 1,
@@ -24,10 +38,11 @@ class ExampleApp extends StatelessWidget {
               error: '4',
               letters: '1:3, 4:3+5 lapis blink, 6:4 emerald',
               fontSize: 22,
+              bundled: _offline,
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             // A full page
-            QuranMadinaFlutter(page: 50, headless: true, fontSize: 20),
+            QuranMadinaFlutter(page: 50, headless: true, fontSize: 20, bundled: _offline),
           ],
         ),
       ),

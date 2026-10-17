@@ -248,14 +248,24 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
 ## Wrappers
 
 - `react/` — `@tarekeldeeb/quran-madina-react` (npm), published by `scripts/publish-wrapper.mjs`.
-- `flutter/` — `quran_madina_flutter` (pub.dev; Dart forbids hyphens in package names). A
-  `QuranMadinaFlutter` widget (a `WebViewWidget`) loading `buildPage()` (`lib/src/page.dart`, pure and unit-tested): the script
-  tag + one `<quran-madina-html>`; the page reports its height and `window.open` calls over the
-  `QMH` JavaScript channel. Tag-option changes go through `qmhSet()` in place; loader changes
-  (layout, size, colours, src/cdn) reload. CI: `.github/workflows/flutter.yml` (analyze, test,
-  publish dry run). No local SDK is assumed.
+- `flutter/` — `quran_madina_flutter` (pub.dev; Dart forbids hyphens in package names).
+  `QuranMadinaFlutter` (`lib/src/widget.dart`) picks its State by conditional import:
+  `view_io.dart` (Android/iOS/macOS: a `WebViewWidget` loading `buildPage()` from
+  `lib/src/page.dart`, pure and unit-tested; height and `window.open` come back over the `QMH`
+  JavaScript channel; tag changes via `qmhSet()` in place, loader changes reload) or
+  `view_web.dart` (web: the tag in an `HtmlElementView`, the script added to the document once,
+  so the first widget's layout/size/URLs are page-wide; height from a ResizeObserver).
+  Offline: `bin/bundle.dart` (`dart run quran_madina_flutter:bundle --layouts ...`) pulls the
+  npm tarball and copies script, CSS, images and each layout's shards + font
+  (`lib/src/bundle.dart`, pure) into the app's `assets/quran_madina/`. `bundled: true` swaps the
+  `qmh-bundle:/` placeholder for a loopback HTTP server (`bundle_server.dart`, serving
+  rootBundle; apps must allow cleartext to 127.0.0.1 / NSAllowsLocalNetworking) or, on the web,
+  the app's asset URL. CI (`.github/workflows/flutter.yml`): publish dry run, analyze, test,
+  the bundler for real, a web build and an Android build of `example/` (made with
+  `flutter create .`). No local SDK is assumed.
 - `scripts/sync-wrapper-version.mjs` (release-it `after:bump`) keeps both at the core version,
-  including `flutter/pubspec.yaml` and a `flutter/CHANGELOG.md` entry. The first pub.dev
+  including `flutter/pubspec.yaml`, `kLibraryVersion` (`lib/src/version.dart`, the bundler's
+  default) and a `flutter/CHANGELOG.md` entry. The first pub.dev
   publish is manual (`flutter pub publish` in `flutter/`); until then, apps use a git dependency.
 
 ## Conventions

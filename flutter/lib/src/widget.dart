@@ -1,12 +1,11 @@
-import 'dart:convert';
-
-import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter/widgets.dart';
 
 import 'page.dart';
+import 'view_io.dart' if (dart.library.js_interop) 'view_web.dart';
 
-/// Renders Quran text like the printed Madina Mushaf: a WebView holding one
-/// `<quran-madina-html>` tag. Same options as the React wrapper.
+/// Renders Quran text like the printed Madina Mushaf: one `<quran-madina-html>` tag, in the
+/// platform's own WebView on Android, iOS and macOS, and straight in the page on the web. Same
+/// options as the React wrapper.
 ///
 /// ```dart
 /// QuranMadinaFlutter(page: 106)
@@ -16,7 +15,8 @@ import 'page.dart';
 ///
 /// `page` and `sura`/`aya` are mutually exclusive (`page` wins if both are given). Changing a
 /// tag option re-renders in place; changing a loader option ([layout], [fontSize], [src], [cdn],
-/// [textColor], [backgroundColor]) reloads the WebView. The widget takes the height of the
+/// [textColor], [backgroundColor]) reloads the WebView (on the web,
+/// the first widget's loader options apply to the whole page). The widget takes the height of the
 /// rendered text unless [height] is given.
 class QuranMadinaFlutter extends StatefulWidget {
   const QuranMadinaFlutter({
@@ -40,6 +40,7 @@ class QuranMadinaFlutter extends StatefulWidget {
     this.backgroundColor,
     this.height,
     this.onOpenUrl,
+    this.bundled = false,
   });
 
   /// Full Mushaf page (1-604; IndoPak 1-610).
@@ -98,8 +99,14 @@ class QuranMadinaFlutter extends StatefulWidget {
   final double? height;
 
   /// Called with links the library opens (the translate buttons, to quran.com). Open them with
-  /// url_launcher, for example; by default they are ignored.
+  /// url_launcher, for example; by default they are ignored. Not used on the web, where the
+  /// browser opens them in a new tab.
   final void Function(String url)? onOpenUrl;
+
+  /// Load the library, its databases and fonts from the app's own assets instead of unpkg, so
+  /// the text renders offline. Copy them in once with `dart run quran_madina_flutter:bundle` (see
+  /// the README); [src] and [cdn] are then ignored.
+  final bool bundled;
 
   Map<String, String> get _attributes => tagAttributes(
         page: page,
@@ -116,8 +123,8 @@ class QuranMadinaFlutter extends StatefulWidget {
       );
 
   QuranLoader get _loader => QuranLoader(
-        src: src,
-        cdn: cdn,
+        src: bundled ? kBundledSrc : src,
+        cdn: bundled ? kBundledCdn : cdn,
         layout: layout,
         fontSize: fontSize,
         textColor: textColor,
@@ -125,81 +132,11 @@ class QuranMadinaFlutter extends StatefulWidget {
       );
 
   @override
-  State<QuranMadinaFlutter> createState() => _QuranMadinaFlutterState();
+  State<QuranMadinaFlutter> createState() => createQuranState();
 }
 
-class _QuranMadinaFlutterState extends State<QuranMadinaFlutter> {
-  late final WebViewController _controller;
-  late Map<String, String> _shown;
-  double _height = 1;
+/// The tag attributes of [w] (for the platform views; not exported).
+Map<String, String> attributesOf(QuranMadinaFlutter w) => w._attributes;
 
-  @override
-  void initState() {
-    super.initState();
-    _shown = widget._attributes;
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..addJavaScriptChannel(kChannel, onMessageReceived: _onMessage)
-      ..setNavigationDelegate(NavigationDelegate(
-        // the page itself is loaded from a string; any other navigation is a link
-        onNavigationRequest: (request) {
-          if (request.url.startsWith('about:') || request.url.startsWith('data:') ||
-              request.url == widget.cdn) {
-            return NavigationDecision.navigate;
-          }
-          widget.onOpenUrl?.call(request.url);
-          return NavigationDecision.prevent;
-        },
-      ));
-    try {
-      _controller.setBackgroundColor(Colors.transparent);
-    } catch (_) {
-      // not supported on every platform (e.g. macOS); the page background is transparent anyway
-    }
-    _load();
-  }
-
-  void _load() {
-    _controller.loadHtmlString(buildPage(widget._loader, _shown), baseUrl: widget.cdn);
-  }
-
-  void _onMessage(JavaScriptMessage message) {
-    final Object? data;
-    try {
-      data = jsonDecode(message.message);
-    } on FormatException {
-      return;
-    }
-    if (data is! Map) return;
-    if (data['kind'] == 'height' && data['value'] is num) {
-      final h = (data['value'] as num).toDouble();
-      if (mounted && h > 0 && (h - _height).abs() >= 1) setState(() => _height = h);
-    } else if (data['kind'] == 'open' && data['value'] is String) {
-      widget.onOpenUrl?.call(data['value'] as String);
-    }
-  }
-
-  @override
-  void didUpdateWidget(QuranMadinaFlutter old) {
-    super.didUpdateWidget(old);
-    final next = widget._attributes;
-    if (widget._loader != old._loader) {
-      _shown = next;
-      _load();
-      return;
-    }
-    final updates = attributeUpdates(_shown, next);
-    if (updates.isNotEmpty) {
-      _shown = next;
-      _controller.runJavaScript(updateScript(updates));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: widget.height ?? _height,
-      child: WebViewWidget(controller: _controller),
-    );
-  }
-}
+/// The loader settings of [w] (for the platform views; not exported).
+QuranLoader loaderOf(QuranMadinaFlutter w) => w._loader;

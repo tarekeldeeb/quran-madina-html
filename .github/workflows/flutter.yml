@@ -49,3 +49,47 @@ jobs:
 
       - name: Test
         run: flutter test
+
+      # The bundler for real, against the newest published library, then the example as a web
+      # app with those files (compiles the web view and checks the asset folders it declares).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Bundle into the example
+        working-directory: flutter/example
+        run: dart run quran_madina_flutter:bundle --layouts 1441H --version "$(npm view quran-madina-html version)"
+
+      - name: Build the example for the web
+        working-directory: flutter/example
+        run: |
+          flutter create --platforms=web --no-pub .
+          flutter build web
+
+  # The WebView side (webview_flutter + the local bundle server) compiled into an Android app.
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter/example
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Bundle
+        run: |
+          flutter pub get
+          dart run quran_madina_flutter:bundle --layouts 1441H --version "$(npm view quran-madina-html version)"
+
+      - name: Build an Android app
+        run: |
+          flutter create --platforms=android --no-pub .
+          flutter build apk --debug

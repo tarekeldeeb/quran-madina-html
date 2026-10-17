@@ -76,4 +76,22 @@ void main() {
       expect(html, contains('color: #ece6d6'));
     });
   });
+
+  group('bundled loader', () {
+    test('resolves the placeholder to where the platform serves the bundle', () {
+      const loader = QuranLoader(src: kBundledSrc, cdn: kBundledCdn, layout: 'IndoPak');
+      expect(loader.bundled, isTrue);
+      final served = loader.resolveBundle('http://127.0.0.1:4321/');
+      expect(served.src, 'http://127.0.0.1:4321/dist/quran-madina-html.min.js');
+      expect(served.cdn, 'http://127.0.0.1:4321/');
+      expect(served.layout, 'IndoPak');
+      expect(served.bundled, isFalse);
+    });
+
+    test('leaves other loaders alone', () {
+      const loader = QuranLoader();
+      expect(loader.bundled, isFalse);
+      expect(loader.resolveBundle('http://127.0.0.1:1/'), loader);
+    });
+  });
 }

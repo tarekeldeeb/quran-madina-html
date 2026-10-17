@@ -6,6 +6,17 @@ const String kDefaultSrc = 'https://unpkg.com/quran-madina-html@2';
 /// Base URL the library fetches its CSS, databases and fonts from by default.
 const String kDefaultCdn = 'https://unpkg.com/quran-madina-html@2/';
 
+/// Where `dart run quran_madina_flutter:bundle` puts the library's files in the app (an asset
+/// directory, declared in the app's pubspec).
+const String kBundleDir = 'assets/quran_madina';
+
+/// Placeholder base of a bundled loader; each platform swaps in where it serves [kBundleDir]
+/// from (a local server in the WebView, the app's asset URL on the web).
+const String kBundledCdn = 'qmh-bundle:/';
+
+/// The library script inside the bundle.
+const String kBundledSrc = '${kBundledCdn}dist/quran-madina-html.min.js';
+
 /// The name of the JavaScript channel the page reports to the widget on.
 const String kChannel = 'QMH';
 
@@ -38,6 +49,24 @@ class QuranLoader {
 
   /// CSS colour behind the text (default transparent, so the Flutter background shows).
   final String? backgroundColor;
+
+  /// Whether this loader reads the app's bundled files (see [kBundleDir]).
+  bool get bundled => cdn == kBundledCdn;
+
+  /// This loader with the bundle placeholder replaced by [base], the URL [kBundleDir] is served
+  /// at (ending in '/'). Loaders that don't use the bundle come back unchanged.
+  QuranLoader resolveBundle(String base) {
+    String swap(String url) =>
+        url.startsWith(kBundledCdn) ? base + url.substring(kBundledCdn.length) : url;
+    return QuranLoader(
+      src: swap(src),
+      cdn: swap(cdn),
+      layout: layout,
+      fontSize: fontSize,
+      textColor: textColor,
+      backgroundColor: backgroundColor,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>

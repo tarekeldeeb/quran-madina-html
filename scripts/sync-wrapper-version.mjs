@@ -28,6 +28,10 @@ try {
   const pubspec = "flutter/pubspec.yaml";
   writeFileSync(pubspec, readFileSync(pubspec, "utf8").replace(/^version: .*$/m, `version: ${version}`));
   console.log(`synced ${pubspec} -> ${version}`);
+  const versionDart = "flutter/lib/src/version.dart";
+  writeFileSync(versionDart, readFileSync(versionDart, "utf8")
+    .replace(/kLibraryVersion = '[^']*'/, `kLibraryVersion = '${version}'`));
+  console.log(`synced ${versionDart} -> ${version}`);
   const changelog = "flutter/CHANGELOG.md";
   const log = readFileSync(changelog, "utf8");
   if (!log.startsWith(`## ${version}\n`)) {
