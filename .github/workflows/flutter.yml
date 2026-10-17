@@ -44,19 +44,6 @@ jobs:
           rm -f "$RUNNER_TEMP/dry-run.txt"
           exit $code
 
-      # Findings also go to annotations, so they show on the PR without opening the log.
-      - name: Analyze
-        shell: bash
-        run: |
-          set +e
-          flutter analyze --no-fatal-infos > "$RUNNER_TEMP/analyze.txt" 2>&1
-          code=$?
-          cat "$RUNNER_TEMP/analyze.txt"
-          grep -E '^ *(info|warning|error) [•-] ' "$RUNNER_TEMP/analyze.txt" | head -40 | while read -r line; do
-            echo "::warning title=flutter analyze::$line"
-          done
-          exit $code
-
       - name: Test
         run: flutter test
 
@@ -69,6 +56,19 @@ jobs:
       - name: Bundle into the example
         working-directory: flutter/example
         run: dart run quran_madina_flutter:bundle --layouts 1441H --version "$(npm view quran-madina-html version)"
+
+      # After the bundle, so the example's asset folders exist. Findings also go to annotations, so they show on the PR without opening the log.
+      - name: Analyze
+        shell: bash
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos > "$RUNNER_TEMP/analyze.txt" 2>&1
+          code=$?
+          cat "$RUNNER_TEMP/analyze.txt"
+          grep -E '^ *(info|warning|error) [•-] ' "$RUNNER_TEMP/analyze.txt" | head -40 | while read -r line; do
+            echo "::warning title=flutter analyze::$line"
+          done
+          exit $code
 
       - name: Build the example for the web
         working-directory: flutter/example

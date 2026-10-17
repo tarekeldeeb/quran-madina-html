@@ -132,7 +132,8 @@ class QuranMadinaFlutter extends StatefulWidget {
       );
 
   @override
-  State<QuranMadinaFlutter> createState() => createQuranState();
+  // ignore: no_logic_in_create_state
+  State<QuranMadinaFlutter> createState() => createQuranState(); // the platform's State
 }
 
 /// The tag attributes of [w] (for the platform views; not exported).
