@@ -59,7 +59,7 @@ class _WebQuranState extends State<QuranMadinaFlutter> {
     final loader = _resolve(loaderOf(widget));
     _ensureScript(loader);
     _shown = attributesOf(widget);
-    _shown.forEach(_tag.setAttribute);
+    _shown.forEach((k, v) => _tag.setAttribute(k, v));
     _box
       ..setAttribute('dir', 'rtl')
       ..setAttribute('lang', 'ar')
