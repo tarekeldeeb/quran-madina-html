@@ -46,6 +46,11 @@ void _ensureScript(QuranLoader loader) {
   script.setAttribute('data-cdn', loader.cdn);
   if (loader.layout != null) script.setAttribute('data-layout', loader.layout!);
   if (loader.fontSize != null) script.setAttribute('data-font-size', '${loader.fontSize}');
+  script.addEventListener(
+      'error',
+      ((web.Event event) => debugPrint('quran_madina_flutter: could not load ${loader.src}. '
+          'With bundled: true, run `dart run quran_madina_flutter:bundle` and declare its '
+          'folders in pubspec.yaml.')).toJS);
   web.document.head!.append(script);
 }
 
