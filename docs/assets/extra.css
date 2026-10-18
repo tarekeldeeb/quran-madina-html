@@ -1,0 +1,22 @@
+/* A live example: the rendered tag, then its code. */
+.qmh-example {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.4rem;
+  padding: 1rem;
+  margin: 1em 0 0.2em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: auto;
+}
+.qmh-example + .highlight, .qmh-example + pre { margin-top: 0; }
+.qmh-example quran-madina-html { text-align: initial; }
+.qmh-example .qmh-caption {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+}
+.qmh-gallery { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+.qmh-gallery figure { margin: 0; text-align: center; }
+.qmh-gallery img { max-width: 220px; border: 1px solid var(--md-default-fg-color--lightest); }

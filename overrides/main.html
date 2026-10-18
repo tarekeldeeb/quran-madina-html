@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  {{ super() }}
+  {#- The library itself, so every <quran-madina-html> tag in these pages renders live. -#}
+  <script src="https://unpkg.com/quran-madina-html@2"
+          data-cdn="https://unpkg.com/quran-madina-html@2/"
+          data-font-size="20"></script>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    // The library picks its dark or light colours when a tag renders. Re-render the examples
+    // when the reader switches the docs' colour scheme (setting an attribute re-renders a tag).
+    document.addEventListener("change", function (event) {
+      if (event.target.name !== "__palette") return;
+      setTimeout(function () {
+        document.querySelectorAll("quran-madina-html").forEach(function (tag) {
+          var key = tag.hasAttribute("page") ? "page" : "sura";
+          tag.setAttribute(key, tag.getAttribute(key));
+        });
+      }, 50);
+    });
+  </script>
+{% endblock %}
