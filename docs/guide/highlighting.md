@@ -7,9 +7,23 @@ They take the same range format as [`words`](words.md).
 <quran-madina-html sura="2" aya="255" highlight="5-8" error="1"></quran-madina-html>
 </div>
 
-```html
-<quran-madina-html sura="2" aya="255" highlight="5-8" error="1"></quran-madina-html>
-```
+=== "HTML"
+
+    ```html
+    <quran-madina-html sura="2" aya="255" highlight="5-8" error="1"></quran-madina-html>
+    ```
+
+=== "React"
+
+    ```jsx
+    <QuranMadinaHtml sura={2} aya="255" highlight="5-8" error="1" />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    QuranMadinaFlutter(sura: 2, aya: '255', highlight: '5-8', error: '1')
+    ```
 
 ## What the numbers count
 
@@ -21,10 +35,26 @@ They work in every kind of render:
 | with `words` | the same word as in `words` (the selection's own numbering) |
 | a full `page` | the first word of the page's first verse |
 
-```html
-<quran-madina-html sura="1" aya="7" words="1-14" highlight="10-13" error="1-2"></quran-madina-html>
-<quran-madina-html page="2" error="1-4"></quran-madina-html>
-```
+=== "HTML"
+
+    ```html
+    <quran-madina-html sura="1" aya="7" words="1-14" highlight="10-13" error="1-2"></quran-madina-html>
+    <quran-madina-html page="2" error="1-4"></quran-madina-html>
+    ```
+
+=== "React"
+
+    ```jsx
+    <QuranMadinaHtml sura={1} aya="7" words="1-14" highlight="10-13" error="1-2" />
+    <QuranMadinaHtml page={2} error="1-4" />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    QuranMadinaFlutter(sura: 1, aya: '7', words: '1-14', highlight: '10-13', error: '1-2'),
+    QuranMadinaFlutter(page: 2, error: '1-4'),
+    ```
 
 A range must fall inside what is shown. One that doesn't, or that is malformed, is ignored with
 a console message; the text still renders. Where `highlight` and `error` overlap, `error` wins.

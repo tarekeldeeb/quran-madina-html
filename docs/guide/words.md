@@ -7,9 +7,23 @@ stays in place but invisible, so the line keeps exactly the shape it has in the 
 <quran-madina-html sura="1" aya="1" words="1:2"></quran-madina-html>
 </div>
 
-```html
-<quran-madina-html sura="1" aya="1" words="1:2"></quran-madina-html>
-```
+=== "HTML"
+
+    ```html
+    <quran-madina-html sura="1" aya="1" words="1:2"></quran-madina-html>
+    ```
+
+=== "React"
+
+    ```jsx
+    <QuranMadinaHtml sura={1} aya="1" words="1:2" />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    QuranMadinaFlutter(sura: 1, aya: '1', words: '1:2')
+    ```
 
 ## Range format
 
@@ -32,10 +46,26 @@ suras. After An-Nas it wraps around to Al-Fatiha.
 <quran-madina-html sura="1" aya="7" words="1-14"></quran-madina-html>
 </div>
 
-```html
-<!-- Al-Fatiha's last verse (9 words), Al-Baqara's basmala (4 words), then الٓمٓ -->
-<quran-madina-html sura="1" aya="7" words="1-14"></quran-madina-html>
-```
+=== "HTML"
+
+    ```html
+    <!-- Al-Fatiha's last verse (9 words), Al-Baqara's basmala (4 words), then الٓمٓ -->
+    <quran-madina-html sura="1" aya="7" words="1-14"></quran-madina-html>
+    ```
+
+=== "React"
+
+    ```jsx
+    {/* Al-Fatiha's last verse (9 words), Al-Baqara's basmala (4 words), then الٓمٓ */}
+    <QuranMadinaHtml sura={1} aya="7" words="1-14" />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    // Al-Fatiha's last verse (9 words), Al-Baqara's basmala (4 words), then الٓمٓ
+    QuranMadinaFlutter(sura: 1, aya: '7', words: '1-14')
+    ```
 
 ## The basmala counts as four words
 
@@ -55,9 +85,23 @@ When you show a selection inside your own layout (a quiz that already names the 
 `notitle="true"` hides the name of a sura the selection crosses into. Its decorated frame stays,
 empty, and the basmala still shows:
 
-```html
-<quran-madina-html sura="1" aya="7" words="1-14" notitle="true"></quran-madina-html>
-```
+=== "HTML"
+
+    ```html
+    <quran-madina-html sura="1" aya="7" words="1-14" notitle="true"></quran-madina-html>
+    ```
+
+=== "React"
+
+    ```jsx
+    <QuranMadinaHtml sura={1} aya="7" words="1-14" notitle />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    QuranMadinaFlutter(sura: 1, aya: '7', words: '1-14', notitle: true)
+    ```
 
 ## Limits and errors
 

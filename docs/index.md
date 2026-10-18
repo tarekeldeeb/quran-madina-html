@@ -7,9 +7,23 @@ and copyable, with no images. One HTML tag renders a page, a verse range or a fe
 <quran-madina-html sura="2" aya="255"></quran-madina-html>
 </div>
 
-```html
-<quran-madina-html sura="2" aya="255"></quran-madina-html>
-```
+=== "HTML"
+
+    ```html
+    <quran-madina-html sura="2" aya="255"></quran-madina-html>
+    ```
+
+=== "React"
+
+    ```jsx
+    <QuranMadinaHtml sura={2} aya="255" />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    QuranMadinaFlutter(sura: 2, aya: '255')
+    ```
 
 Every example in these docs is the library itself, rendering live.
 

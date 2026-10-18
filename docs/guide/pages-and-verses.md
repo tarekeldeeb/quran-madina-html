@@ -8,9 +8,23 @@
 <quran-madina-html page="1"></quran-madina-html>
 </div>
 
-```html
-<quran-madina-html page="1"></quran-madina-html>
-```
+=== "HTML"
+
+    ```html
+    <quran-madina-html page="1"></quran-madina-html>
+    ```
+
+=== "React"
+
+    ```jsx
+    <QuranMadinaHtml page={1} />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    QuranMadinaFlutter(page: 1)
+    ```
 
 ## A verse or a range
 
@@ -21,9 +35,23 @@ laid out exactly as they sit on the page:
 <quran-madina-html sura="2" aya="8-10"></quran-madina-html>
 </div>
 
-```html
-<quran-madina-html sura="2" aya="8-10"></quran-madina-html>
-```
+=== "HTML"
+
+    ```html
+    <quran-madina-html sura="2" aya="8-10"></quran-madina-html>
+    ```
+
+=== "React"
+
+    ```jsx
+    <QuranMadinaHtml sura={2} aya="8-10" />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    QuranMadinaFlutter(sura: 2, aya: '8-10')
+    ```
 
 Verses are numbered the Kufan way in every layout, so the same `sura` and `aya` show the same
 verse whichever print you choose. A range may run onto the next page.
@@ -37,9 +65,23 @@ the translation on quran.com. `headless="true"` keeps only the Quran text:
 <quran-madina-html sura="5" aya="1-2" headless="true"></quran-madina-html>
 </div>
 
-```html
-<quran-madina-html sura="5" aya="1-2" headless="true"></quran-madina-html>
-```
+=== "HTML"
+
+    ```html
+    <quran-madina-html sura="5" aya="1-2" headless="true"></quran-madina-html>
+    ```
+
+=== "React"
+
+    ```jsx
+    <QuranMadinaHtml sura={5} aya="1-2" headless />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    QuranMadinaFlutter(sura: 5, aya: '1-2', headless: true)
+    ```
 
 Clicking a verse opens a small copy/translate menu for that verse alone. It works on inline
 renders too, which have no header.
@@ -52,7 +94,23 @@ marks: <quran-madina-html sura="1" aya="2"></quran-madina-html>.
 - `quotes="no"` drops the quote marks.
 - `inline="no"` forces the multiline layout, with its header, even for a short selection.
 
-```html
-<quran-madina-html sura="1" aya="2" quotes="no"></quran-madina-html>
-<quran-madina-html sura="1" aya="2" inline="no"></quran-madina-html>
-```
+=== "HTML"
+
+    ```html
+    <quran-madina-html sura="1" aya="2" quotes="no"></quran-madina-html>
+    <quran-madina-html sura="1" aya="2" inline="no"></quran-madina-html>
+    ```
+
+=== "React"
+
+    ```jsx
+    <QuranMadinaHtml sura={1} aya="2" quotes="no" />
+    <QuranMadinaHtml sura={1} aya="2" inline="no" />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    QuranMadinaFlutter(sura: 1, aya: '2', quotes: 'no'),
+    QuranMadinaFlutter(sura: 1, aya: '2', inline: 'no'),
+    ```

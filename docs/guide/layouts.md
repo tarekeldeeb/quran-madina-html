@@ -10,9 +10,25 @@ The script tag's `data-layout` picks the print. It applies to every tag on the p
 <figure><img src="../../assets/img/v2-p50-IndoPak.png" alt="page 50, IndoPak"><figcaption><code>IndoPak</code><br>15-line IndoPak</figcaption></figure>
 </div>
 
-```html
-<script src="https://unpkg.com/quran-madina-html@2" data-layout="IndoPak"></script>
-```
+=== "HTML"
+
+    ```html
+    <script src="https://unpkg.com/quran-madina-html@2" data-layout="IndoPak"></script>
+    ```
+
+=== "React"
+
+    ```jsx
+    {/* layout and fontSize apply to the whole page: set them on the first component */}
+    <QuranMadinaHtml layout="IndoPak" sura={2} aya="255" />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    // per widget on Android, iOS and macOS; on the web, the first widget's apply page-wide
+    QuranMadinaFlutter(layout: 'IndoPak', sura: 2, aya: '255')
+    ```
 
 | | `1441H` | `1405H` | `IndoPak` |
 |---|---|---|---|
@@ -40,6 +56,22 @@ against the print.
 `data-font-size` sets the size in pixels (default 16; anything from 6 to 100, decimals
 allowed). The whole page scales with it, line width included:
 
-```html
-<script src="https://unpkg.com/quran-madina-html@2" data-font-size="24"></script>
-```
+=== "HTML"
+
+    ```html
+    <script src="https://unpkg.com/quran-madina-html@2" data-font-size="24"></script>
+    ```
+
+=== "React"
+
+    ```jsx
+    {/* layout and fontSize apply to the whole page: set them on the first component */}
+    <QuranMadinaHtml fontSize={24} sura={2} aya="255" />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    // per widget on Android, iOS and macOS; on the web, the first widget's apply page-wide
+    QuranMadinaFlutter(fontSize: 24, sura: 2, aya: '255')
+    ```

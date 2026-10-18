@@ -2,11 +2,28 @@
 
 ## Text colour
 
-The text takes the colour of the surrounding page, like any text. To change it, style the tag:
+The text takes the colour of the surrounding page, like any text. To change it:
 
-```css
-quran-madina-html { color: #3b2f2f; }
-```
+=== "HTML"
+
+    ```css
+    quran-madina-html { color: #3b2f2f; }
+    ```
+
+=== "React"
+
+    ```jsx
+    <QuranMadinaHtml sura={2} aya="255" style={{ color: "#3b2f2f" }} />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    QuranMadinaFlutter(sura: 2, aya: '255', textColor: '#3b2f2f', backgroundColor: '#fdf8ee')
+    ```
+
+The CSS below applies to HTML and React pages. A Flutter widget's text sits in its own page:
+set `textColor` and `backgroundColor` instead; highlight, error and letter colours adapt to them.
 
 ## Colours you can change
 

@@ -94,3 +94,4 @@ nav:
           - Phase 0 audit: v2/phase0-audit.md
           - Phase 1 proof of concept: v2/phase1-poc.md
   - Version 1.x: v1.md
+  - Live demo: https://tarekeldeeb.github.io/quran-madina-html/demo/index.html

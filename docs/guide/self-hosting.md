@@ -30,9 +30,31 @@ Each print takes about 4 MB. Serve only the ones you use.
 
 `data-cdn` is the base URL that holds `dist/` and `assets/`:
 
-```html
-<script src="/static/qmh/dist/quran-madina-html.min.js" data-cdn="/static/qmh/"></script>
-```
+=== "HTML"
+
+    ```html
+    <script src="/static/qmh/dist/quran-madina-html.min.js" data-cdn="/static/qmh/"></script>
+    ```
+
+=== "React"
+
+    ```jsx
+    {/* src and cdn apply to the whole page: set them on the first component */}
+    <QuranMadinaHtml page={1} src="/static/qmh/dist/quran-madina-html.min.js" cdn="/static/qmh/" />
+    ```
+
+=== "Flutter"
+
+    ```dart
+    // from your own server
+    QuranMadinaFlutter(
+      page: 1,
+      src: 'https://example.com/qmh/dist/quran-madina-html.min.js',
+      cdn: 'https://example.com/qmh/',
+    )
+    // or offline, from the app's own assets (see Flutter: online or offline)
+    QuranMadinaFlutter(page: 1, bundled: true)
+    ```
 
 Everything, the font included, then loads from there.
 
