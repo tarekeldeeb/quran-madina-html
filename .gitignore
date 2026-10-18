@@ -16,3 +16,6 @@ assets/db/v2/*.otf
 
 # mkdocs build output
 site/
+
+# readme_page.py output
+site-root/

@@ -63,4 +63,10 @@ jobs:
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
               commit -q -m "Flutter web example from ${GITHUB_SHA}"
-          git push -q origin HEAD:gh-pages
+          # another workflow may have pushed to gh-pages meanwhile: rebase onto it and retry
+          for attempt in 1 2 3 4 5; do
+            git push -q origin HEAD:gh-pages && exit 0
+            sleep $((attempt * 5))
+            git pull -q --rebase origin gh-pages
+          done
+          exit 1

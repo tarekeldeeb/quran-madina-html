@@ -281,7 +281,9 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   site: MkDocs Material, `mkdocs.yml` + `docs/` + `overrides/main.html` (which loads the library
   from unpkg `@2`, so raw `<quran-madina-html>` tags in the Markdown render live).
   `mkdocs serve` to preview; `.github/workflows/docs.yml` builds with `--strict` and publishes
-  to `gh-pages/docs/` (only that folder). Pin `mkdocs<2`.
+  to `gh-pages/docs/`, plus the site root's `index.html`: the README rendered by
+  `scripts/readme_page.py` (gh-pages has `.nojekyll`, so nothing renders README.md for us).
+  Pin `mkdocs<2`.
 - New attributes/options go in the guide page for the topic AND `docs/reference/`.
 - `scripts/readme_gif.py` re-renders the README GIF (needs `npm run start`); the blink scene
   pauses the CSS animation at fixed times. `scripts/readme_screenshots.py` makes the stills.
