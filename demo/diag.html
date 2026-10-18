@@ -11,9 +11,31 @@
               background: #f3f3f3; padding: 10px; border-radius: 6px; overflow-wrap: anywhere; }
     button { font-size: 16px; padding: 8px 14px; margin: 8px 0; }
     .wrap { overflow-x: auto; }
+      .site-nav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 18px;
+      padding: 10px 20px;
+      background-color: #00796b;
+      color: #fff;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+    .site-nav a { color: #fff; text-decoration: none; }
+    .site-nav a:hover { text-decoration: underline; }
+    .site-nav .brand { font-weight: 600; margin-inline-end: auto; direction: ltr; }
   </style>
 </head>
 <body>
+  <nav class="site-nav" dir="rtl">
+    <a class="brand" href="https://github.com/tarekeldeeb/quran-madina-html">quran-madina-html</a>
+    <a href="https://tarekeldeeb.github.io/quran-madina-html/docs/">التوثيق</a>
+    <a href="https://github.com/tarekeldeeb/quran-madina-html">GitHub</a>
+    <a href="https://www.npmjs.com/package/quran-madina-html">npm</a>
+    <a href="https://pub.dev/packages/quran_madina_flutter">Flutter</a>
+  </nav>
+
   <p dir="ltr">Measures every word on this device and compares it with the widths the layout
   was computed for (Chrome). Wait for the report, then tap <b>Copy report</b> and paste it back.</p>
   <button id="copy" dir="ltr">Copy report</button>
