@@ -1,0 +1,66 @@
+# Builds the Flutter example (flutter/example) for the web, with the library bundled from this
+# commit, and publishes it to the flutter/ folder of the GitHub Pages site:
+# https://tarekeldeeb.github.io/quran-madina-html/flutter/
+# Only that folder changes; the demo and the docs stay as they are.
+name: Flutter web example
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "flutter/**"
+      - "src/**"
+      - "assets/db/v2/**"
+      - ".github/workflows/flutter-web-example.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # push the build to gh-pages
+
+concurrency: flutter-web-example
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build the library (dist/)
+        run: |
+          npm ci
+          npx grunt
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Build the example for the web
+        working-directory: flutter/example
+        run: |
+          flutter pub get
+          dart run quran_madina_flutter:bundle --layouts 1441H --from ../..
+          flutter create --platforms=web --no-pub .
+          flutter build web --base-href /quran-madina-html/flutter/ --no-web-resources-cdn
+
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      # `git add -f`: the branch's .gitignore (copied from main) excludes dist/, which the
+      # bundled library needs.
+      - name: Publish
+        working-directory: gh-pages
+        run: |
+          rm -rf flutter
+          cp -r ../flutter/example/build/web flutter
+          git add -A -f flutter
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "Flutter web example from ${GITHUB_SHA}"
+          git push -q origin HEAD:gh-pages

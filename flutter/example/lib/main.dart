@@ -1,8 +1,12 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:quran_madina_flutter/quran_madina_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() => runApp(const ExampleApp());
+
+final _docs = Uri.parse('https://tarekeldeeb.github.io/quran-madina-html/docs/frameworks/flutter/');
+final _github = Uri.parse('https://github.com/tarekeldeeb/quran-madina-html');
 
 class ExampleApp extends StatefulWidget {
   const ExampleApp({super.key});
@@ -24,6 +28,8 @@ class _ExampleAppState extends State<ExampleApp> {
         appBar: AppBar(
           title: const Text('quran_madina_flutter'),
           actions: [
+            TextButton(onPressed: () => launchUrl(_docs), child: const Text('Docs')),
+            TextButton(onPressed: () => launchUrl(_github), child: const Text('GitHub')),
             if (!kIsWeb) ...[
               const Center(child: Text('offline')),
               Switch(value: _offline, onChanged: (v) => setState(() => _offline = v)),

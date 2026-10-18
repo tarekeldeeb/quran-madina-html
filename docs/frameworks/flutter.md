@@ -6,6 +6,10 @@
 the `<quran-madina-html>` tag. It has the same options as the tag and the React component, and
 is released together with the library, under the same version number.
 
+!!! tip "Try it"
+    The [example app](https://github.com/tarekeldeeb/quran-madina-html/tree/main/flutter/example),
+    built for the web, runs live at <https://tarekeldeeb.github.io/quran-madina-html/flutter/>.
+
 ```dart
 import 'package:quran_madina_flutter/quran_madina_flutter.dart';
 

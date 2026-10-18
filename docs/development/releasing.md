@@ -37,5 +37,7 @@ matching `{{version}}`.
 
 - These docs publish from `main` on every change to `docs/` or `mkdocs.yml` (the **Docs**
   workflow), into the `docs/` folder of the GitHub Pages site.
-- The demo (`demo/`) and the Flutter web example (`flutter/`) live on the same `gh-pages`
-  branch. When updating them by hand, keep the `docs/` folder.
+- The Flutter web example publishes from `main` on every change to `flutter/` or the library
+  (the **Flutter web example** workflow), into the `flutter/` folder.
+- The demo (`demo/`) lives on the same `gh-pages` branch. When updating it by hand, keep the
+  `docs/` and `flutter/` folders.

@@ -20,8 +20,7 @@ words and emphasised letters, in the 1441H, 1405H or IndoPak print.
 
 <p align="center">
   <a href="https://tarekeldeeb.github.io/quran-madina-html/docs/"><b>Documentation</b></a> ·
-  <a href="https://tarekeldeeb.github.io/quran-madina-html/demo/index.html"><b>Live demo</b></a> ·
-  <a href="https://tarekeldeeb.github.io/quran-madina-html/flutter/"><b>Flutter web example</b></a>
+  <a href="https://tarekeldeeb.github.io/quran-madina-html/demo/index.html"><b>Live demo</b></a>
 </p>
 
 ## Getting started

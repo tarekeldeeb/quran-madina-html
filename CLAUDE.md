@@ -281,8 +281,10 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
 - New attributes/options go in the guide page for the topic AND `docs/reference/`.
 - `scripts/readme_gif.py` re-renders the README GIF (needs `npm run start`); the blink scene
   pauses the CSS animation at fixed times. `scripts/readme_screenshots.py` makes the stills.
-- gh-pages holds the demo (root), `flutter/` (Flutter web example) and `docs/` (this site):
-  when redeploying the demo by hand, keep `flutter/` and `docs/`.
+- gh-pages holds the demo (root), `flutter/` (Flutter web example, published from main by
+  `.github/workflows/flutter-web-example.yml`) and `docs/` (this site, by `docs.yml`): when
+  redeploying the demo by hand, keep `flutter/` and `docs/`. The branch's `.gitignore` excludes
+  `dist`, so anything that ships a `dist/` folder must be added with `git add -f`.
 - The 1.x docs are `docs/v1.md` (was README_v1.md).
 
 ## Conventions
