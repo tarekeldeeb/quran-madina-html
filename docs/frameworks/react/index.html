@@ -1949,6 +1949,11 @@ because the library reads its options from its own script tag. <code>react</code
 <td>Base URL of the library's files. Default: unpkg.</td>
 </tr>
 <tr>
+<td><code>bundled</code></td>
+<td>boolean | string</td>
+<td>Load the app's own copy of the library, made by <code>npx quran-madina-bundle</code> (see <a href="#offline">Offline</a>). <code>true</code> loads it from <code>/quran-madina/</code>; a string is the URL the copy is served at. Overrides <code>src</code> and <code>cdn</code>.</td>
+</tr>
+<tr>
 <td><code>font</code>, <code>name</code></td>
 <td>string</td>
 <td>Ignored since 2.0 (the library logs a warning).</td>
@@ -1957,7 +1962,7 @@ because the library reads its options from its own script tag. <code>react</code
 </table>
 <div class="admonition warning">
 <p class="admonition-title">Page-wide options</p>
-<p><code>layout</code>, <code>fontSize</code>, <code>src</code> and <code>cdn</code> configure the one library instance on the page. Only
+<p><code>layout</code>, <code>fontSize</code>, <code>src</code>, <code>cdn</code> and <code>bundled</code> configure the one library instance on the page. Only
 the first <code>&lt;QuranMadinaHtml&gt;</code> to mount sets them; later values are ignored.</p>
 </div>
 <h2 id="why-cdn-is-set">Why <code>cdn</code> is set<a class="headerlink" href="#why-cdn-is-set" title="Permanent link">&para;</a></h2>
@@ -1980,10 +1985,51 @@ npx<span class="w"> </span>cap<span class="w"> </span>open<span class="w"> </spa
 npx<span class="w"> </span>cap<span class="w"> </span>open<span class="w"> </span>android<span class="w">    </span><span class="c1"># Android Studio</span>
 </code></pre></div>
 <h2 id="offline">Offline<a class="headerlink" href="#offline" title="Permanent link">&para;</a></h2>
-<p>Bundle the library's files into your web build (see
-<a href="../../guide/self-hosting/#what-to-serve">what to serve</a>), then point the component at them:</p>
-<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">page</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">src</span><span class="o">=</span><span class="s">"/qmh/dist/quran-madina-html.min.js"</span><span class="w"> </span><span class="na">cdn</span><span class="o">=</span><span class="s">"/qmh/"</span><span class="w"> </span><span class="p">/&gt;</span>
+<p>By default the library, its databases and fonts load from unpkg. To work offline, copy them
+into your app once, from the app's folder:</p>
+<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>quran-madina-bundle<span class="w">                            </span><span class="c1"># the 1441H layout (about 4 MB)</span>
+npx<span class="w"> </span>quran-madina-bundle<span class="w"> </span>--layouts<span class="w"> </span>1441H,IndoPak<span class="w">    </span><span class="c1"># about 4 MB per layout</span>
 </code></pre></div>
+<p>The command writes <code>public/quran-madina/</code>, which Vite, Create React App and Next.js serve as
+<code>/quran-madina/</code>, and Capacitor copies into the app with the rest of the build. Then pass
+<code>bundled</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">page</span><span class="o">=</span><span class="p">{</span><span class="mf">106</span><span class="p">}</span><span class="w"> </span><span class="na">bundled</span><span class="w"> </span><span class="p">/&gt;</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--layouts</code></td>
+<td><code>1441H</code></td>
+<td>The prints to include: <code>1441H</code>, <code>1405H</code>, <code>IndoPak</code>, comma-separated.</td>
+</tr>
+<tr>
+<td><code>--out</code></td>
+<td><code>public/quran-madina</code></td>
+<td>Where to write the files.</td>
+</tr>
+<tr>
+<td><code>--version</code></td>
+<td>this package's version</td>
+<td>The quran-madina-html version to copy from npm.</td>
+</tr>
+<tr>
+<td><code>--from</code></td>
+<td></td>
+<td>Copy from a built checkout of quran-madina-html instead of npm.</td>
+</tr>
+</tbody>
+</table>
+<p>If the folder is served somewhere else (a different <code>--out</code>, or an app under a sub-path), pass
+that URL instead: <code>bundled="/my-app/quran-madina/"</code>.</p>
+<p>Run the command again after upgrading this package, so the files match its version. It
+replaces the whole folder, so only the layouts you list stay.</p>
 <h2 id="react-native">React Native<a class="headerlink" href="#react-native" title="Permanent link">&para;</a></h2>
 <p>Not supported. React Native has no HTML or CSS, so the tag can't run there. Use Capacitor, or
 a WebView component.</p>

@@ -1843,8 +1843,10 @@ internet connection.</p>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="cm">/* src and cdn apply to the whole page: set them on the first component */</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="cm">/* src, cdn and bundled apply to the whole page: set them on the first component */</span><span class="p">}</span>
 <span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">page</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">src</span><span class="o">=</span><span class="s">"/static/qmh/dist/quran-madina-html.min.js"</span><span class="w"> </span><span class="na">cdn</span><span class="o">=</span><span class="s">"/static/qmh/"</span><span class="w"> </span><span class="p">/&gt;</span>
+<span class="p">{</span><span class="cm">/* or offline, from the app's own copy (npx quran-madina-bundle; see React: Offline) */</span><span class="p">}</span>
+<span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">page</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">bundled</span><span class="w"> </span><span class="p">/&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -1869,8 +1871,8 @@ server, Capacitor) does not have the files there, so set <code>data-cdn</code> i
 and Flutter wrappers do it for you.</p>
 <h2 id="apps">Apps<a class="headerlink" href="#apps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>React with Capacitor:</strong> bundle the files above into the web build and set the component's
-  <code>src</code> and <code>cdn</code> props. See <a href="../../frameworks/react/#offline">React</a>.</li>
+<li><strong>React</strong> (web, or iOS and Android with Capacitor): one command copies the files into
+  <code>public/</code>. See <a href="../../frameworks/react/#offline">React</a>.</li>
 <li><strong>Flutter:</strong> one command copies the files into the app's assets. See
   <a href="../../frameworks/flutter/#online-or-offline">Flutter</a>.</li>
 </ul>
