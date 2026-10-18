@@ -6,6 +6,11 @@
 #
 # Needs one repository secret, NPM_TOKEN: an npm access token allowed to publish both packages
 # (granular token with read+write on them; "bypass 2FA" if the account requires 2FA to publish).
+#
+# Optional secret RELEASE_PAT: a fine-grained GitHub token for this repository with Contents
+# read+write. With it, the release tag push starts "Publish Flutter package" (flutter-publish.yml),
+# which uploads the Flutter wrapper to pub.dev. Without it the tag is pushed with GITHUB_TOKEN,
+# which starts no workflows, and pub.dev must be published by hand.
 name: Release
 
 on:
@@ -38,6 +43,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0          # release-it reads the tags for the changelog
+          # pushes made with RELEASE_PAT start other workflows (the pub.dev publish on the tag)
+          token: ${{ secrets.RELEASE_PAT || github.token }}
 
       - uses: actions/setup-node@v4
         with:
