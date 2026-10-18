@@ -265,8 +265,10 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   `flutter create .`). No local SDK is assumed.
 - `scripts/sync-wrapper-version.mjs` (release-it `after:bump`) keeps both at the core version,
   including `flutter/pubspec.yaml`, `kLibraryVersion` (`lib/src/version.dart`, the bundler's
-  default) and a `flutter/CHANGELOG.md` entry. The first pub.dev
-  publish is manual (`flutter pub publish` in `flutter/`); until then, apps use a git dependency.
+  default) and a `flutter/CHANGELOG.md` entry. pub.dev: the release tag (e.g. `2.1.1`) starts
+  `.github/workflows/flutter-publish.yml` (OIDC, no stored secret; pub.dev Admin -> Automated
+  publishing, tag pattern `{{version}}`). Tags pushed with GITHUB_TOKEN start no workflows, so
+  release.yml checks out with the `RELEASE_PAT` secret when it is set.
 
 ## Conventions
 

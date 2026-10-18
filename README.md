@@ -330,7 +330,7 @@ See [`react/README.md`](react/README.md) for the full prop reference and the Cap
 
 ## Flutter wrapper
 
-For Flutter apps, use `quran_madina_flutter`, a widget with the same options as the React
+For Flutter apps, use [`quran_madina_flutter`](https://pub.dev/packages/quran_madina_flutter), a widget with the same options as the React
 component. It lives in this repo's [`flutter/`](flutter) folder and is released in step with
 this package.
 
@@ -342,11 +342,10 @@ this package.
 
 ```yaml
 dependencies:
-  quran_madina_flutter:
-    git:
-      url: https://github.com/tarekeldeeb/quran-madina-html
-      path: flutter
+  quran_madina_flutter: ^2.1.0
 ```
+
+It's on [pub.dev](https://pub.dev/packages/quran_madina_flutter).
 
 ```dart
 import 'package:quran_madina_flutter/quran_madina_flutter.dart';

@@ -1,0 +1,51 @@
+# Publishes the Flutter wrapper (flutter/) to pub.dev when a release tag such as 2.1.1 is pushed.
+#
+# The Release workflow pushes that tag. pub.dev only accepts uploads from a workflow started by a
+# tag push, and tags pushed with the default GITHUB_TOKEN start no workflows, so the Release
+# workflow pushes with the RELEASE_PAT secret (see release.yml).
+#
+# One-time setup on pub.dev (package Admin tab -> Automated publishing):
+#   Enable publishing from GitHub Actions, repository tarekeldeeb/quran-madina-html,
+#   tag pattern {{version}}. Optionally require the GitHub Actions environment "pub.dev".
+name: Publish Flutter package
+
+on:
+  push:
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: read
+  id-token: write   # pub.dev checks this workflow's OIDC token instead of a stored secret
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pub.dev
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Version matches the tag
+        run: |
+          version=$(sed -n 's/^version: *//p' pubspec.yaml)
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::flutter/pubspec.yaml says $version but the tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+      - name: Dependencies and tests
+        run: |
+          flutter pub get
+          flutter test
+
+      # Last, so its short-lived pub.dev token is fresh: it signs pub in through OIDC.
+      - uses: dart-lang/setup-dart@v1
+
+      - name: Publish
+        run: flutter pub publish --force
