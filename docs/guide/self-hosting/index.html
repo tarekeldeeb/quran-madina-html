@@ -375,6 +375,25 @@
   
 
       
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://tarekeldeeb.github.io/quran-madina-html/demo/index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Live demo
+
+      </a>
+    </li>
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -1634,6 +1653,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://tarekeldeeb.github.io/quran-madina-html/demo/index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1790,8 +1836,30 @@ internet connection.</p>
 <p>Each print takes about 4 MB. Serve only the ones you use.</p>
 <h2 id="point-the-script-at-your-copy">Point the script at your copy<a class="headerlink" href="#point-the-script-at-your-copy" title="Permanent link">&para;</a></h2>
 <p><code>data-cdn</code> is the base URL that holds <code>dist/</code> and <code>assets/</code>:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">HTML</label><label for="__tabbed_1_2">React</label><label for="__tabbed_1_3">Flutter</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">"/static/qmh/dist/quran-madina-html.min.js"</span> <span class="na">data-cdn</span><span class="o">=</span><span class="s">"/static/qmh/"</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
 </code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="cm">/* src and cdn apply to the whole page: set them on the first component */</span><span class="p">}</span>
+<span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">page</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">src</span><span class="o">=</span><span class="s">"/static/qmh/dist/quran-madina-html.min.js"</span><span class="w"> </span><span class="na">cdn</span><span class="o">=</span><span class="s">"/static/qmh/"</span><span class="w"> </span><span class="p">/&gt;</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="c1">// from your own server</span>
+<span class="n">QuranMadinaFlutter</span><span class="p">(</span>
+<span class="w">  </span><span class="nl">page:</span><span class="w"> </span><span class="m">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nl">src:</span><span class="w"> </span><span class="s1">'https://example.com/qmh/dist/quran-madina-html.min.js'</span><span class="p">,</span>
+<span class="w">  </span><span class="nl">cdn:</span><span class="w"> </span><span class="s1">'https://example.com/qmh/'</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1">// or offline, from the app's own assets (see Flutter: online or offline)</span>
+<span class="n">QuranMadinaFlutter</span><span class="p">(</span><span class="nl">page:</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="nl">bundled:</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span>
+</code></pre></div>
+</div>
+</div>
+</div>
 <p>Everything, the font included, then loads from there.</p>
 <h2 id="the-localhost-rule">The localhost rule<a class="headerlink" href="#the-localhost-rule" title="Permanent link">&para;</a></h2>
 <p>Without <code>data-cdn</code>, the script loads its files from unpkg, except on a page served from

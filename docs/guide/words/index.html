@@ -375,6 +375,25 @@
   
 
       
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://tarekeldeeb.github.io/quran-madina-html/demo/index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Live demo
+
+      </a>
+    </li>
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -1645,6 +1664,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://tarekeldeeb.github.io/quran-madina-html/demo/index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1753,8 +1799,22 @@ stays in place but invisible, so the line keeps exactly the shape it has in the 
 <quran-madina-html sura="1" aya="1" words="1:2"></quran-madina-html>
 </div>
 
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">HTML</label><label for="__tabbed_1_2">React</label><label for="__tabbed_1_3">Flutter</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">quran-madina-html</span> <span class="na">sura</span><span class="o">=</span><span class="s">"1"</span> <span class="na">aya</span><span class="o">=</span><span class="s">"1"</span> <span class="na">words</span><span class="o">=</span><span class="s">"1:2"</span><span class="p">&gt;&lt;/</span><span class="nt">quran-madina-html</span><span class="p">&gt;</span>
 </code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">sura</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">aya</span><span class="o">=</span><span class="s">"1"</span><span class="w"> </span><span class="na">words</span><span class="o">=</span><span class="s">"1:2"</span><span class="w"> </span><span class="p">/&gt;</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">QuranMadinaFlutter</span><span class="p">(</span><span class="nl">sura:</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="nl">aya:</span><span class="w"> </span><span class="s1">'1'</span><span class="p">,</span><span class="w"> </span><span class="nl">words:</span><span class="w"> </span><span class="s1">'1:2'</span><span class="p">)</span>
+</code></pre></div>
+</div>
+</div>
+</div>
 <h2 id="range-format">Range format<a class="headerlink" href="#range-format" title="Permanent link">&para;</a></h2>
 <p>Words are numbered from 1, and both ends are included:</p>
 <table>
@@ -1784,9 +1844,25 @@ suras. After An-Nas it wraps around to Al-Fatiha.</p>
 <quran-madina-html sura="1" aya="7" words="1-14"></quran-madina-html>
 </div>
 
+<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">HTML</label><label for="__tabbed_2_2">React</label><label for="__tabbed_2_3">Flutter</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="cm">&lt;!-- Al-Fatiha's last verse (9 words), Al-Baqara's basmala (4 words), then الٓمٓ --&gt;</span>
 <span class="p">&lt;</span><span class="nt">quran-madina-html</span> <span class="na">sura</span><span class="o">=</span><span class="s">"1"</span> <span class="na">aya</span><span class="o">=</span><span class="s">"7"</span> <span class="na">words</span><span class="o">=</span><span class="s">"1-14"</span><span class="p">&gt;&lt;/</span><span class="nt">quran-madina-html</span><span class="p">&gt;</span>
 </code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="cm">/* Al-Fatiha's last verse (9 words), Al-Baqara's basmala (4 words), then الٓمٓ */</span><span class="p">}</span>
+<span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">sura</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">aya</span><span class="o">=</span><span class="s">"7"</span><span class="w"> </span><span class="na">words</span><span class="o">=</span><span class="s">"1-14"</span><span class="w"> </span><span class="p">/&gt;</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="c1">// Al-Fatiha's last verse (9 words), Al-Baqara's basmala (4 words), then الٓمٓ</span>
+<span class="n">QuranMadinaFlutter</span><span class="p">(</span><span class="nl">sura:</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="nl">aya:</span><span class="w"> </span><span class="s1">'7'</span><span class="p">,</span><span class="w"> </span><span class="nl">words:</span><span class="w"> </span><span class="s1">'1-14'</span><span class="p">)</span>
+</code></pre></div>
+</div>
+</div>
+</div>
 <h2 id="the-basmala-counts-as-four-words">The basmala counts as four words<a class="headerlink" href="#the-basmala-counts-as-four-words" title="Permanent link">&para;</a></h2>
 <p>The basmala at the top of a sura counts as its four words, matching the flat word numbering of
 the Tanzil text that most apps count with. This holds when a selection crosses into a new sura,
@@ -1802,8 +1878,22 @@ first word.</p>
 <p>When you show a selection inside your own layout (a quiz that already names the sura, say),
 <code>notitle="true"</code> hides the name of a sura the selection crosses into. Its decorated frame stays,
 empty, and the basmala still shows:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><input id="__tabbed_3_3" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">HTML</label><label for="__tabbed_3_2">React</label><label for="__tabbed_3_3">Flutter</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">quran-madina-html</span> <span class="na">sura</span><span class="o">=</span><span class="s">"1"</span> <span class="na">aya</span><span class="o">=</span><span class="s">"7"</span> <span class="na">words</span><span class="o">=</span><span class="s">"1-14"</span> <span class="na">notitle</span><span class="o">=</span><span class="s">"true"</span><span class="p">&gt;&lt;/</span><span class="nt">quran-madina-html</span><span class="p">&gt;</span>
 </code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">sura</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">aya</span><span class="o">=</span><span class="s">"7"</span><span class="w"> </span><span class="na">words</span><span class="o">=</span><span class="s">"1-14"</span><span class="w"> </span><span class="na">notitle</span><span class="w"> </span><span class="p">/&gt;</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">QuranMadinaFlutter</span><span class="p">(</span><span class="nl">sura:</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="nl">aya:</span><span class="w"> </span><span class="s1">'7'</span><span class="p">,</span><span class="w"> </span><span class="nl">words:</span><span class="w"> </span><span class="s1">'1-14'</span><span class="p">,</span><span class="w"> </span><span class="nl">notitle:</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span>
+</code></pre></div>
+</div>
+</div>
+</div>
 <h2 id="limits-and-errors">Limits and errors<a class="headerlink" href="#limits-and-errors" title="Permanent link">&para;</a></h2>
 <ul>
 <li>A selection is capped at 500 words.</li>
