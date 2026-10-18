@@ -1,3 +1,7 @@
+## 2.1.1
+
+- Follows quran-madina-html 2.1.1.
+
 ## 2.1.0
 
 - First release: `QuranMadinaFlutter` widget for the quran-madina-html web component, with the
