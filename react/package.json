@@ -15,7 +15,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE.md"
   ],
   "sideEffects": false,
   "scripts": {
@@ -45,7 +46,7 @@
     "quran-madina-html"
   ],
   "author": "Tarek Eldeeb",
-  "license": "ISC",
+  "license": "SEE LICENSE IN LICENSE.md",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tarekeldeeb/quran-madina-html.git",
