@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quran Madina Html</title>
+<meta name="description" content="Quran pages that look like the printed Madina Mushaf, as real text: selectable, searchable and copyable, with no images. Lines are justified the way the print fills them, by stretching the letters themselves. One tag renders a page, a verse range or a few words, with highlighted words and emphasised letters, in the 1441H, 1405H or IndoPak print.">
+<link rel="icon" href="favicon.ico">
+<style>
+:root {
+  --bg: #ffffff; --fg: #1f2328; --muted: #59636e; --line: #d1d9e0; --code-bg: #f6f8fa;
+  --link: #00796b; --top: #00796b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --line: #3d444d; --code-bg: #151b23;
+    --link: #4db6ac; --top: #004d40;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+}
+.top {
+  display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center;
+  padding: 10px 20px; background: var(--top); color: #fff; font-size: 15px;
+}
+.top a { color: #fff; text-decoration: none; }
+.top a:hover { text-decoration: underline; }
+.top .brand { font-weight: 600; margin-right: auto; }
+main { max-width: 860px; margin: 0 auto; padding: 24px 20px 64px; }
+a { color: var(--link); }
+h1 { font-size: 2em; margin: 0.4em 0 0.5em; padding-bottom: 0.3em; border-bottom: 1px solid var(--line); }
+h2 { margin-top: 1.8em; padding-bottom: 0.3em; border-bottom: 1px solid var(--line); }
+h3 { margin-top: 1.4em; }
+img { max-width: 100%; height: auto; }
+p > a > img { vertical-align: middle; }
+code {
+  font: 0.88em/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--code-bg); padding: 0.15em 0.35em; border-radius: 6px;
+}
+pre { background: var(--code-bg); padding: 14px 16px; border-radius: 8px; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+ul { padding-left: 1.4em; }
+li { margin: 0.25em 0; }
+footer { margin-top: 3em; color: var(--muted); font-size: 0.9em; }
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: #ffffcc }
+.highlight { background: #f8f8f8; }
+.highlight .c { color: #3D7B7B; font-style: italic } /* Comment */
+.highlight .err { border: 1px solid #F00 } /* Error */
+.highlight .k { color: #008000; font-weight: bold } /* Keyword */
+.highlight .o { color: #666 } /* Operator */
+.highlight .ch { color: #3D7B7B; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #3D7B7B; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #9C6500 } /* Comment.Preproc */
+.highlight .cpf { color: #3D7B7B; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #3D7B7B; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #3D7B7B; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #A00000 } /* Generic.Deleted */
+.highlight .ge { font-style: italic } /* Generic.Emph */
+.highlight .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.highlight .gr { color: #E40000 } /* Generic.Error */
+.highlight .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.highlight .gi { color: #008400 } /* Generic.Inserted */
+.highlight .go { color: #717171 } /* Generic.Output */
+.highlight .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.highlight .gs { font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.highlight .gt { color: #04D } /* Generic.Traceback */
+.highlight .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: #008000 } /* Keyword.Pseudo */
+.highlight .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: #B00040 } /* Keyword.Type */
+.highlight .m { color: #666 } /* Literal.Number */
+.highlight .s { color: #BA2121 } /* Literal.String */
+.highlight .na { color: #687822 } /* Name.Attribute */
+.highlight .nb { color: #008000 } /* Name.Builtin */
+.highlight .nc { color: #00F; font-weight: bold } /* Name.Class */
+.highlight .no { color: #800 } /* Name.Constant */
+.highlight .nd { color: #A2F } /* Name.Decorator */
+.highlight .ni { color: #717171; font-weight: bold } /* Name.Entity */
+.highlight .ne { color: #CB3F38; font-weight: bold } /* Name.Exception */
+.highlight .nf { color: #00F } /* Name.Function */
+.highlight .nl { color: #767600 } /* Name.Label */
+.highlight .nn { color: #00F; font-weight: bold } /* Name.Namespace */
+.highlight .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.highlight .nv { color: #19177C } /* Name.Variable */
+.highlight .ow { color: #A2F; font-weight: bold } /* Operator.Word */
+.highlight .w { color: #BBB } /* Text.Whitespace */
+.highlight .mb { color: #666 } /* Literal.Number.Bin */
+.highlight .mf { color: #666 } /* Literal.Number.Float */
+.highlight .mh { color: #666 } /* Literal.Number.Hex */
+.highlight .mi { color: #666 } /* Literal.Number.Integer */
+.highlight .mo { color: #666 } /* Literal.Number.Oct */
+.highlight .sa { color: #BA2121 } /* Literal.String.Affix */
+.highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
+.highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .dl { color: #BA2121 } /* Literal.String.Delimiter */
+.highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.highlight .s2 { color: #BA2121 } /* Literal.String.Double */
+.highlight .se { color: #AA5D1F; font-weight: bold } /* Literal.String.Escape */
+.highlight .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.highlight .si { color: #A45A77; font-weight: bold } /* Literal.String.Interpol */
+.highlight .sx { color: #008000 } /* Literal.String.Other */
+.highlight .sr { color: #A45A77 } /* Literal.String.Regex */
+.highlight .s1 { color: #BA2121 } /* Literal.String.Single */
+.highlight .ss { color: #19177C } /* Literal.String.Symbol */
+.highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #00F } /* Name.Function.Magic */
+.highlight .vc { color: #19177C } /* Name.Variable.Class */
+.highlight .vg { color: #19177C } /* Name.Variable.Global */
+.highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .vm { color: #19177C } /* Name.Variable.Magic */
+.highlight .il { color: #666 } /* Literal.Number.Integer.Long */
+@media (prefers-color-scheme: dark) {
+pre { line-height: 125%; }
+td.linenos .normal { color: #6e7681; background-color: #0d1117; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #6e7681; background-color: #0d1117; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #e6edf3; background-color: #6e7681; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: #6e7681 }
+.highlight { background: #0d1117; color: #E6EDF3 }
+.highlight .c { color: #8B949E; font-style: italic } /* Comment */
+.highlight .err { color: #F85149 } /* Error */
+.highlight .esc { color: #E6EDF3 } /* Escape */
+.highlight .g { color: #E6EDF3 } /* Generic */
+.highlight .k { color: #FF7B72 } /* Keyword */
+.highlight .l { color: #A5D6FF } /* Literal */
+.highlight .n { color: #E6EDF3 } /* Name */
+.highlight .o { color: #FF7B72; font-weight: bold } /* Operator */
+.highlight .x { color: #E6EDF3 } /* Other */
+.highlight .p { color: #E6EDF3 } /* Punctuation */
+.highlight .ch { color: #8B949E; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #8B949E; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #8B949E; font-weight: bold; font-style: italic } /* Comment.Preproc */
+.highlight .cpf { color: #8B949E; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #8B949E; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #8B949E; font-weight: bold; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #FFA198; background-color: #490202 } /* Generic.Deleted */
+.highlight .ge { color: #E6EDF3; font-style: italic } /* Generic.Emph */
+.highlight .ges { color: #E6EDF3; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.highlight .gr { color: #FFA198 } /* Generic.Error */
+.highlight .gh { color: #79C0FF; font-weight: bold } /* Generic.Heading */
+.highlight .gi { color: #56D364; background-color: #0F5323 } /* Generic.Inserted */
+.highlight .go { color: #8B949E } /* Generic.Output */
+.highlight .gp { color: #8B949E } /* Generic.Prompt */
+.highlight .gs { color: #E6EDF3; font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #79C0FF } /* Generic.Subheading */
+.highlight .gt { color: #FF7B72 } /* Generic.Traceback */
+.highlight .g-Underline { color: #E6EDF3; text-decoration: underline } /* Generic.Underline */
+.highlight .kc { color: #79C0FF } /* Keyword.Constant */
+.highlight .kd { color: #FF7B72 } /* Keyword.Declaration */
+.highlight .kn { color: #FF7B72 } /* Keyword.Namespace */
+.highlight .kp { color: #79C0FF } /* Keyword.Pseudo */
+.highlight .kr { color: #FF7B72 } /* Keyword.Reserved */
+.highlight .kt { color: #FF7B72 } /* Keyword.Type */
+.highlight .ld { color: #79C0FF } /* Literal.Date */
+.highlight .m { color: #A5D6FF } /* Literal.Number */
+.highlight .s { color: #A5D6FF } /* Literal.String */
+.highlight .na { color: #E6EDF3 } /* Name.Attribute */
+.highlight .nb { color: #E6EDF3 } /* Name.Builtin */
+.highlight .nc { color: #F0883E; font-weight: bold } /* Name.Class */
+.highlight .no { color: #79C0FF; font-weight: bold } /* Name.Constant */
+.highlight .nd { color: #D2A8FF; font-weight: bold } /* Name.Decorator */
+.highlight .ni { color: #FFA657 } /* Name.Entity */
+.highlight .ne { color: #F0883E; font-weight: bold } /* Name.Exception */
+.highlight .nf { color: #D2A8FF; font-weight: bold } /* Name.Function */
+.highlight .nl { color: #79C0FF; font-weight: bold } /* Name.Label */
+.highlight .nn { color: #FF7B72 } /* Name.Namespace */
+.highlight .nx { color: #E6EDF3 } /* Name.Other */
+.highlight .py { color: #79C0FF } /* Name.Property */
+.highlight .nt { color: #7EE787 } /* Name.Tag */
+.highlight .nv { color: #79C0FF } /* Name.Variable */
+.highlight .ow { color: #FF7B72; font-weight: bold } /* Operator.Word */
+.highlight .pm { color: #E6EDF3 } /* Punctuation.Marker */
+.highlight .w { color: #6E7681 } /* Text.Whitespace */
+.highlight .mb { color: #A5D6FF } /* Literal.Number.Bin */
+.highlight .mf { color: #A5D6FF } /* Literal.Number.Float */
+.highlight .mh { color: #A5D6FF } /* Literal.Number.Hex */
+.highlight .mi { color: #A5D6FF } /* Literal.Number.Integer */
+.highlight .mo { color: #A5D6FF } /* Literal.Number.Oct */
+.highlight .sa { color: #79C0FF } /* Literal.String.Affix */
+.highlight .sb { color: #A5D6FF } /* Literal.String.Backtick */
+.highlight .sc { color: #A5D6FF } /* Literal.String.Char */
+.highlight .dl { color: #79C0FF } /* Literal.String.Delimiter */
+.highlight .sd { color: #A5D6FF } /* Literal.String.Doc */
+.highlight .s2 { color: #A5D6FF } /* Literal.String.Double */
+.highlight .se { color: #79C0FF } /* Literal.String.Escape */
+.highlight .sh { color: #79C0FF } /* Literal.String.Heredoc */
+.highlight .si { color: #A5D6FF } /* Literal.String.Interpol */
+.highlight .sx { color: #A5D6FF } /* Literal.String.Other */
+.highlight .sr { color: #79C0FF } /* Literal.String.Regex */
+.highlight .s1 { color: #A5D6FF } /* Literal.String.Single */
+.highlight .ss { color: #A5D6FF } /* Literal.String.Symbol */
+.highlight .bp { color: #E6EDF3 } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #D2A8FF; font-weight: bold } /* Name.Function.Magic */
+.highlight .vc { color: #79C0FF } /* Name.Variable.Class */
+.highlight .vg { color: #79C0FF } /* Name.Variable.Global */
+.highlight .vi { color: #79C0FF } /* Name.Variable.Instance */
+.highlight .vm { color: #79C0FF } /* Name.Variable.Magic */
+.highlight .il { color: #A5D6FF } /* Literal.Number.Integer.Long */
+}
+</style>
+</head>
+<body>
+<nav class="top">
+  <a class="brand" href="https://tarekeldeeb.github.io/quran-madina-html/">quran-madina-html</a>
+  <a href="https://tarekeldeeb.github.io/quran-madina-html/docs/">Docs</a>
+  <a href="https://tarekeldeeb.github.io/quran-madina-html/demo/index.html">Live demo</a>
+  <a href="https://github.com/tarekeldeeb/quran-madina-html">GitHub</a>
+</nav>
+<main>
+<h1>Quran Madina Html</h1>
+<p><a href="https://www.npmjs.com/package/quran-madina-html"><img alt="npm" src="https://img.shields.io/npm/v/quran-madina-html.svg?label=npm" /></a>
+<a href="https://www.npmjs.com/package/@tarekeldeeb/quran-madina-react"><img alt="React" src="https://img.shields.io/npm/v/@tarekeldeeb/quran-madina-react.svg?label=react" /></a>
+<a href="https://pub.dev/packages/quran_madina_flutter"><img alt="pub.dev" src="https://img.shields.io/pub/v/quran_madina_flutter.svg?label=flutter" /></a>
+<a href="https://tarekeldeeb.github.io/quran-madina-html/docs/"><img alt="Docs" src="https://img.shields.io/badge/docs-online-00796b.svg" /></a>
+<a href="https://github.com/tarekeldeeb/quran-madina-html/blob/main/LICENSE.md"><img alt="License" src="https://img.shields.io/badge/license-Waqf%20GPL%202.0-blue.svg" /></a>
+<a href="https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/npm-grunt.yml"><img alt="build" src="https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/npm-grunt.yml/badge.svg" /></a>
+<a href="https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/py_test.yml"><img alt="tests" src="https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/py_test.yml/badge.svg" /></a>
+<a href="https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/flutter.yml"><img alt="Flutter" src="https://github.com/tarekeldeeb/quran-madina-html/actions/workflows/flutter.yml/badge.svg" /></a></p>
+<p>Quran pages that look like the printed Madina Mushaf, as real text: selectable, searchable and
+copyable, with no images. Lines are justified the way the print fills them, by stretching the
+letters themselves. One tag renders a page, a verse range or a few words, with highlighted
+words and emphasised letters, in the 1441H, 1405H or IndoPak print.</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/tarekeldeeb/quran-madina-html/main/docs/assets/img/showcase.gif" width="720" alt="quran-madina-html rendering a page, a verse, highlighted words, blinking letters, a selection across suras, and three prints">
+</p>
+
+<p align="center">
+  <a href="https://tarekeldeeb.github.io/quran-madina-html/docs/"><b>Documentation</b></a> ·
+  <a href="https://tarekeldeeb.github.io/quran-madina-html/demo/index.html"><b>Live demo</b></a>
+</p>
+
+<h2>Getting started</h2>
+<h3>HTML</h3>
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">"https://unpkg.com/quran-madina-html@2"</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nt">quran-madina-html</span> <span class="na">sura</span><span class="o">=</span><span class="s">"2"</span> <span class="na">aya</span><span class="o">=</span><span class="s">"255"</span><span class="p">&gt;&lt;/</span><span class="nt">quran-madina-html</span><span class="p">&gt;</span>
+</code></pre></div>
+
+<h3>React</h3>
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>install<span class="w"> </span>@tarekeldeeb/quran-madina-react<span class="w"> </span>react
+</code></pre></div>
+
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nx">QuranMadinaHtml</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@tarekeldeeb/quran-madina-react"</span><span class="p">;</span>
+
+<span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">sura</span><span class="o">=</span><span class="p">{</span><span class="mf">2</span><span class="p">}</span><span class="w"> </span><span class="na">aya</span><span class="o">=</span><span class="s">"255"</span><span class="w"> </span><span class="p">/&gt;</span>
+</code></pre></div>
+
+<h3>Flutter</h3>
+<div class="highlight"><pre><span></span><code><span class="nt">dependencies</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quran_madina_flutter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">^2.1.0</span>
+</code></pre></div>
+
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="s1">'package:quran_madina_flutter/quran_madina_flutter.dart'</span><span class="p">;</span>
+
+<span class="n">QuranMadinaFlutter</span><span class="p">(</span><span class="nl">sura:</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="nl">aya:</span><span class="w"> </span><span class="s1">'255'</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Everything else (pages, word selection, highlighting, letters, layouts, styling, offline use,
+and every option) is in the <a href="https://tarekeldeeb.github.io/quran-madina-html/docs/">documentation</a>.</p>
+<h2>Credits</h2>
+<ul>
+<li>Quran text: <a href="https://tanzil.net">Tanzil Project</a> (Uthmani 1.1).</li>
+<li>Fonts and the 1405H and IndoPak layouts: <a href="https://github.com/DigitalKhatt/digitalkhatt.org">DigitalKhatt</a>
+  by Amine Anane, sponsored by Tarteel (fonts OFL 1.1, code MIT). The fonts in <code>assets/db/v2</code>
+  are modified copies, with stretch features added, under the same license and renamed <code>QMH ...</code>.</li>
+<li>1441H line breaks: King Fahd Glorious Quran Printing Complex page data, as published in the
+  <a href="https://www.npmjs.com/package/quran-qcf4"><code>quran-qcf4</code></a> package (MIT); only the line
+  boundaries are used.</li>
+</ul>
+<h2>License</h2>
+<p>Code and assets are licensed under the <a href="https://github.com/ojuba-org/waqf/tree/master/2.0">"Waqf" General Public License 2.0</a>.
+See <a href="https://github.com/tarekeldeeb/quran-madina-html/blob/main/LICENSE.md">LICENSE.md</a>.</p>
+<footer>This page is the project's <a href="https://github.com/tarekeldeeb/quran-madina-html#readme">README</a>.</footer>
+</main>
+</body>
+</html>
