@@ -1,5 +1,7 @@
 # quran_madina_flutter
 
+**[Documentation](https://tarekeldeeb.github.io/quran-madina-html/docs/)** · [Live demo](https://tarekeldeeb.github.io/quran-madina-html/demo/index.html)
+
 Render Quran pages in Flutter that look like the printed Madina Mushaf: real, selectable text
 with letters stretched like the print, no images. The widget wraps the
 [quran-madina-html](https://github.com/tarekeldeeb/quran-madina-html) web component. It has the

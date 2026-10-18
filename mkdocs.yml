@@ -1,0 +1,96 @@
+site_name: quran-madina-html
+site_description: Quran pages that look like the printed Madina Mushaf, as real text. No images.
+site_url: https://tarekeldeeb.github.io/quran-madina-html/docs/
+repo_url: https://github.com/tarekeldeeb/quran-madina-html
+repo_name: tarekeldeeb/quran-madina-html
+edit_uri: edit/main/docs/
+copyright: Waqf General Public License 2.0
+
+theme:
+  name: material
+  custom_dir: overrides
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+    - toc.follow
+
+plugins:
+  - search
+
+extra_css:
+  - assets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - getting-started/index.md
+      - HTML: getting-started/html.md
+      - React: getting-started/react.md
+      - Flutter: getting-started/flutter.md
+  - Guide:
+      - guide/index.md
+      - Pages and verses: guide/pages-and-verses.md
+      - Layouts and sizes: guide/layouts.md
+      - Selecting words: guide/words.md
+      - Highlighting words: guide/highlighting.md
+      - Emphasising letters: guide/letters.md
+      - Styling and dark mode: guide/styling.md
+      - Self-hosting and offline: guide/self-hosting.md
+  - Frameworks:
+      - frameworks/index.md
+      - React: frameworks/react.md
+      - Flutter: frameworks/flutter.md
+  - Reference:
+      - reference/index.md
+      - Tag attributes: reference/attributes.md
+      - Script options: reference/script.md
+      - CSS: reference/css.md
+  - Development:
+      - development/index.md
+      - Setup and tests: development/setup.md
+      - Building the databases: development/databases.md
+      - Releasing: development/releasing.md
+      - Design notes (v2):
+          - Design decisions: v2/design-decisions.md
+          - Phase 0 audit: v2/phase0-audit.md
+          - Phase 1 proof of concept: v2/phase1-poc.md
+  - Version 1.x: v1.md

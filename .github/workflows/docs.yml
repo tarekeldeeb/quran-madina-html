@@ -1,0 +1,45 @@
+# Builds the documentation site (docs/, mkdocs.yml) and publishes it to the docs/ folder of the
+# GitHub Pages site: https://tarekeldeeb.github.io/quran-madina-html/docs/
+# The rest of the gh-pages branch (the demo, the Flutter web example) is left as it is.
+name: Docs
+
+on:
+  push:
+    branches: [main]
+    paths: ["docs/**", "mkdocs.yml", "overrides/**", ".github/workflows/docs.yml"]
+  pull_request:
+    paths: ["docs/**", "mkdocs.yml", "overrides/**", ".github/workflows/docs.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # push the built site to gh-pages
+
+concurrency: docs
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # MkDocs 2.0 drops the plugin and theme system Material relies on, so stay on 1.x.
+      - name: Install
+        run: pip install "mkdocs>=1.6,<2" "mkdocs-material>=9.7,<10"
+
+      - name: Build
+        run: mkdocs build --strict
+
+      - name: Publish
+        if: github.event_name != 'pull_request'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./site
+          destination_dir: docs
+          keep_files: false   # replaces docs/ only; the rest of the branch stays
+          commit_message: "Docs from ${{ github.sha }}"

@@ -270,6 +270,21 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   publishing, tag pattern `{{version}}`). Tags pushed with GITHUB_TOKEN start no workflows, so
   release.yml checks out with the `RELEASE_PAT` secret when it is set.
 
+## Docs and README
+
+- `README.md` is a short showcase only (badges, description, `docs/assets/img/showcase.gif`,
+  getting started for HTML/React/Flutter, credits, license). Everything else lives in the docs
+  site: MkDocs Material, `mkdocs.yml` + `docs/` + `overrides/main.html` (which loads the library
+  from unpkg `@2`, so raw `<quran-madina-html>` tags in the Markdown render live).
+  `mkdocs serve` to preview; `.github/workflows/docs.yml` builds with `--strict` and publishes
+  to `gh-pages/docs/` (only that folder). Pin `mkdocs<2`.
+- New attributes/options go in the guide page for the topic AND `docs/reference/`.
+- `scripts/readme_gif.py` re-renders the README GIF (needs `npm run start`); the blink scene
+  pauses the CSS animation at fixed times. `scripts/readme_screenshots.py` makes the stills.
+- gh-pages holds the demo (root), `flutter/` (Flutter web example) and `docs/` (this site):
+  when redeploying the demo by hand, keep `flutter/` and `docs/`.
+- The 1.x docs are `docs/v1.md` (was README_v1.md).
+
 ## Conventions
 
 - `src/db/test*.html` files are temp scratch files written/removed during DB builds — don't commit them.
