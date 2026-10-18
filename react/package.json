@@ -15,6 +15,7 @@
   },
   "files": [
     "dist",
+    "bin",
     "README.md",
     "LICENSE.md"
   ],
@@ -55,5 +56,8 @@
   "bugs": {
     "url": "https://github.com/tarekeldeeb/quran-madina-html/issues"
   },
-  "homepage": "https://github.com/tarekeldeeb/quran-madina-html/tree/main/react#readme"
+  "homepage": "https://github.com/tarekeldeeb/quran-madina-html/tree/main/react#readme",
+  "bin": {
+    "quran-madina-bundle": "bin/bundle.mjs"
+  }
 }

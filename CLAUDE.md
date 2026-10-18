@@ -248,6 +248,10 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
 ## Wrappers
 
 - `react/` — `@tarekeldeeb/quran-madina-react` (npm), published by `scripts/publish-wrapper.mjs`.
+  Offline like Flutter: `bin/bundle.mjs` (`npx quran-madina-bundle`, bin in package.json; pure
+  helpers in `bin/lib.mjs`, same rules as `flutter/lib/src/bundle.dart`) copies the library from
+  npm (or `--from` a checkout) into `public/quran-madina/`; the `bundled` prop (`bundleUrls()`)
+  sets src/cdn to `/quran-madina/` or a given base.
 - `flutter/` — `quran_madina_flutter` (pub.dev; Dart forbids hyphens in package names).
   `QuranMadinaFlutter` (`lib/src/widget.dart`) picks its State by conditional import:
   `view_io.dart` (Android/iOS/macOS: a `WebViewWidget` loading `buildPage()` from

@@ -16,6 +16,12 @@ export interface QuranMadinaHtmlLoaderOptions {
   name?: string;
   /** data-font-size in px (default 16). Any size works. */
   fontSize?: number | string;
+  /**
+   * Load the app's own copy of the library instead of unpkg, for offline use. Write it with
+   * `npx quran-madina-bundle` (default: public/quran-madina). `true` loads it from
+   * "/quran-madina/"; a string is the URL the bundle folder is served at. Overrides src and cdn.
+   */
+  bundled?: boolean | string;
 }
 
 export interface QuranMadinaHtmlProps
@@ -70,3 +76,9 @@ export function loadQuranMadinaHtml(
 
 declare const QuranMadinaHtml: React.FC<QuranMadinaHtmlProps>;
 export default QuranMadinaHtml;
+
+/** URL the default bundle folder (public/quran-madina) is served at: "/quran-madina/". */
+export declare const BUNDLE_BASE: string;
+
+/** The script URL and asset base for a bundled copy of the library (see `bundled`). */
+export declare function bundleUrls(bundled: true | string): { src: string; cdn: string };

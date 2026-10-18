@@ -39,8 +39,10 @@ Each print takes about 4 MB. Serve only the ones you use.
 === "React"
 
     ```jsx
-    {/* src and cdn apply to the whole page: set them on the first component */}
+    {/* src, cdn and bundled apply to the whole page: set them on the first component */}
     <QuranMadinaHtml page={1} src="/static/qmh/dist/quran-madina-html.min.js" cdn="/static/qmh/" />
+    {/* or offline, from the app's own copy (npx quran-madina-bundle; see React: Offline) */}
+    <QuranMadinaHtml page={1} bundled />
     ```
 
 === "Flutter"
@@ -68,7 +70,7 @@ and Flutter wrappers do it for you.
 
 ## Apps
 
-- **React with Capacitor:** bundle the files above into the web build and set the component's
-  `src` and `cdn` props. See [React](../frameworks/react.md#offline).
+- **React** (web, or iOS and Android with Capacitor): one command copies the files into
+  `public/`. See [React](../frameworks/react.md#offline).
 - **Flutter:** one command copies the files into the app's assets. See
   [Flutter](../frameworks/flutter.md#online-or-offline).

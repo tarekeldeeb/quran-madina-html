@@ -72,6 +72,7 @@ export default function App() {
 | `fontSize`  | number \| string    | px, default 16. Any size works. |
 | `src`       | string              | Library script URL. Default: unpkg latest. |
 | `cdn`       | string              | Base URL for CSS + JSON assets. Default: unpkg package root. |
+| `bundled`   | boolean \| string   | Load the app's own copy of the library (see Offline below): `true` for `/quran-madina/`, or the URL it is served at. Overrides `src`/`cdn`. |
 
 > **Global config caveat:** `layout`, `fontSize`, `src` and `cdn` configure the single
 > library instance for the whole page. Only the **first** mounted `<QuranMadinaHtml>` sets them;
@@ -116,13 +117,29 @@ Notes for mobile:
 
 - Capacitor serves the app from `localhost`, so keep the default `cdn` (unpkg) **or** self-host the
   assets and point `cdn` at them — see above. Do not rely on the library's `../` default.
-- **Offline support:** bundle the library `dist/quran-madina-html.min.js`, `dist/*.min.css`, the
-  `assets/db/v2/` files of the layout you use (its `.json` or shard folder and its `-qmh.woff2` font) into your web build, then set `src` to
-  the bundled JS and `cdn` to the base path that contains `dist/` and `assets/`. Everything —
-  including the font — resolves from `cdn`, so no network is needed (requires library >= 0.6,
-  which stores font paths relative).
+- **Offline:** see below; the copied files go into the app with the rest of the build.
 - This is the recommended mobile path: it reuses the battle-tested HTML/CSS renderer (fonts,
   per-line stretch, offsets) instead of reimplementing the layout natively in React Native.
+
+## Offline
+
+Copy the library, its databases and fonts into your app once, from the app's folder:
+
+```bash
+npx quran-madina-bundle                            # the 1441H layout, into public/quran-madina
+npx quran-madina-bundle --layouts 1441H,IndoPak    # about 4 MB per layout
+```
+
+Then pass `bundled`, and nothing loads from the network:
+
+```jsx
+<QuranMadinaHtml page={106} bundled />
+```
+
+Options: `--out <folder>` (default `public/quran-madina`), `--version <x.y.z>` (default: this
+package's version), `--from <folder>` (a built checkout instead of npm). If the folder is served
+somewhere other than `/quran-madina/`, pass that URL: `bundled="/my-app/quran-madina/"`. Run the
+command again after upgrading.
 
 ## React Native (native, no WebView)
 

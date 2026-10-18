@@ -86,4 +86,21 @@ describe("loadQuranMadinaHtml", () => {
     loadQuranMadinaHtml({ src: "https://example.com/retry.js" });
     expect(document.querySelector('script[src="https://example.com/retry.js"]')).toBeTruthy();
   });
+
+  it("bundled loads the app's own copy: the default folder, or a given base", async () => {
+    let { loadQuranMadinaHtml, bundleUrls } = await importFresh();
+    loadQuranMadinaHtml({ bundled: true, src: "https://ignored.example/x.js" });
+    let script = document.querySelector(SELECTOR);
+    expect(script.getAttribute("src")).toBe("/quran-madina/dist/quran-madina-html.min.js");
+    expect(script.getAttribute("data-cdn")).toBe("/quran-madina/");
+    expect(bundleUrls("/app/qmh")).toEqual({
+      src: "/app/qmh/dist/quran-madina-html.min.js",
+      cdn: "/app/qmh/",
+    });
+    script.remove();
+    ({ loadQuranMadinaHtml } = await importFresh());
+    loadQuranMadinaHtml({ bundled: "/app/qmh/" });
+    script = document.querySelector(SELECTOR);
+    expect(script.getAttribute("data-cdn")).toBe("/app/qmh/");
+  });
 });

@@ -54,10 +54,11 @@ export default function App() {
 | `fontSize` | number \| string | Size in px, default 16. |
 | `src` | string | Library script URL. Default: unpkg, latest. |
 | `cdn` | string | Base URL of the library's files. Default: unpkg. |
+| `bundled` | boolean \| string | Load the app's own copy of the library, made by `npx quran-madina-bundle` (see [Offline](#offline)). `true` loads it from `/quran-madina/`; a string is the URL the copy is served at. Overrides `src` and `cdn`. |
 | `font`, `name` | string | Ignored since 2.0 (the library logs a warning). |
 
 !!! warning "Page-wide options"
-    `layout`, `fontSize`, `src` and `cdn` configure the one library instance on the page. Only
+    `layout`, `fontSize`, `src`, `cdn` and `bundled` configure the one library instance on the page. Only
     the first `<QuranMadinaHtml>` to mount sets them; later values are ignored.
 
 ## Why `cdn` is set
@@ -89,12 +90,34 @@ npx cap open android    # Android Studio
 
 ## Offline
 
-Bundle the library's files into your web build (see
-[what to serve](../guide/self-hosting.md#what-to-serve)), then point the component at them:
+By default the library, its databases and fonts load from unpkg. To work offline, copy them
+into your app once, from the app's folder:
+
+```bash
+npx quran-madina-bundle                            # the 1441H layout (about 4 MB)
+npx quran-madina-bundle --layouts 1441H,IndoPak    # about 4 MB per layout
+```
+
+The command writes `public/quran-madina/`, which Vite, Create React App and Next.js serve as
+`/quran-madina/`, and Capacitor copies into the app with the rest of the build. Then pass
+`bundled`:
 
 ```jsx
-<QuranMadinaHtml page={1} src="/qmh/dist/quran-madina-html.min.js" cdn="/qmh/" />
+<QuranMadinaHtml page={106} bundled />
 ```
+
+| Option | Default | Description |
+|---|---|---|
+| `--layouts` | `1441H` | The prints to include: `1441H`, `1405H`, `IndoPak`, comma-separated. |
+| `--out` | `public/quran-madina` | Where to write the files. |
+| `--version` | this package's version | The quran-madina-html version to copy from npm. |
+| `--from` | | Copy from a built checkout of quran-madina-html instead of npm. |
+
+If the folder is served somewhere else (a different `--out`, or an app under a sub-path), pass
+that URL instead: `bundled="/my-app/quran-madina/"`.
+
+Run the command again after upgrading this package, so the files match its version. It
+replaces the whole folder, so only the layouts you list stay.
 
 ## React Native
 

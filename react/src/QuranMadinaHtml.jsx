@@ -8,6 +8,19 @@ const DEFAULT_SRC = "https://unpkg.com/quran-madina-html";
 // supports the `data-cdn` attribute (>= the release that introduced it).
 const DEFAULT_CDN = "https://unpkg.com/quran-madina-html/";
 
+// Where `npx quran-madina-bundle` puts the library by default (public/quran-madina), as served.
+export const BUNDLE_BASE = "/quran-madina/";
+
+/**
+ * The script URL and asset base for a bundled copy of the library: `true` for the default
+ * folder, or the URL the bundle folder is served at (e.g. "/app/quran-madina/").
+ */
+export function bundleUrls(bundled) {
+  let base = bundled === true ? BUNDLE_BASE : String(bundled);
+  if (!base.endsWith("/")) base += "/";
+  return { src: `${base}dist/quran-madina-html.min.js`, cdn: base };
+}
+
 let loaderPromise = null;
 
 /**
@@ -23,10 +36,14 @@ let loaderPromise = null;
  * @param {string} [opts.font]     Deprecated, ignored since 2.0 (the library logs a warning).
  * @param {string} [opts.name]     Deprecated, ignored since 2.0 (the library logs a warning).
  * @param {number|string} [opts.fontSize] data-font-size in px (default 16). Any size works.
+ * @param {boolean|string} [opts.bundled] Load the app's own copy of the library, written by
+ *                                  `npx quran-madina-bundle`: true for /quran-madina/, or the URL
+ *                                  the bundle is served at. Overrides src and cdn.
  * @returns {Promise<void>}
  */
 export function loadQuranMadinaHtml(opts = {}) {
-  const { src = DEFAULT_SRC, cdn = DEFAULT_CDN, layout, font, name, fontSize } = opts;
+  const { layout, font, name, fontSize, bundled } = opts;
+  const { src = DEFAULT_SRC, cdn = DEFAULT_CDN } = bundled ? bundleUrls(bundled) : opts;
   if (typeof window === "undefined" || typeof document === "undefined") {
     return Promise.resolve(); // SSR / non-browser: nothing to load
   }
@@ -63,6 +80,7 @@ export function loadQuranMadinaHtml(opts = {}) {
  * Mark words:                   <QuranMadinaHtml sura={2} aya={255} highlight="5-8" error="1" />
  * Mark letters in words:        <QuranMadinaHtml sura={1} aya={2} letters="1:3, 4:3-5 emerald blink" />
  * Pick the v2 layout:           <QuranMadinaHtml page={3} layout="1405H" />
+ * Offline, from the app's copy:  <QuranMadinaHtml page={3} bundled />   (npx quran-madina-bundle)
  * Drop header/copy chrome:      <QuranMadinaHtml sura={2} aya="8-10" headless />
  * Drop the inline quote marks:  <QuranMadinaHtml sura={1} aya={3} quotes="no" />
  * Force the multiline layout:   <QuranMadinaHtml sura={1} aya={3} inline="no" />
@@ -90,6 +108,7 @@ export default function QuranMadinaHtml({
   font,
   name,
   fontSize,
+  bundled,
   className,
   style,
   ...rest
@@ -103,13 +122,13 @@ export default function QuranMadinaHtml({
 
   useEffect(() => {
     let active = true;
-    loadQuranMadinaHtml({ src, cdn, layout, font, name, fontSize })
+    loadQuranMadinaHtml({ src, cdn, layout, font, name, fontSize, bundled })
       .then(() => active && setReady(true))
       .catch((err) => console.error("[quran-madina-html]", err));
     return () => {
       active = false;
     };
-  }, [src, cdn, layout, font, name, fontSize]);
+  }, [src, cdn, layout, font, name, fontSize, bundled]);
 
   // Sync attributes imperatively. We avoid passing page/sura/aya as React props because attribute
   // handling for custom elements differs across React versions; setting them on the DOM node is
