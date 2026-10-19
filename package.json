@@ -5,9 +5,7 @@
     "grunt": "^1.6.2",
     "grunt-contrib-clean": "^2.0.1",
     "grunt-contrib-concat": "^2.1.0",
-    "grunt-contrib-cssmin": "^5.0.0",
     "grunt-contrib-jshint": "^3.2.0",
-    "grunt-contrib-uglify": "^5.2.2",
     "grunt-contrib-watch": "^1.1.0",
     "grunt-json-minify": "^1.1.0",
     "http-server": "^14.1.1",
@@ -49,10 +47,8 @@
       "release": true
     },
     "hooks": {
-      "after:init": [
-        "grunt"
-      ],
       "after:bump": [
+        "grunt",
         "node scripts/sync-wrapper-version.mjs ${version}",
         "git add react/package.json react/package-lock.json react-native/package.json react-native/package-lock.json flutter/pubspec.yaml flutter/CHANGELOG.md flutter/lib/src/version.dart wordpress/quran-madina-html/quran-madina-html.php wordpress/quran-madina-html/readme.txt"
       ],
