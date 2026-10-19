@@ -1,3 +1,7 @@
+## 2.1.3
+
+- Follows quran-madina-html 2.1.3.
+
 ## 2.1.2
 
 - Follows quran-madina-html 2.1.2.

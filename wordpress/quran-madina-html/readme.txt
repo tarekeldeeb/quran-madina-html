@@ -4,7 +4,7 @@ Tags: quran, islam, arabic, mushaf, shortcode
 Requires at least: 6.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.1.1
+Stable tag: 2.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,9 @@ No: the print and the size are set once for the whole site, under Settings → Q
 2. Verses with highlighted words and emphasised letters on a post.
 
 == Changelog ==
+
+= 2.1.3 =
+* Follows quran-madina-html 2.1.3.
 
 = 2.1.1 =
 * First release: the Quran block, the [quran] shortcode, settings for the print and size, and an optional copy of the library on your site.
