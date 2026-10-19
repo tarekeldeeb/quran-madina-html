@@ -79,6 +79,10 @@ nav:
       - frameworks/index.md
       - React: frameworks/react.md
       - Flutter: frameworks/flutter.md
+      - Vue: frameworks/vue.md
+      - Angular: frameworks/angular.md
+      - Svelte: frameworks/svelte.md
+      - Astro: frameworks/astro.md
   - Reference:
       - reference/index.md
       - Tag attributes: reference/attributes.md

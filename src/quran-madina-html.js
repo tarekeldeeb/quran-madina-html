@@ -125,6 +125,14 @@
     if(/^(https?:)?\/\//.test(url)) return url;
     return cdn + String(url).replace(/^\//, "");
   }
+  // Properties mirror their attributes, as on built-in elements: `tag.sura = 2` sets sura="2",
+  // which re-renders. Frameworks that bind properties on custom elements (Vue, Svelte, Angular,
+  // Lit) then work like plain HTML. null/undefined/false remove the attribute; true sets it empty.
+  function reflectAttribute(tag, key, value){
+    if(value === undefined || value === null || value === false) tag.removeAttribute(key);
+    else tag.setAttribute(key, value === true ? "" : String(value));
+  }
+
   function relativeLuminance(rgbString){
     // WCAG relative luminance of a getComputedStyle "rgb(r, g, b)"/"rgba(...)" string.
     var m = rgbString && rgbString.match(/[\d.]+/g);
@@ -1192,7 +1200,7 @@
 
       constructor() {
         super();
-        this._data = {};
+        this._data = {}; // render bookkeeping (the re-entry guard)
       }
 
       connectedCallback() {
@@ -1200,44 +1208,47 @@
       }
 
       attributeChangedCallback() {
-        this.render();
+        // A tag not yet in the page renders once it's inserted (connectedCallback). Frameworks
+        // set attributes one by one before inserting it; rendering each step would log
+        // "Bad arguments" for the half-set ones.
+        if (this.isConnected) this.render();
       }
 
       get page() { return this.getAttribute("page"); }
-      set page(value) { this._data.page = value; }
+      set page(value) { reflectAttribute(this, "page", value); }
 
       get page_param() { return this.getAttribute("page_param"); }
-      set page_param(value) { this._data.page_param = value; }
+      set page_param(value) { reflectAttribute(this, "page_param", value); }
 
       get aya() { return this.getAttribute("aya"); }
-      set aya(value) { this._data.aya = value; }
+      set aya(value) { reflectAttribute(this, "aya", value); }
 
       get sura() { return this.getAttribute("sura"); }
-      set sura(value) { this._data.sura = value; }
+      set sura(value) { reflectAttribute(this, "sura", value); }
 
       get words() { return this.getAttribute("words"); }
-      set words(value) { this._data.words = value; }
+      set words(value) { reflectAttribute(this, "words", value); }
 
       get highlight() { return this.getAttribute("highlight"); }
-      set highlight(value) { this._data.highlight = value; }
+      set highlight(value) { reflectAttribute(this, "highlight", value); }
 
       get error() { return this.getAttribute("error"); }
-      set error(value) { this._data.error = value; }
+      set error(value) { reflectAttribute(this, "error", value); }
 
       get letters() { return this.getAttribute("letters"); }
-      set letters(value) { this._data.letters = value; }
+      set letters(value) { reflectAttribute(this, "letters", value); }
 
       get headless() { return this.getAttribute("headless"); }
-      set headless(value) { this._data.headless = value; }
+      set headless(value) { reflectAttribute(this, "headless", value); }
 
       get quotes() { return this.getAttribute("quotes"); }
-      set quotes(value) { this._data.quotes = value; }
+      set quotes(value) { reflectAttribute(this, "quotes", value); }
 
       get inline() { return this.getAttribute("inline"); }
-      set inline(value) { this._data.inline = value; }
+      set inline(value) { reflectAttribute(this, "inline", value); }
 
       get notitle() { return this.getAttribute("notitle"); }
-      set notitle(value) { this._data.notitle = value; }
+      set notitle(value) { reflectAttribute(this, "notitle", value); }
 
       render(tag = this) {
         // Re-entrancy guard. Kept from the pre-native-Custom-Elements version, where the platform

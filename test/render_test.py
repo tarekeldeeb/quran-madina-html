@@ -742,6 +742,19 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertEqual(self.letter_marks(), [])
         self.assertEqual(self.visible_words(), aya_word_list(self.db["suras"][0]["ayas"][2]))
 
+    def test_44_properties_reflect_to_attributes(self):
+        """Setting a property (as Vue, Svelte and Angular bindings do) sets the attribute and
+        re-renders; true sets an empty attribute, null/false remove it"""
+        self.set_attrs(sura=1, aya=1)
+        attrs = self.web_driver.execute_script("""
+            var t = document.querySelector('quran-madina-html');
+            t.aya = 3; t.headless = true; t.words = '1:2'; t.words = null; t.notitle = false;
+            return [t.getAttribute('aya'), t.getAttribute('headless'), t.hasAttribute('words'),
+                    t.hasAttribute('notitle'), t.aya];""")
+        self.assertEqual(attrs, ["3", "", False, False, "3"])
+        WebDriverWait(self.web_driver, 10).until(
+            lambda d: self.visible_words() == aya_word_list(self.db["suras"][0]["ayas"][4]))
+
 
 class FontSizeTest(unittest.TestCase):
     """v2 sizes everything in em: any data-font-size gives the same layout, scaled. The tag is

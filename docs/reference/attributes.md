@@ -1,6 +1,7 @@
 # Tag attributes
 
 Attributes of `<quran-madina-html>`. Changing one after the page loads re-renders the tag.
+Each is also a property: `tag.aya = 256` sets `aya="256"` (from 2.1.2).
 
 | Attribute | Value | Default | Description |
 |---|---|---|---|

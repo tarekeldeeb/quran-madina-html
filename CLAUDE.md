@@ -193,6 +193,11 @@ slot 1 is blank (no basmala in the real text). Decoration slots are always cente
   plain JS identifier/property name for a class getter/setter, so hyphenated attributes are read
   via `getAttribute()` directly instead of via a same-named class getter, or avoid the hyphen as
   done here.)
+- Properties reflect to attributes (`reflectAttribute`; since 2.1.2): `tag.aya = 3` sets
+  `aya="3"`, true -> empty attribute, null/false -> removed. Vue, Svelte and Angular property
+  bindings depend on it (render test 44). `attributeChangedCallback` renders only when the tag is
+  connected, so a framework setting attributes one by one before insertion renders once.
+  `this._data` holds only the render re-entry guard.
 - Stretch is applied as a CSS `scaleX()` transform on the line. There is no stored offset; a
   selection/line that starts mid-line reflows the preceding text invisibly (spacers) so the line's
   own stretch/centering positions the first visible word.
