@@ -81,8 +81,16 @@ export function selectBundle(pkg, layouts) {
     if (!files.has(path)) throw new Error(`${path} is missing from the package`);
     out.set(path, files.get(path));
   };
-  take("dist/quran-madina-html.min.js");
-  take("dist/quran-madina-html.min.css");
+  // The script and its CSS. Since 2.1.2 they are dist/quran-madina-html.js/.css, with .min.*
+  // copies of the same files for 2.x pages that link those; older packages only have .min.*.
+  // Take whichever exist, and make sure the script is there under the new name.
+  for (const name of ["quran-madina-html.js", "quran-madina-html.css", "quran-madina-html.min.js", "quran-madina-html.min.css"]) {
+    if (files.has(`dist/${name}`)) take(`dist/${name}`);
+  }
+  if (!out.has("dist/quran-madina-html.js")) {
+    if (!out.has("dist/quran-madina-html.min.js")) throw new Error("dist/quran-madina-html.js is missing from the package");
+    out.set("dist/quran-madina-html.js", out.get("dist/quran-madina-html.min.js"));
+  }
   for (const path of files.keys()) if (path.startsWith("assets/img/")) take(path);
   for (const layout of layouts) {
     const stem = layoutStem(layout);

@@ -77,7 +77,7 @@ php "$PLUGIN/tests/copy.php" "$WP"
 expect shortcodes "<script[^>]*data-cdn=\"$SITE/wp-content/uploads/quran-madina-html/[0-9.]+/\"[^>]*data-layout=\"IndoPak\"[^>]*data-font-size=\"20\"" "library from this site, with the saved settings"
 html=$(page shortcodes)
 url=$(grep -oE "$SITE/wp-content/uploads/quran-madina-html/[0-9.]+/" <<<"$html" | head -1)
-for f in dist/quran-madina-html.min.js dist/quran-madina-html.min.css assets/db/v2/IndoPak-15/manifest.json assets/db/v2/indopak-qmh.woff2; do
+for f in dist/quran-madina-html.js dist/quran-madina-html.css assets/db/v2/IndoPak-15/manifest.json assets/db/v2/indopak-qmh.woff2; do
   if curl -fsS -o /dev/null "$url$f"; then echo "ok   serves $f"; else echo "FAIL serves $f"; fail=1; fi
 done
 

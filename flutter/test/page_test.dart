@@ -82,7 +82,7 @@ void main() {
       const loader = QuranLoader(src: kBundledSrc, cdn: kBundledCdn, layout: 'IndoPak');
       expect(loader.bundled, isTrue);
       final served = loader.resolveBundle('http://127.0.0.1:4321/');
-      expect(served.src, 'http://127.0.0.1:4321/dist/quran-madina-html.min.js');
+      expect(served.src, 'http://127.0.0.1:4321/dist/quran-madina-html.js');
       expect(served.cdn, 'http://127.0.0.1:4321/');
       expect(served.layout, 'IndoPak');
       expect(served.bundled, isFalse);
@@ -98,8 +98,9 @@ void main() {
   test('isLibraryScript knows the library from other scripts', () {
     expect(isLibraryScript(kDefaultSrc), isTrue);
     expect(isLibraryScript('https://unpkg.com/quran-madina-html@2.1.0/'), isTrue);
-    expect(isLibraryScript('https://cdn.example/dist/quran-madina-html.min.js?v=2'), isTrue);
-    expect(isLibraryScript('http://127.0.0.1:9/dist/quran-madina-html.min.js'), isTrue);
+    expect(isLibraryScript('https://cdn.example/dist/quran-madina-html.js?v=2'), isTrue);
+    expect(isLibraryScript('http://127.0.0.1:9/dist/quran-madina-html.js'), isTrue);
+    expect(isLibraryScript('https://unpkg.com/quran-madina-html@2.1.1/dist/quran-madina-html.min.js'), isTrue);
     expect(isLibraryScript('/quran-madina-html/flutter/main.dart.js'), isFalse);
     expect(isLibraryScript('https://x.github.io/quran-madina-html/flutter/flutter.js'), isFalse);
   });

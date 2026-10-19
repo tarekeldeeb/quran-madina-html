@@ -32,6 +32,8 @@ function tarOf(files) {
 const manifest = (font) => JSON.stringify({ version: 2, font_url: font });
 const PACKAGE = {
   "package/package.json": "{}",
+  "package/dist/quran-madina-html.js": "js",
+  "package/dist/quran-madina-html.css": "css",
   "package/dist/quran-madina-html.min.js": "js",
   "package/dist/quran-madina-html.min.css": "css",
   "package/assets/img/sura_border_sym4.svg": "<svg/>",
@@ -65,6 +67,8 @@ describe("selectBundle", () => {
 
   it("takes the script, CSS, images, and each layout's shards and font", () => {
     expect(new Set(selectBundle(pkg, ["1441H", "indopak"]).keys())).toEqual(new Set([
+      "dist/quran-madina-html.js",
+      "dist/quran-madina-html.css",
       "dist/quran-madina-html.min.js",
       "dist/quran-madina-html.min.css",
       "assets/img/sura_border_sym4.svg",
@@ -75,6 +79,15 @@ describe("selectBundle", () => {
       "assets/db/v2/IndoPak-15/juz-01.json",
       "assets/db/v2/indopak-qmh.woff2",
     ]));
+  });
+
+  it("an older package (only .min.*): the script is also written under the new name", () => {
+    const old = { ...PACKAGE };
+    delete old["package/dist/quran-madina-html.js"];
+    delete old["package/dist/quran-madina-html.css"];
+    const out = selectBundle(readTar(tarOf(old)), ["1441H"]);
+    expect(out.get("dist/quran-madina-html.js").toString()).toBe("js");
+    expect(out.has("dist/quran-madina-html.min.css")).toBe(true);
   });
 
   it("rejects an unknown layout and a layout missing from the package", () => {

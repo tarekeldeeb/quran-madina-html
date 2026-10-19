@@ -2,10 +2,10 @@ module.exports = function(grunt) {
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
-    // The npm package ships readable (unminified) code. The output keeps the historical
-    // `.min.js` / `.min.css` names because they are a published URL contract (unpkg links,
-    // the React / React Native / Flutter / WordPress wrappers, self-hosting docs).
-    // Each file opens with the license header (version/author from package.json).
+    // The npm package ships readable (unminified) code: dist/quran-madina-html.js and .css,
+    // each opening with the license header (version/author from package.json). Through 2.x the
+    // same files are also written under the old .min.js / .min.css names, for pages that link
+    // those directly (e.g. unpkg @2 URLs); drop the *_min targets in 3.0.
     concat: {
       options: {
         stripBanners: false,
@@ -22,9 +22,17 @@ module.exports = function(grunt) {
       },
       js: {
         src: ['src/<%= pkg.name %>.js'],
+        dest: 'dist/<%= pkg.name %>.js'
+      },
+      js_min: {
+        src: ['src/<%= pkg.name %>.js'],
         dest: 'dist/<%= pkg.name %>.min.js'
       },
       css: {
+        src: ['src/<%= pkg.name %>.css'],
+        dest: 'dist/<%= pkg.name %>.css'
+      },
+      css_min: {
         src: ['src/<%= pkg.name %>.css'],
         dest: 'dist/<%= pkg.name %>.min.css'
       }

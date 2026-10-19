@@ -47,14 +47,14 @@ function qmh_library_urls() {
 	if ( 'local' === qmh_settings()['source'] && qmh_local_ready() ) {
 		$base = qmh_local_url();
 		return array(
-			'src'   => $base . 'dist/quran-madina-html.min.js',
+			'src'   => $base . 'dist/quran-madina-html.js',
 			'cdn'   => $base,
 			'local' => true,
 		);
 	}
 	$base = 'https://unpkg.com/quran-madina-html@' . QMH_VERSION . '/';
 	return array(
-		'src'   => $base . 'dist/quran-madina-html.min.js',
+		'src'   => $base . 'dist/quran-madina-html.js',
 		'cdn'   => $base,
 		'local' => false,
 	);

@@ -15,7 +15,7 @@ const String kBundleDir = 'assets/quran_madina';
 const String kBundledCdn = 'qmh-bundle:/';
 
 /// The library script inside the bundle.
-const String kBundledSrc = '${kBundledCdn}dist/quran-madina-html.min.js';
+const String kBundledSrc = '${kBundledCdn}dist/quran-madina-html.js';
 
 /// The name of the JavaScript channel the page reports to the widget on.
 const String kChannel = 'QMH';

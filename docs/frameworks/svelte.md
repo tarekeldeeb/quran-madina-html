@@ -46,7 +46,7 @@ npx -p @tarekeldeeb/quran-madina-react quran-madina-bundle --layouts 1441H --out
 Then load it from there:
 
 ```html
-<script src="/quran-madina/dist/quran-madina-html.min.js" data-cdn="/quran-madina/"></script>
+<script src="/quran-madina/dist/quran-madina-html.js" data-cdn="/quran-madina/"></script>
 ```
 
 See [Self-hosting and offline](../guide/self-hosting.md).

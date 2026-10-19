@@ -91,10 +91,10 @@ describe("loadQuranMadinaHtml", () => {
     let { loadQuranMadinaHtml, bundleUrls } = await importFresh();
     loadQuranMadinaHtml({ bundled: true, src: "https://ignored.example/x.js" });
     let script = document.querySelector(SELECTOR);
-    expect(script.getAttribute("src")).toBe("/quran-madina/dist/quran-madina-html.min.js");
+    expect(script.getAttribute("src")).toBe("/quran-madina/dist/quran-madina-html.js");
     expect(script.getAttribute("data-cdn")).toBe("/quran-madina/");
     expect(bundleUrls("/app/qmh")).toEqual({
-      src: "/app/qmh/dist/quran-madina-html.min.js",
+      src: "/app/qmh/dist/quran-madina-html.js",
       cdn: "/app/qmh/",
     });
     script.remove();

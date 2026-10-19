@@ -35,6 +35,8 @@ String manifest(String font) => jsonEncode({'version': 2, 'font_url': font});
 
 final package = {
   'package/package.json': '{}',
+  'package/dist/quran-madina-html.js': 'js',
+  'package/dist/quran-madina-html.css': 'css',
   'package/dist/quran-madina-html.min.js': 'js',
   'package/dist/quran-madina-html.min.css': 'css',
   'package/assets/img/sura_border_sym4.svg': '<svg/>',
@@ -84,6 +86,8 @@ void main() {
     test('takes the script, CSS, images, and each layout\'s shards and font', () {
       final out = selectBundle(files, ['1441H', 'indopak']);
       expect(out.keys.toSet(), {
+        'dist/quran-madina-html.js',
+        'dist/quran-madina-html.css',
         'dist/quran-madina-html.min.js',
         'dist/quran-madina-html.min.css',
         'assets/img/sura_border_sym4.svg',
@@ -94,6 +98,15 @@ void main() {
         'assets/db/v2/IndoPak-15/juz-01.json',
         'assets/db/v2/indopak-qmh.woff2',
       });
+    });
+
+    test('an older package (only .min.*): the script is also written under the new name', () {
+      final old = Map.of(package)
+        ..remove('package/dist/quran-madina-html.js')
+        ..remove('package/dist/quran-madina-html.css');
+      final out = selectBundle(readTar(tarOf(old)), ['1441H']);
+      expect(utf8.decode(out['dist/quran-madina-html.js']!), 'js');
+      expect(out.containsKey('dist/quran-madina-html.min.css'), isTrue);
     });
 
     test('rejects an unknown layout and a layout missing from the package', () {
@@ -114,7 +127,7 @@ void main() {
 
   group('bundle server', () {
     test('maps request paths into the bundle, refusing to leave it', () {
-      expect(bundlePath('/dist/quran-madina-html.min.js'), 'dist/quran-madina-html.min.js');
+      expect(bundlePath('/dist/quran-madina-html.js'), 'dist/quran-madina-html.js');
       expect(bundlePath('/assets//db/v2/x.json'), 'assets/db/v2/x.json');
       expect(bundlePath('/assets/../../secret'), isNull);
       expect(bundlePath('/'), isNull);

@@ -92,7 +92,7 @@ export function hostPage(config) {
     document.body.appendChild(tag);
     var here = location.href.replace(/[#?].*$/, "").replace(/[^/]*$/, "");
     var script = document.createElement("script");
-    script.src = cfg.src || here + "dist/quran-madina-html.min.js";
+    script.src = cfg.src || here + "dist/quran-madina-html.js";
     script.setAttribute("data-cdn", cfg.cdn || here);
     if (cfg.layout) script.setAttribute("data-layout", cfg.layout);
     if (cfg.fontSize) script.setAttribute("data-font-size", String(cfg.fontSize));

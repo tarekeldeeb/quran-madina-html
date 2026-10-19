@@ -35,7 +35,7 @@ function qmh_local_url() {
  * @return bool
  */
 function qmh_local_ready() {
-	return file_exists( qmh_local_dir() . 'dist/quran-madina-html.min.js' );
+	return file_exists( qmh_local_dir() . 'dist/quran-madina-html.js' );
 }
 
 /**
@@ -46,7 +46,8 @@ function qmh_local_ready() {
  * @return bool
  */
 function qmh_wanted_file( $path ) {
-	if ( in_array( $path, array( 'dist/quran-madina-html.min.js', 'dist/quran-madina-html.min.css' ), true ) ) {
+	// The script and its CSS, and their 2.x .min.* copies (older packages only have those).
+	if ( preg_match( '#^dist/quran-madina-html(\.min)?\.(js|css)$#', $path ) ) {
 		return true;
 	}
 	if ( 0 === strpos( $path, 'assets/img/' ) ) {
@@ -99,7 +100,14 @@ function qmh_extract_package( $archive, $dest ) {
 	} catch ( Exception $e ) {
 		return new WP_Error( 'qmh_unpack', $e->getMessage() );
 	}
-	if ( ! file_exists( $dest . 'dist/quran-madina-html.min.js' ) ) {
+	foreach ( array( 'js', 'css' ) as $ext ) { // an older package only has the .min names
+		$file = $dest . 'dist/quran-madina-html.' . $ext;
+		$min  = $dest . 'dist/quran-madina-html.min.' . $ext;
+		if ( ! file_exists( $file ) && file_exists( $min ) ) {
+			copy( $min, $file );
+		}
+	}
+	if ( ! file_exists( $dest . 'dist/quran-madina-html.js' ) ) {
 		return new WP_Error( 'qmh_incomplete', __( 'The downloaded package does not contain the library.', 'quran-madina-html' ) );
 	}
 	return $count;

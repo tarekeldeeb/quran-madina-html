@@ -1084,7 +1084,7 @@
   var doc_cdn     = this_script.getAttribute('data-cdn');
   if (doc_cdn) cdn = doc_cdn.replace(/\/?$/, "/"); // honor explicit base, ensure trailing slash
   print(`layout: ${doc_layout} size: ${doc_font_sz}`);
-  const name_css = cdn+"dist/"+name+".min.css?v=1.1";
+  const name_css = cdn+"dist/"+name+".css?v=1.1";
   if (!document.getElementById(name))
   {
       var head  = document.getElementsByTagName('head')[0];

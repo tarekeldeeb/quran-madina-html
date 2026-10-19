@@ -10,11 +10,15 @@ From the npm package (`npm install quran-madina-html`), keep this folder structu
 
 | Path | What |
 |---|---|
-| `dist/quran-madina-html.min.js` | the script |
-| `dist/quran-madina-html.min.css` | its styles (loaded by the script) |
+| `dist/quran-madina-html.js` | the script |
+| `dist/quran-madina-html.css` | its styles (loaded by the script) |
 | `assets/img/` | the sura frame |
 | `assets/db/v2/<stem>/` | the text and layout of one print, split per juz' |
 | `assets/db/v2/<font>-qmh.woff2` | that print's font |
+
+Through version 2.x, `dist/` also holds the same two files under their old names,
+`quran-madina-html.min.js` and `.min.css`, so pages that link those keep working. Use the
+names above; the old ones go in 3.0.
 
 The stems and fonts by layout:
 
@@ -33,14 +37,14 @@ Each print takes about 4 MB. Serve only the ones you use.
 === "HTML"
 
     ```html
-    <script src="/static/qmh/dist/quran-madina-html.min.js" data-cdn="/static/qmh/"></script>
+    <script src="/static/qmh/dist/quran-madina-html.js" data-cdn="/static/qmh/"></script>
     ```
 
 === "React"
 
     ```jsx
     {/* src, cdn and bundled apply to the whole page: set them on the first component */}
-    <QuranMadinaHtml page={1} src="/static/qmh/dist/quran-madina-html.min.js" cdn="/static/qmh/" />
+    <QuranMadinaHtml page={1} src="/static/qmh/dist/quran-madina-html.js" cdn="/static/qmh/" />
     {/* or offline, from the app's own copy (npx quran-madina-bundle; see React: Offline) */}
     <QuranMadinaHtml page={1} bundled />
     ```
@@ -49,7 +53,7 @@ Each print takes about 4 MB. Serve only the ones you use.
 
     ```jsx
     {/* from your own server */}
-    <QuranMadinaNative page={1} src="https://example.com/qmh/dist/quran-madina-html.min.js" cdn="https://example.com/qmh/" />
+    <QuranMadinaNative page={1} src="https://example.com/qmh/dist/quran-madina-html.js" cdn="https://example.com/qmh/" />
     {/* or offline, from the app's own copy (npx quran-madina-native-bundle; see React Native: Offline) */}
     <QuranMadinaNative page={1} bundled />
     ```
@@ -60,7 +64,7 @@ Each print takes about 4 MB. Serve only the ones you use.
     // from your own server
     QuranMadinaFlutter(
       page: 1,
-      src: 'https://example.com/qmh/dist/quran-madina-html.min.js',
+      src: 'https://example.com/qmh/dist/quran-madina-html.js',
       cdn: 'https://example.com/qmh/',
     )
     // or offline, from the app's own assets (see Flutter: online or offline)

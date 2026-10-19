@@ -18,7 +18,7 @@ export const BUNDLE_BASE = "/quran-madina/";
 export function bundleUrls(bundled) {
   let base = bundled === true ? BUNDLE_BASE : String(bundled);
   if (!base.endsWith("/")) base += "/";
-  return { src: `${base}dist/quran-madina-html.min.js`, cdn: base };
+  return { src: `${base}dist/quran-madina-html.js`, cdn: base };
 }
 
 let loaderPromise = null;
