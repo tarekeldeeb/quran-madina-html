@@ -1995,11 +1995,11 @@ internet connection.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>dist/quran-madina-html.min.js</code></td>
+<td><code>dist/quran-madina-html.js</code></td>
 <td>the script</td>
 </tr>
 <tr>
-<td><code>dist/quran-madina-html.min.css</code></td>
+<td><code>dist/quran-madina-html.css</code></td>
 <td>its styles (loaded by the script)</td>
 </tr>
 <tr>
@@ -2016,6 +2016,9 @@ internet connection.</p>
 </tr>
 </tbody>
 </table>
+<p>Through version 2.x, <code>dist/</code> also holds the same two files under their old names,
+<code>quran-madina-html.min.js</code> and <code>.min.css</code>, so pages that link those keep working. Use the
+names above; the old ones go in 3.0.</p>
 <p>The stems and fonts by layout:</p>
 <table>
 <thead>
@@ -2049,19 +2052,19 @@ internet connection.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">HTML</label><label for="__tabbed_1_2">React</label><label for="__tabbed_1_3">React Native</label><label for="__tabbed_1_4">Flutter</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">"/static/qmh/dist/quran-madina-html.min.js"</span> <span class="na">data-cdn</span><span class="o">=</span><span class="s">"/static/qmh/"</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">"/static/qmh/dist/quran-madina-html.js"</span> <span class="na">data-cdn</span><span class="o">=</span><span class="s">"/static/qmh/"</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="p">{</span><span class="cm">/* src, cdn and bundled apply to the whole page: set them on the first component */</span><span class="p">}</span>
-<span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">page</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">src</span><span class="o">=</span><span class="s">"/static/qmh/dist/quran-madina-html.min.js"</span><span class="w"> </span><span class="na">cdn</span><span class="o">=</span><span class="s">"/static/qmh/"</span><span class="w"> </span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">page</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">src</span><span class="o">=</span><span class="s">"/static/qmh/dist/quran-madina-html.js"</span><span class="w"> </span><span class="na">cdn</span><span class="o">=</span><span class="s">"/static/qmh/"</span><span class="w"> </span><span class="p">/&gt;</span>
 <span class="p">{</span><span class="cm">/* or offline, from the app's own copy (npx quran-madina-bundle; see React: Offline) */</span><span class="p">}</span>
 <span class="p">&lt;</span><span class="nt">QuranMadinaHtml</span><span class="w"> </span><span class="na">page</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">bundled</span><span class="w"> </span><span class="p">/&gt;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="p">{</span><span class="cm">/* from your own server */</span><span class="p">}</span>
-<span class="p">&lt;</span><span class="nt">QuranMadinaNative</span><span class="w"> </span><span class="na">page</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">src</span><span class="o">=</span><span class="s">"https://example.com/qmh/dist/quran-madina-html.min.js"</span><span class="w"> </span><span class="na">cdn</span><span class="o">=</span><span class="s">"https://example.com/qmh/"</span><span class="w"> </span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">QuranMadinaNative</span><span class="w"> </span><span class="na">page</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">src</span><span class="o">=</span><span class="s">"https://example.com/qmh/dist/quran-madina-html.js"</span><span class="w"> </span><span class="na">cdn</span><span class="o">=</span><span class="s">"https://example.com/qmh/"</span><span class="w"> </span><span class="p">/&gt;</span>
 <span class="p">{</span><span class="cm">/* or offline, from the app's own copy (npx quran-madina-native-bundle; see React Native: Offline) */</span><span class="p">}</span>
 <span class="p">&lt;</span><span class="nt">QuranMadinaNative</span><span class="w"> </span><span class="na">page</span><span class="o">=</span><span class="p">{</span><span class="mf">1</span><span class="p">}</span><span class="w"> </span><span class="na">bundled</span><span class="w"> </span><span class="p">/&gt;</span>
 </code></pre></div>
@@ -2070,7 +2073,7 @@ internet connection.</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// from your own server</span>
 <span class="n">QuranMadinaFlutter</span><span class="p">(</span>
 <span class="w">  </span><span class="nl">page:</span><span class="w"> </span><span class="m">1</span><span class="p">,</span>
-<span class="w">  </span><span class="nl">src:</span><span class="w"> </span><span class="s1">'https://example.com/qmh/dist/quran-madina-html.min.js'</span><span class="p">,</span>
+<span class="w">  </span><span class="nl">src:</span><span class="w"> </span><span class="s1">'https://example.com/qmh/dist/quran-madina-html.js'</span><span class="p">,</span>
 <span class="w">  </span><span class="nl">cdn:</span><span class="w"> </span><span class="s1">'https://example.com/qmh/'</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="c1">// or offline, from the app's own assets (see Flutter: online or offline)</span>
