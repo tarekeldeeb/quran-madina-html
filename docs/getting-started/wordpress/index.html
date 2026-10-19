@@ -768,23 +768,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Settings">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#without-outside-requests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Without outside requests
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -803,6 +786,17 @@
     <span class="md-ellipsis">
       
         License
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-the-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building the plugin
       
     </span>
   </a>
@@ -1997,23 +1991,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Settings">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#without-outside-requests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Without outside requests
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2032,6 +2009,17 @@
     <span class="md-ellipsis">
       
         License
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-the-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building the plugin
       
     </span>
   </a>
@@ -2142,17 +2130,10 @@ on one line shows inline, inside the sentence:</p>
 <li><strong>Print:</strong> the 1441H or 1405H Madina Mushaf, or the 15-line IndoPak. One print for the
   whole site.</li>
 <li><strong>Font size:</strong> in pixels, 16 by default.</li>
-<li><strong>Load the library from:</strong> unpkg.com (the default, nothing to set up), or <strong>this site</strong>.</li>
 </ul>
-<h3 id="without-outside-requests">Without outside requests<a class="headerlink" href="#without-outside-requests" title="Permanent link">&para;</a></h3>
-<p>To load nothing from unpkg.com (for privacy, or a site that must work on a closed network):</p>
-<ol>
-<li>Under <strong>Settings → Quran Madina</strong>, click <strong>Copy to this site</strong>. It downloads the library,
-   its texts and fonts for all three prints (about 11 MB) into your uploads folder, once.</li>
-<li>Choose <strong>This site</strong> under "Load the library from", and <strong>Save</strong>.</li>
-</ol>
-<p>After a plugin update, copy it again: each plugin version loads its own library version. Until
-you do, pages load from unpkg.com, and the settings page says so.</p>
+<p>The plugin carries the library, the Quran text and the fonts for all three prints, and loads
+them from your own site: nothing comes from unpkg.com or any other outside server. (Versions
+2.1.1 to 2.1.3 loaded from unpkg.com unless you copied the library to the site.)</p>
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The library loads only on pages that show Quran text.</li>
@@ -2162,14 +2143,20 @@ you do, pages load from unpkg.com, and the settings page says so.</p>
 <li>Caching and optimisation plugins: exclude the <code>quran-madina-html</code> script from "combine" or
   "defer" options if the text doesn't appear. The library reads its settings from its own
   script tag.</li>
-<li>Uninstalling the plugin removes its settings and the copied library.</li>
+<li>Uninstalling the plugin removes its settings, and the copy of the library that versions
+  2.1.1 to 2.1.3 could save in the uploads folder.</li>
 </ul>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
-<p>The plugin is dual licensed: GPLv2 or later, or the
+<p>The plugin, including its copy of the library, is dual licensed: GPLv2 or later, or the
 <a href="https://github.com/ojuba-org/waqf/tree/master/2.0">"Waqf" General Public License 2.0</a>, at your
-choice (see <code>LICENSE.txt</code> in the plugin folder). The GPL option is for WordPress, whose plugins
-must be GPL compatible. The library the plugin loads, and the rest of this project, stay under the
-Waqf General Public License 2.0; the fonts under the SIL Open Font License 1.1.</p>
+choice (see <code>LICENSE.txt</code> in the plugin folder). The GPL option is for WordPress.org, whose
+plugins must be GPL compatible. Outside the plugin, this project stays under the Waqf General
+Public License 2.0 only. The fonts are under the SIL Open Font License 1.1, and the Quran text
+is the Tanzil Project's (Creative Commons Attribution 3.0, distributed verbatim).</p>
+<h2 id="building-the-plugin">Building the plugin<a class="headerlink" href="#building-the-plugin" title="Permanent link">&para;</a></h2>
+<p><code>wordpress/build.sh</code> copies the library into the plugin's <code>library/</code> folder (run <code>npx grunt</code>
+first); <code>wordpress/build.sh --zip quran-madina-html.zip</code> also writes the zip. CI does this and
+runs WordPress.org's <a href="https://wordpress.org/plugins/plugin-check/">Plugin Check</a> on the result.</p>
 
 
 
