@@ -933,6 +933,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1033,6 +1041,118 @@
     
   
     Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="vue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="angular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Angular
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="svelte/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Svelte
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="astro/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Astro
   
 
     
@@ -1609,6 +1729,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setting-values-from-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting values from code
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1628,14 +1767,57 @@
 
 
 <h1 id="frameworks">Frameworks<a class="headerlink" href="#frameworks" title="Permanent link">&para;</a></h1>
-<p>Thin wrappers around the <code>&lt;quran-madina-html&gt;</code> tag. The rendering is the same library in every
-case; each wrapper loads it and passes your options through.</p>
+<p><code>&lt;quran-madina-html&gt;</code> is a standard web component, so it works in any framework that renders
+HTML. Two frameworks get a dedicated package, because they can't use the tag directly or gain a
+lot from one:</p>
 <ul>
-<li><a href="react/">React</a>: <code>@tarekeldeeb/quran-madina-react</code>, for React on the web and, through
-  Capacitor, on iOS and Android.</li>
-<li><a href="flutter/">Flutter</a>: <code>quran_madina_flutter</code>, for Android, iOS, macOS and the web.</li>
+<li><a href="react/">React</a>: <code>@tarekeldeeb/quran-madina-react</code>, a component that loads the library for
+  you, for React on the web and, through Capacitor, on iOS and Android.</li>
+<li><a href="flutter/">Flutter</a>: <code>quran_madina_flutter</code>, a widget for Android, iOS, macOS and the web.</li>
 </ul>
-<p>Any other framework can use the tag directly, like any HTML element: see <a href="../getting-started/html/">HTML</a>.</p>
+<p>The others use the tag as it is, with a line or two of setup:</p>
+<table>
+<thead>
+<tr>
+<th>Framework</th>
+<th>Setup</th>
+<th>Page</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vue, Nuxt</td>
+<td>mark the tag as a custom element in the compiler options</td>
+<td><a href="vue/">Vue</a></td>
+</tr>
+<tr>
+<td>Angular</td>
+<td><code>CUSTOM_ELEMENTS_SCHEMA</code> on the component</td>
+<td><a href="angular/">Angular</a></td>
+</tr>
+<tr>
+<td>Svelte, SvelteKit</td>
+<td>none</td>
+<td><a href="svelte/">Svelte</a></td>
+</tr>
+<tr>
+<td>Astro</td>
+<td>load the script with <code>is:inline</code></td>
+<td><a href="astro/">Astro</a></td>
+</tr>
+<tr>
+<td>SolidJS, Preact, Lit, Alpine, plain JavaScript</td>
+<td>none: write the tag, or create it with <code>document.createElement</code></td>
+<td><a href="../getting-started/html/">HTML</a></td>
+</tr>
+</tbody>
+</table>
+<p>Next.js is React: use the <a href="react/">React</a> component in a client component (<code>"use client"</code>).</p>
+<h2 id="setting-values-from-code">Setting values from code<a class="headerlink" href="#setting-values-from-code" title="Permanent link">&para;</a></h2>
+<p>Every attribute is also a property: <code>tag.aya = 256</code> is the same as
+<code>tag.setAttribute("aya", "256")</code>, and either re-renders the tag. <code>true</code> sets an empty attribute,
+and <code>null</code> or <code>false</code> removes it. Frameworks that pass values as properties (Vue, Svelte,
+Angular's <code>[aya]</code>) rely on this, which needs library 2.1.2 or later.</p>
 
 
 
