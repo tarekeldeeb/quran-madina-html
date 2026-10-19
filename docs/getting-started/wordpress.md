@@ -84,3 +84,11 @@ you do, pages load from unpkg.com, and the settings page says so.
   "defer" options if the text doesn't appear. The library reads its settings from its own
   script tag.
 - Uninstalling the plugin removes its settings and the copied library.
+
+## License
+
+The plugin is dual licensed: GPLv2 or later, or the
+["Waqf" General Public License 2.0](https://github.com/ojuba-org/waqf/tree/master/2.0), at your
+choice (see `LICENSE.txt` in the plugin folder). The GPL option is for WordPress, whose plugins
+must be GPL compatible. The library the plugin loads, and the rest of this project, stay under the
+Waqf General Public License 2.0; the fonts under the SIL Open Font License 1.1.

@@ -5,8 +5,8 @@ Requires at least: 6.3
 Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 2.1.1
-License: Waqf General Public License 2.0
-License URI: https://github.com/ojuba-org/waqf/tree/master/2.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Quran pages that look like the printed Madina Mushaf, as real text: a Quran block and a [quran] shortcode.
 
@@ -34,6 +34,10 @@ Built on [quran-madina-html](https://github.com/tarekeldeeb/quran-madina-html). 
 * `[quran sura="5" aya="1-2" headless="true"]` without the header
 
 A verse that fits on one line shows inline, inside your sentence.
+
+= License =
+
+The plugin is dual licensed: GPLv2 or later, or the ["Waqf" General Public License 2.0](https://github.com/ojuba-org/waqf/tree/master/2.0), at your choice (see LICENSE.txt). The quran-madina-html library it loads, from unpkg.com or from your own site, is under the Waqf General Public License 2.0; its fonts are under the SIL Open Font License 1.1.
 
 == Installation ==
 

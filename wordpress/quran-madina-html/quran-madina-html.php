@@ -8,9 +8,12 @@
  * Requires PHP:      7.4
  * Author:            Tarek Eldeeb
  * Author URI:        https://github.com/tarekeldeeb
- * License:           Waqf General Public License 2.0
- * License URI:       https://github.com/ojuba-org/waqf/tree/master/2.0
+ * License:           GPLv2 or later, or Waqf General Public License 2.0
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       quran-madina-html
+ *
+ * Dual licensed: GPL-2.0-or-later, or the "Waqf" General Public License 2.0, at your choice.
+ * See LICENSE.txt. The library it loads stays under the Waqf General Public License 2.0.
  *
  * @package QuranMadinaHtml
  */

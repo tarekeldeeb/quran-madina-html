@@ -295,6 +295,8 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   (GitHub clone + SQLite drop-in + `php -S`) and checks the HTML; `QMH_CA_BUNDLE` for proxied
   sandboxes. CI: `.github/workflows/wordpress.yml`; on a release tag it attaches
   `quran-madina-html-wordpress.zip` to the GitHub release (stable "latest/download" link).
+  License: the plugin folder only is dual GPL-2.0-or-later / Waqf GPL 2.0 (`LICENSE.txt`,
+  header, readme.txt), since WordPress.org requires GPL; everything else stays Waqf only.
 - `scripts/sync-wrapper-version.mjs` (release-it `after:bump`) keeps all of them at the core version,
   including the WordPress plugin header, QMH_VERSION and readme Stable tag, `flutter/pubspec.yaml`, `kLibraryVersion` (`lib/src/version.dart`, the bundler's
   default) and a `flutter/CHANGELOG.md` entry. pub.dev: the release tag (e.g. `2.1.1`) starts
