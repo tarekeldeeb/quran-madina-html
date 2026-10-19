@@ -1,1 +1,200 @@
-quran-madina-html{--qmh-background:#F5F5DC;--qmh-header:black;--qmh-highlight:#fff3b0;--qmh-error:#f5c6cb;--qmh-highlight-text:#1a1a1a;--qmh-error-text:#1a1a1a;display:inline-flex;direction:rtl;background-color:color-mix(in srgb,var(--qmh-background) 10%,transparent);border-radius:5px;overflow:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}quran-madina-html[data-qmh-text-scheme=dark]{--qmh-highlight:#5c4600;--qmh-error:#6b1a24;--qmh-highlight-text:#ffffff;--qmh-error-text:#ffffff}quran-madina-html-header{background-color:color-mix(in srgb,var(--qmh-header) 20%,transparent);font-size:smaller;display:block;padding:5px 5px 5px 10px;margin-bottom:5px;color:color-mix(in srgb,currentColor 60%,transparent);height:25px;line-height:25px}quran-madina-html-line{text-align:right;white-space:nowrap;transform-origin:top right;margin-right:5px}quran-madina-html.quran-madina-html-inline quran-madina-html-line::before{content:"\201D";color:color-mix(in srgb,currentColor 50%,transparent)}quran-madina-html.quran-madina-html-inline quran-madina-html-line::after{content:"\201C";color:color-mix(in srgb,currentColor 50%,transparent)}.quran-madina-html-part{transition:background-color .5s ease}.quran-madina-html-word-hidden{visibility:hidden}.quran-madina-html-word-highlight{background-color:var(--qmh-highlight);color:var(--qmh-highlight-text,currentColor)}.quran-madina-html-word-error{background-color:var(--qmh-error);color:var(--qmh-error-text,currentColor)}.quran-madina-html-word-error,.quran-madina-html-word-highlight{-webkit-print-color-adjust:exact;print-color-adjust:exact}quran-madina-html{--qmh-letter:#a3263a}quran-madina-html.quran-madina-html-lettered .quran-madina-html-ink,quran-madina-html.quran-madina-html-lettered .quran-madina-html-word:not(.quran-madina-html-word-lettered){position:relative;z-index:1}.quran-madina-html-letter{color:var(--qmh-letter);text-shadow:0 0 .1em color-mix(in srgb,currentColor 30%,transparent);-webkit-print-color-adjust:exact;print-color-adjust:exact}.quran-madina-html-letter-blink{animation:quran-madina-html-letter-blink 1.4s ease-in-out infinite}quran-madina-html[data-qmh-text-scheme=dark] .quran-madina-html-letter{color:color-mix(in srgb,var(--qmh-letter) 45%,#fff)}@keyframes quran-madina-html-letter-blink{0%,100%,55%{text-shadow:0 0 .1em color-mix(in srgb,currentColor 30%,transparent)}70%,85%{text-shadow:0 0 .08em color-mix(in srgb,currentColor 75%,transparent),0 0 .28em color-mix(in srgb,currentColor 60%,transparent),0 0 .55em color-mix(in srgb,currentColor 40%,transparent)}}@media (prefers-reduced-motion:reduce){.quran-madina-html-letter{animation:none}}@media print{.quran-madina-html-letter{animation:none}}quran-madina-html-line:has(.quran-madina-html-sura-start){position:relative}quran-madina-html-line:has(.quran-madina-html-sura-start)::before{content:"";position:absolute;inset:0;background-color:currentColor;-webkit-mask-image:url(../assets/img/sura_border_sym4.svg);mask-image:url(../assets/img/sura_border_sym4.svg);-webkit-mask-size:95% 100%;mask-size:95% 100%;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;mask-mode:alpha;pointer-events:none}svg.quran-madina-html-icon{float:left;padding:4px 4px 0 7px;border-radius:5px}svg.quran-madina-html-icon:hover{background-color:color-mix(in srgb,var(--qmh-header) 50%,transparent)}svg.quran-madina-html-icon path{fill:color-mix(in srgb,currentColor 60%,transparent)}quran-madina-html-aya-popup{display:none;position:fixed;direction:rtl;z-index:1000;align-items:center;gap:2px;background-color:color-mix(in srgb,var(--qmh-header) 85%,transparent);border-radius:6px;padding:2px 4px;box-shadow:0 2px 10px rgba(0,0,0,.35)}quran-madina-html-aya-popup.quran-madina-html-open{display:flex}quran-madina-html-aya-popup svg.quran-madina-html-icon{float:none;padding:4px}quran-madina-html-aya-popup svg.quran-madina-html-icon path{fill:var(--qmh-background)}
+/*!
+ * quran-madina-html v2.1.2
+ * A Madina Quran HTML Renderer without images.
+ * https://github.com/tarekeldeeb/quran-madina-html#readme
+ *
+ * Copyright (c) Tarek Eldeeb
+ * Licensed under the "Waqf" General Public License 2.0, 3 Muharram 1435
+ * https://github.com/ojuba-org/waqf/tree/master/2.0
+ * See LICENSE.md in the package for details.
+ */
+quran-madina-html {
+  --qmh-background: #F5F5DC; /*#beige; */
+  --qmh-header: black; /* #dimgrey; */
+  --qmh-highlight: #fff3b0; /* soft yellow */
+  --qmh-error: #f5c6cb; /* soft red */
+  --qmh-highlight-text: #1a1a1a;
+  --qmh-error-text: #1a1a1a;
+  display: inline-flex;
+  direction: rtl;
+  background-color:color-mix(in srgb, var(--qmh-background) 10%, transparent);
+  border-radius: 5px;
+  overflow: hidden;
+  /* Mobile Safari (and every iOS browser) enlarges text it finds too small on pages wider than
+     the screen. The line geometry is pre-computed for the exact font size, so enlarged words
+     would spill out of the frame: keep the size we set. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+/* highlight=/error= need a bg+text pair that contrasts with whatever the host page's actual
+   (ambient, inherited) text color is - not a guess based on prefers-color-scheme, which may not
+   correlate with how a host implements its own dark/light mode (e.g. a manual class toggle).
+   applyMarkTextScheme() in the JS reads the real computed color and sets this attribute. */
+quran-madina-html[data-qmh-text-scheme="dark"] {
+  --qmh-highlight: #5c4600;
+  --qmh-error: #6b1a24;
+  --qmh-highlight-text: #ffffff;
+  --qmh-error-text: #ffffff;
+}
+quran-madina-html-header {
+  background-color: color-mix(in srgb, var(--qmh-header) 20%, transparent);
+  font-size: smaller;
+  display: block;
+  padding: 5px 5px 5px 10px;
+  margin-bottom: 5px;
+  color: color-mix(in srgb, currentColor 60%, transparent);
+  height: 25px;
+  line-height: 25px;
+}
+quran-madina-html-line {
+  text-align: right;
+  white-space: nowrap;
+  transform-origin: top right;
+  margin-right: 5px;
+}
+/* Inline (single-line) renders have no header and no copy button (removed - the per-aya click
+   popup covers them too), so quote marks are their only visual cue that this is a quoted excerpt.
+   Generated content, not real text, so it's invisible to textContent-based copy logic (which adds
+   its own matching quotes around what it reads - see copyToClipboard/showAyaPopup). */
+quran-madina-html.quran-madina-html-inline quran-madina-html-line::before {
+  content: "\201D";
+  color: color-mix(in srgb, currentColor 50%, transparent);
+}
+quran-madina-html.quran-madina-html-inline quran-madina-html-line::after {
+  content: "\201C";
+  color: color-mix(in srgb, currentColor 50%, transparent);
+}
+.quran-madina-html-part{
+  transition: background-color 0.5s ease;
+}
+/* Words outside a words="a:b" selection: kept in place to preserve the Madina line
+   geometry (stretch/offset), but blanked. visibility:hidden also drops them from
+   innerText, so copy-to-clipboard yields only the selected words. */
+.quran-madina-html-word-hidden{
+  visibility: hidden;
+}
+/* highlight=/error=: mark a sub-range of words (see appendWords/basmalaRenderMode in the
+   JS). background-color only - no padding/margin/border, since every word span's exact
+   measured width feeds the line's pre-computed stretch/kashida geometry (see CLAUDE.md);
+   adding box size here would visibly distort line justification. Override via the
+   --qmh-highlight/--qmh-error custom properties or these rules directly. */
+.quran-madina-html-word-highlight{
+  background-color: var(--qmh-highlight);
+  color: var(--qmh-highlight-text, currentColor);
+}
+.quran-madina-html-word-error{
+  background-color: var(--qmh-error);
+  color: var(--qmh-error-text, currentColor);
+}
+.quran-madina-html-word-highlight, .quran-madina-html-word-error{
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; /* keep the marks in print */
+}
+/* letters= : single letters inside a word, in --qmh-letter (per group in letters=, default crimson)
+   with a soft halo of the same hue, pulsing when the group says "blink". Colour and text-shadow only (never size or position),
+   so the pre-computed line geometry is untouched. The halo must glow *behind* the surrounding
+   ink, not over it: the letter stays in normal flow, while every other piece of ink on the tag
+   (the rest of its word, and the other words) is lifted into a positioned layer above it. Word
+   backgrounds (highlight=/error=) of the lettered word stay in flow, under the letter. */
+quran-madina-html{
+  --qmh-letter: #a3263a;
+}
+quran-madina-html.quran-madina-html-lettered .quran-madina-html-word:not(.quran-madina-html-word-lettered),
+quran-madina-html.quran-madina-html-lettered .quran-madina-html-ink{
+  position: relative;
+  z-index: 1;
+}
+.quran-madina-html-letter{
+  color: var(--qmh-letter);
+  text-shadow: 0 0 0.1em color-mix(in srgb, currentColor 30%, transparent);
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.quran-madina-html-letter-blink{
+  animation: quran-madina-html-letter-blink 1.4s ease-in-out infinite;
+}
+quran-madina-html[data-qmh-text-scheme="dark"] .quran-madina-html-letter{
+  color: color-mix(in srgb, var(--qmh-letter) 45%, white); /* lighter shade on dark pages */
+}
+/* The pulse only adds light around the letter: it keeps its colour in every frame, so a
+   screenshot taken at any moment shows it. No animation in print or with reduced motion. */
+@keyframes quran-madina-html-letter-blink{
+  0%, 55%, 100% { text-shadow: 0 0 0.1em color-mix(in srgb, currentColor 30%, transparent); }
+  70%, 85%      { text-shadow: 0 0 0.08em color-mix(in srgb, currentColor 75%, transparent),
+                               0 0 0.28em color-mix(in srgb, currentColor 60%, transparent),
+                               0 0 0.55em color-mix(in srgb, currentColor 40%, transparent); }
+}
+@media (prefers-reduced-motion: reduce){
+  .quran-madina-html-letter{ animation: none; }
+}
+@media print{
+  .quran-madina-html-letter{ animation: none; }
+}
+/* The decorative frame is a static SVG asset referenced by URL, so plain CSS (fill,
+   currentColor, custom properties) cannot recolor it directly. mask-image instead uses the SVG
+   purely as a shape stencil, painted with background-color - here currentColor, so the frame
+   automatically follows the ambient text color (dark host page -> light text -> light frame,
+   and vice versa) with no media query needed. The SVG's paths are opaque black on a transparent
+   canvas; default CSS mask compositing is luminance-based (visibility = luminance * alpha),
+   under which black (luminance ~0) and transparent (alpha 0) would composite to the same
+   near-zero value and the frame would render blank - mask-mode: alpha fixes this by keying
+   visibility off opacity alone, not color. The mask lives on a ::before layer rather than on
+   the line element itself: mask-image clips an element's ENTIRE rendered output, background
+   *and* descendants, so putting it directly on quran-madina-html-line would also mask away the
+   sura-name text rendered inside it. The pseudo-element paints first (behind the real DOM
+   content, per normal paint order - no z-index needed), so the frame renders as a backdrop
+   without touching the name text's own visibility. */
+quran-madina-html-line:has(.quran-madina-html-sura-start){
+  position: relative;
+}
+quran-madina-html-line:has(.quran-madina-html-sura-start)::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  -webkit-mask-image: url(../assets/img/sura_border_sym4.svg);
+  mask-image: url(../assets/img/sura_border_sym4.svg);
+  -webkit-mask-size: 95% 100%;
+  mask-size: 95% 100%;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  mask-mode: alpha;
+  pointer-events: none;
+}
+svg.quran-madina-html-icon {
+  float:left; 
+  padding:4px 4px 0 7px;
+  border-radius: 5px;
+}
+svg.quran-madina-html-icon:hover {
+  background-color: color-mix(in srgb, var(--qmh-header) 50%, transparent);;
+}
+svg.quran-madina-html-icon path {
+  fill: color-mix(in srgb, currentColor 60%, transparent);
+}
+/* Popup shown when a hovered aya is clicked (see wireAyaClick/showAyaPopup): copy/translate
+   scoped to that one aya, positioned over it via position:fixed. Hidden by default; JS toggles
+   the -open class and sets left/top per click. */
+quran-madina-html-aya-popup {
+  display: none;
+  position: fixed;
+  /* Lives on document.body (see getOrCreateAyaPopup), so RTL is not inherited from the tag */
+  direction: rtl;
+  z-index: 1000;
+  align-items: center;
+  gap: 2px;
+  background-color: color-mix(in srgb, var(--qmh-header) 85%, transparent);
+  border-radius: 6px;
+  padding: 2px 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+quran-madina-html-aya-popup.quran-madina-html-open {
+  display: flex;
+}
+quran-madina-html-aya-popup svg.quran-madina-html-icon {
+  float: none;
+  padding: 4px;
+}
+quran-madina-html-aya-popup svg.quran-madina-html-icon path {
+  fill: var(--qmh-background);
+}

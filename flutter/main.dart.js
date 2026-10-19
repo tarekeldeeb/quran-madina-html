@@ -64324,7 +64324,7 @@ $S:110}
 A.uv.prototype={
 gDC(){var s=this,r=null
 return A.avc(s.e,s.w,!0,s.r,r,s.x,r,s.c,r,s.d,r)},
-gqm(){return new A.uu("qmh-bundle:/dist/quran-madina-html.min.js","qmh-bundle:/",null,this.ax,null,null)},
+gqm(){return new A.uu("qmh-bundle:/dist/quran-madina-html.js","qmh-bundle:/",null,this.ax,null,null)},
 ak(){var s=$.ai0
 $.ai0=s+1
 return new A.LS("quran-madina-flutter-"+s,A.aek(),v.G.document.createElement("quran-madina-html"))}}
