@@ -307,7 +307,7 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
 ## Docs and README
 
 - `README.md` is a short showcase only (badges, description, `docs/assets/img/showcase.gif`,
-  getting started for HTML/React/Flutter, credits, license). Everything else lives in the docs
+  getting started for HTML/React/React Native/Flutter, a pointer to the Vue/Angular/Svelte/Astro pages, WordPress, credits, license). Everything else lives in the docs
   site: MkDocs Material, `mkdocs.yml` + `docs/` + `overrides/main.html` (which loads the library
   from unpkg `@2`, so raw `<quran-madina-html>` tags in the Markdown render live).
   `mkdocs serve` to preview; `.github/workflows/docs.yml` builds with `--strict` and publishes
