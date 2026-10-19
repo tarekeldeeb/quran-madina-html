@@ -31,11 +31,11 @@ npm install              # install JS deps + the python deps are separate (see b
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 # thereafter run pytest as: .venv/bin/python -m pytest ...
 
-npm run build            # grunt: jshint, clean, concat, uglify, cssmin, json-minify
+npm run build            # grunt: jshint, clean, concat (unminified + license header), json-minify
 npm run build-db         # regenerate ALL assets/db/*.json (slow: downloads + headless Chrome). See below.
 npm run start            # http-server on localhost:8000 (required for render tests + demo)
 npm test                 # python -m pytest (runs both test/db_test.py and test/render_test.py)
-npm run release          # release-it (runs grunt via after:init hook)
+npm run release          # release-it (runs grunt via after:bump hook, so the header carries the new version)
 ```
 
 Run a single test:

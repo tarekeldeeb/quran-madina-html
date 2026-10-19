@@ -2,34 +2,31 @@ module.exports = function(grunt) {
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
+    // The npm package ships readable (unminified) code. The output keeps the historical
+    // `.min.js` / `.min.css` names because they are a published URL contract (unpkg links,
+    // the React / React Native / Flutter / WordPress wrappers, self-hosting docs).
+    // Each file opens with the license header (version/author from package.json).
     concat: {
       options: {
-        separator: ';'
+        stripBanners: false,
+        banner: '/*!\n' +
+                ' * <%= pkg.name %> v<%= pkg.version %>\n' +
+                ' * <%= pkg.description %>\n' +
+                ' * <%= pkg.homepage %>\n' +
+                ' *\n' +
+                ' * Copyright (c) <%= pkg.author %>\n' +
+                ' * Licensed under the "Waqf" General Public License 2.0, 3 Muharram 1435\n' +
+                ' * https://github.com/ojuba-org/waqf/tree/master/2.0\n' +
+                ' * See LICENSE.md in the package for details.\n' +
+                ' */\n'
       },
-      dist: {
+      js: {
         src: ['src/<%= pkg.name %>.js'],
-        dest: 'dist/<%= pkg.name %>.js'
-      }
-    },
-    uglify: {
-      options: {
-        banner: '/*! <%= pkg.name %> <%= grunt.template.today("dd-mm-yyyy") %> */\n'
+        dest: 'dist/<%= pkg.name %>.min.js'
       },
-      dist: {
-        files: {
-          'dist/<%= pkg.name %>.min.js': ['<%= concat.dist.dest %>']
-        }
-      }
-    },
-    cssmin: {
-      target: {
-        files: [{
-          expand: true,
-          cwd: 'src',
-          src: ['*.css', '!*.min.css'],
-          dest: 'dist',
-          ext: '.min.css'
-        }]
+      css: {
+        src: ['src/<%= pkg.name %>.css'],
+        dest: 'dist/<%= pkg.name %>.min.css'
       }
     },
     jshint: {
@@ -62,15 +59,13 @@ module.exports = function(grunt) {
     }
   });
 
-  grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-clean');
-  grunt.loadNpmTasks('grunt-contrib-cssmin');
   grunt.loadNpmTasks('grunt-json-minify');
 
   grunt.registerTask('test', ['jshint']);
-  grunt.registerTask('default', ['jshint', 'clean', 'concat', 'uglify', 'cssmin', 'json-minify']);
+  grunt.registerTask('default', ['jshint', 'clean', 'concat', 'json-minify']);
 
 };
