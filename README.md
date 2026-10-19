@@ -1,6 +1,7 @@
 # Quran Madina Html
 
 [![npm](https://img.shields.io/npm/v/quran-madina-html.svg?label=npm)](https://www.npmjs.com/package/quran-madina-html)
+[![Socket Badge](https://badge.socket.dev/npm/package/quran-madina-html)](https://socket.dev/npm/package/quran-madina-html)
 [![React](https://img.shields.io/npm/v/@tarekeldeeb/quran-madina-react.svg?label=react)](https://www.npmjs.com/package/@tarekeldeeb/quran-madina-react)
 [![React Native](https://img.shields.io/npm/v/@tarekeldeeb/quran-madina-react-native.svg?label=react%20native)](https://www.npmjs.com/package/@tarekeldeeb/quran-madina-react-native)
 [![pub.dev](https://img.shields.io/pub/v/quran_madina_flutter.svg?label=flutter)](https://pub.dev/packages/quran_madina_flutter)
