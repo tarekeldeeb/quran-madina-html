@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- The WordPress.org banner: render.mjs renders it at
+     772x250 (1x) and 1544x500 (2x) into wordpress/assets/. Needs `npm run start` (port 8000). -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; }
+  body {
+    width: 772px; height: 250px; overflow: hidden; position: relative;
+    font-family: "Inter Display", "Inter", sans-serif;
+    background:
+      radial-gradient(ellipse 420px 260px at 18% 40%, rgba(255,255,255,.75), rgba(255,255,255,0) 70%),
+      linear-gradient(135deg, #eef3f8 0%, #d6e2ec 55%, #bccddc 100%);
+  }
+  .icon { position: absolute; left: 26px; top: 25px; width: 200px; height: 200px;
+          filter: drop-shadow(0 6px 14px rgba(31, 61, 92, .22)); }
+  .title { position: absolute; left: 246px; top: 44px; width: 236px; }
+  h1 { margin: 0; font-weight: 800; font-size: 31px; line-height: 1.02; letter-spacing: .5px;
+       color: #1f4268; }
+  h1 span { display: block; font-weight: 700; font-size: 15px; letter-spacing: 3.2px;
+            color: #3c6a92; margin-top: 7px; }
+  p { margin: 14px 0 0; font-size: 13.5px; line-height: 1.42; color: #3d5670; font-weight: 500; }
+  .chips { margin-top: 13px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .chips b { font-weight: 600; font-size: 10.5px; color: #24496f; background: rgba(255,255,255,.62);
+             border: 1px solid rgba(36,73,111,.16); border-radius: 20px; padding: 3px 9px; }
+  .page { position: absolute; right: 26px; top: 27px; width: 238px; height: 196px;
+          box-sizing: border-box; padding: 14px 10px 0; align-items: flex-start; border-radius: 6px;
+          background: #fdf9ee; border: 1px solid #d8c48f;
+          box-shadow: 0 0 0 4px #f4ead0, 0 0 0 5px #cdb57a, 0 10px 24px rgba(31,61,92,.22);
+          display: flex; justify-content: center; }
+  quran-madina-html { color: #1c1c1a; }
+</style>
+<script src="http://localhost:8000/dist/quran-madina-html.js" data-cdn="http://localhost:8000/"
+        data-font-size="12"></script>
+</head>
+<body>
+  <img class="icon" src="../assets/icon-256x256.png" alt="">
+  <div class="title">
+    <h1>Quran Madina<span>HTML</span></h1>
+    <p>The printed Madina Mushaf, as real text: selectable, searchable, no images.</p>
+    <div class="chips"><b>Quran block</b><b>[quran] shortcode</b><b>3 prints</b></div>
+  </div>
+  <div class="page">
+    <quran-madina-html sura="1" aya="1-7" headless="true" highlight="5-7" letters="1:3 emerald"></quran-madina-html>
+  </div>
+</body>
+</html>
