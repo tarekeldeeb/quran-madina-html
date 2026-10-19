@@ -303,6 +303,8 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   2.0 (`LICENSE.txt` lists the third-party parts: OFL fonts, Tanzil text CC BY 3.0 verbatim,
   quran-qcf4 MIT); header and readme say `GPLv2 or later` (Plugin Check requires them to
   match); everything outside the plugin stays Waqf only.
+  `wordpress/assets/` holds the WordPress.org directory assets (SVN `assets/`, not in the zip):
+  `icon-128x128.png` / `icon-256x256.png` (no WordPress logo: it's the Foundation's trademark).
 - `scripts/sync-wrapper-version.mjs` (release-it `after:bump`) keeps all of them at the core version,
   including the WordPress plugin header, QMHTML_VERSION and readme Stable tag, `flutter/pubspec.yaml`, `kLibraryVersion` (`lib/src/version.dart`, the bundler's
   default) and a `flutter/CHANGELOG.md` entry. pub.dev: the release tag (e.g. `2.1.1`) starts
