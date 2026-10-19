@@ -43,13 +43,13 @@ try {
   console.warn(`skip flutter: ${err.message}`);
 }
 
-// WordPress plugin: header Version, QMH_VERSION (the library version it loads), readme.txt's
+// WordPress plugin: header Version, QMHTML_VERSION (the library version it carries), readme.txt's
 // Stable tag, and a changelog entry.
 try {
   const main = "wordpress/quran-madina-html/quran-madina-html.php";
   writeFileSync(main, readFileSync(main, "utf8")
     .replace(/^( \* Version:\s+).*$/m, `$1${version}`)
-    .replace(/define\( 'QMH_VERSION', '[^']*' \);/, `define( 'QMH_VERSION', '${version}' );`));
+    .replace(/define\( 'QMHTML_VERSION', '[^']*' \);/, `define( 'QMHTML_VERSION', '${version}' );`));
   const readme = "wordpress/quran-madina-html/readme.txt";
   let text = readFileSync(readme, "utf8").replace(/^Stable tag: .*$/m, `Stable tag: ${version}`);
   if (!text.includes(`= ${version} =`)) {

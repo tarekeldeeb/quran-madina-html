@@ -1,6 +1,7 @@
-# The WordPress plugin (wordpress/quran-madina-html): runs it in a real WordPress (SQLite, PHP's
-# built-in server) and checks the shortcode, the block, the settings and the library copy. On a
-# release tag, attaches the plugin zip to the GitHub release:
+# The WordPress plugin (wordpress/quran-madina-html): builds it with its copy of the library
+# (wordpress/build.sh), runs it in a real WordPress (SQLite, PHP's built-in server) and checks the
+# shortcode, the block and the settings, and runs WordPress.org's Plugin Check on the zip's
+# contents. On a release tag, attaches the plugin zip to the GitHub release:
 #   https://github.com/tarekeldeeb/quran-madina-html/releases/latest/download/quran-madina-html-wordpress.zip
 name: WordPress
 
@@ -8,9 +9,9 @@ on:
   push:
     branches: [main]
     tags: ["[0-9]+.[0-9]+.[0-9]+"]
-    paths: ["wordpress/**", ".github/workflows/wordpress.yml"]
+    paths: ["wordpress/**", "src/**", "assets/**", "Gruntfile.js", ".github/workflows/wordpress.yml"]
   pull_request:
-    paths: ["wordpress/**", ".github/workflows/wordpress.yml"]
+    paths: ["wordpress/**", "src/**", "assets/**", "Gruntfile.js", ".github/workflows/wordpress.yml"]
   workflow_dispatch:
 
 permissions:
@@ -21,6 +22,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build the plugin
+        run: |
+          npm ci
+          npx grunt
+          wordpress/build.sh --zip "$RUNNER_TEMP/quran-madina-html-wordpress.zip"
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -33,16 +45,47 @@ jobs:
       - name: Run in WordPress
         run: wordpress/quran-madina-html/tests/run.sh "$RUNNER_TEMP/wp"
 
+  # WordPress.org's own checks (the ones its plugin review runs), on what the zip contains.
+  plugin-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build the plugin
+        run: |
+          npm ci
+          npx grunt
+          wordpress/build.sh --zip "$RUNNER_TEMP/quran-madina-html-wordpress.zip"
+
+      - name: Unzip
+        run: unzip -q "$RUNNER_TEMP/quran-madina-html-wordpress.zip" -d "$RUNNER_TEMP/plugin"
+
+      - uses: WordPress/plugin-check-action@v1
+        with:
+          build-dir: ${{ runner.temp }}/plugin/quran-madina-html
+
   package:
-    needs: test
+    needs: [test, plugin-check]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Zip the plugin
-        working-directory: wordpress
-        run: zip -qr "$RUNNER_TEMP/quran-madina-html-wordpress.zip" quran-madina-html -x 'quran-madina-html/tests/*'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build the plugin
+        run: |
+          npm ci
+          npx grunt
+          wordpress/build.sh --zip "$RUNNER_TEMP/quran-madina-html-wordpress.zip"
 
       # The release workflow creates the GitHub release just after pushing the tag.
       - name: Attach to the release

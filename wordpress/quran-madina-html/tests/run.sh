@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Runs the plugin in a real WordPress (SQLite, PHP's built-in server) and checks what it outputs.
 #   wordpress/quran-madina-html/tests/run.sh [work-dir]
-# Needs php (with pdo_sqlite, phar, zlib), git and curl. Downloads WordPress and the SQLite
-# plugin from GitHub, and the library from npm (for the "copy to this site" check).
+# Needs php (with pdo_sqlite), git and curl, and the plugin's library/ folder (wordpress/build.sh).
+# Downloads WordPress and the SQLite plugin from GitHub.
 set -euo pipefail
 PLUGIN="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="${1:-$(mktemp -d)}"
 PORT="${QMH_PORT:-8686}"
 WP="$WORK/wp"
+[ -f "$PLUGIN/library/dist/quran-madina-html.js" ] || { echo "library/ is missing: run wordpress/build.sh" >&2; exit 1; }
 SITE="http://localhost:$PORT"
 
 if [ ! -f "$WP/wp-settings.php" ]; then
@@ -38,11 +39,6 @@ if ( ! defined( 'ABSPATH' ) ) { define( 'ABSPATH', __DIR__ . '/' ); }
 require_once ABSPATH . 'wp-settings.php';
 CONFIG
 ln -sfn "$PLUGIN" "$WP/wp-content/plugins/quran-madina-html"
-if [ -n "${QMH_CA_BUNDLE:-}" ]; then  # behind a proxy with its own CA: trust it for downloads
-  mkdir -p "$WP/wp-content/mu-plugins"
-  echo "<?php add_filter( 'http_request_args', function ( \$a ) { \$a['sslcertificates'] = '$QMH_CA_BUNDLE'; return \$a; } );" \
-    > "$WP/wp-content/mu-plugins/test-ca.php"
-fi
 cp "$PLUGIN/tests/setup.php" "$WP/qmh-test-setup.php"
 php "$WP/qmh-test-setup.php"
 
@@ -68,17 +64,18 @@ expect shortcodes '<quran-madina-html sura="112" aya="1">' "inline shortcode"
 expect shortcodes 'letters="1:3 blink, 4:3\+5 lapis" headless="true"' "letters and headless"
 reject shortcodes 'onclick|alert' "unknown attributes and scripts are dropped"
 expect shortcodes '<quran-madina-html sura="1" aya="1"></quran-madina-html>' "a malformed range is left out"
-expect shortcodes '<script[^>]*data-cdn="https://unpkg.com/quran-madina-html@[0-9.]+/"[^>]*data-layout="1441H"' "library script with its options"
 expect block '<quran-madina-html sura="2" aya="1-5" highlight="3">' "block"
 expect block '<quran-madina-html page="50" headless="true">' "block page wins over the default verse"
 reject plain 'quran-madina-html' "no library on posts without Quran text"
 
-php "$PLUGIN/tests/copy.php" "$WP"
-expect shortcodes "<script[^>]*data-cdn=\"$SITE/wp-content/uploads/quran-madina-html/[0-9.]+/\"[^>]*data-layout=\"IndoPak\"[^>]*data-font-size=\"20\"" "library from this site, with the saved settings"
-html=$(page shortcodes)
-url=$(grep -oE "$SITE/wp-content/uploads/quran-madina-html/[0-9.]+/" <<<"$html" | head -1)
-for f in dist/quran-madina-html.js dist/quran-madina-html.css assets/db/v2/IndoPak-15/manifest.json assets/db/v2/indopak-qmh.woff2; do
-  if curl -fsS -o /dev/null "$url$f"; then echo "ok   serves $f"; else echo "FAIL serves $f"; fail=1; fi
+LIB="$SITE/wp-content/plugins/quran-madina-html/library/"
+expect shortcodes "<script[^>]*data-cdn=\"$LIB\"[^>]*data-layout=\"1441H\"[^>]*src=\"${LIB}dist/quran-madina-html.js\\?ver=[0-9.]+\"" "library script from the plugin, with its options"
+reject shortcodes 'unpkg|jsdelivr|cdn\.' "nothing from a CDN"
+
+php "$PLUGIN/tests/settings.php" "$WP"
+expect shortcodes "<script[^>]*data-layout=\"IndoPak\"[^>]*data-font-size=\"20\"" "saved settings"
+for f in dist/quran-madina-html.js dist/quran-madina-html.css assets/db/v2/IndoPak-15/manifest.json assets/db/v2/indopak-qmh.woff2 assets/img/sura_border_sym4.svg; do
+  if curl -fsS -o /dev/null "$LIB$f"; then echo "ok   serves $f"; else echo "FAIL serves $f"; fail=1; fi
 done
 
 if grep -iE 'qmh|quran-madina' "$WP/wp-content/debug.log" 2>/dev/null; then echo "FAIL PHP notices from the plugin"; fail=1; fi

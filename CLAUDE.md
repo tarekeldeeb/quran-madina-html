@@ -285,20 +285,26 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   the bundler for real, a web build and an Android build of `example/` (made with
   `flutter create .`). No local SDK is assumed.
 - `wordpress/quran-madina-html/` — WordPress plugin (Quran block + `[quran]`/`[quran_madina]`
-  shortcode, Settings → Quran Madina). `includes/render.php`: `qmh_tag()` builds the tag
-  (attributes whitelisted; `qmh_clean_value()` validates each: ranges, quotes/inline words,
-  letters chars; page wins over sura/aya), enqueues the library in the footer only where used,
-  `script_loader_tag` adds data-cdn/layout/font-size. Library pinned to `QMH_VERSION` on unpkg,
-  or a copy in uploads (`includes/local-copy.php`: npm tgz via PharData, every layout's shards +
-  fonts, ~11 MB). `block/editor.js` is plain JS (no build); the editor loads the library through
-  `enqueue_block_assets` for the live preview. `tests/run.sh` runs it in real WordPress
-  (GitHub clone + SQLite drop-in + `php -S`) and checks the HTML; `QMH_CA_BUNDLE` for proxied
-  sandboxes. CI: `.github/workflows/wordpress.yml`; on a release tag it attaches
-  `quran-madina-html-wordpress.zip` to the GitHub release (stable "latest/download" link).
-  License: the plugin folder only is dual GPL-2.0-or-later / Waqf GPL 2.0 (`LICENSE.txt`,
-  header, readme.txt), since WordPress.org requires GPL; everything else stays Waqf only.
+  shortcode, Settings → Quran Madina: print + size). Written for the WordPress.org guidelines:
+  no CDN (guideline 8), so the plugin carries the library in `library/` (gitignored, made by
+  `wordpress/build.sh [--zip out.zip]` from `dist/` after grunt + every layout's shards, fonts,
+  images; ~3 MB zipped, the directory's limit is 10 MB). Prefix `qmhtml_`/`QMHTML_` (the
+  review team asks for long prefixes); `qmhtml_settings()` still reads the 2.1.1-2.1.3 option
+  `qmh_settings`. `includes/render.php`: `qmhtml_tag()` builds the tag (attributes whitelisted;
+  `qmhtml_clean_value()` validates each: ranges, quotes/inline words, letters chars; page wins
+  over sura/aya), enqueues the library in the footer only where used, `script_loader_tag` adds
+  data-cdn (the plugin's library/ URL)/layout/font-size. `block/editor.js` is plain JS (no
+  build); the editor loads the library through `enqueue_block_assets` for the live preview.
+  `tests/run.sh` runs it in real WordPress (GitHub clone + SQLite drop-in + `php -S`, needs
+  library/ built) and checks the HTML and served files. CI (`.github/workflows/wordpress.yml`):
+  build, tests, `WordPress/plugin-check-action` on the zip's contents; on a release tag it
+  attaches `quran-madina-html-wordpress.zip` to the GitHub release ("latest/download" link).
+  License: the plugin folder, its library/ copy included, is dual GPL-2.0-or-later / Waqf GPL
+  2.0 (`LICENSE.txt` lists the third-party parts: OFL fonts, Tanzil text CC BY 3.0 verbatim,
+  quran-qcf4 MIT); header and readme say `GPLv2 or later` (Plugin Check requires them to
+  match); everything outside the plugin stays Waqf only.
 - `scripts/sync-wrapper-version.mjs` (release-it `after:bump`) keeps all of them at the core version,
-  including the WordPress plugin header, QMH_VERSION and readme Stable tag, `flutter/pubspec.yaml`, `kLibraryVersion` (`lib/src/version.dart`, the bundler's
+  including the WordPress plugin header, QMHTML_VERSION and readme Stable tag, `flutter/pubspec.yaml`, `kLibraryVersion` (`lib/src/version.dart`, the bundler's
   default) and a `flutter/CHANGELOG.md` entry. pub.dev: the release tag (e.g. `2.1.1`) starts
   `.github/workflows/flutter-publish.yml` (OIDC, no stored secret; pub.dev Admin -> Automated
   publishing, tag pattern `{{version}}`). Tags pushed with GITHUB_TOKEN start no workflows, so

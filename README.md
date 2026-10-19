@@ -89,7 +89,7 @@ shortcode anywhere:
 [quran sura="2" aya="255"]
 ```
 
-The library can load from unpkg.com or from a copy on your own site. See
+The plugin carries the library, so nothing loads from outside your site. See
 [WordPress](https://tarekeldeeb.github.io/quran-madina-html/docs/getting-started/wordpress/).
 
 Everything else (pages, word selection, highlighting, letters, layouts, styling, offline use,

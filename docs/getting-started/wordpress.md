@@ -61,18 +61,10 @@ Under **Settings → Quran Madina**:
 - **Print:** the 1441H or 1405H Madina Mushaf, or the 15-line IndoPak. One print for the
   whole site.
 - **Font size:** in pixels, 16 by default.
-- **Load the library from:** unpkg.com (the default, nothing to set up), or **this site**.
 
-### Without outside requests
-
-To load nothing from unpkg.com (for privacy, or a site that must work on a closed network):
-
-1. Under **Settings → Quran Madina**, click **Copy to this site**. It downloads the library,
-   its texts and fonts for all three prints (about 11 MB) into your uploads folder, once.
-2. Choose **This site** under "Load the library from", and **Save**.
-
-After a plugin update, copy it again: each plugin version loads its own library version. Until
-you do, pages load from unpkg.com, and the settings page says so.
+The plugin carries the library, the Quran text and the fonts for all three prints, and loads
+them from your own site: nothing comes from unpkg.com or any other outside server. (Versions
+2.1.1 to 2.1.3 loaded from unpkg.com unless you copied the library to the site.)
 
 ## Notes
 
@@ -83,12 +75,20 @@ you do, pages load from unpkg.com, and the settings page says so.
 - Caching and optimisation plugins: exclude the `quran-madina-html` script from "combine" or
   "defer" options if the text doesn't appear. The library reads its settings from its own
   script tag.
-- Uninstalling the plugin removes its settings and the copied library.
+- Uninstalling the plugin removes its settings, and the copy of the library that versions
+  2.1.1 to 2.1.3 could save in the uploads folder.
 
 ## License
 
-The plugin is dual licensed: GPLv2 or later, or the
+The plugin, including its copy of the library, is dual licensed: GPLv2 or later, or the
 ["Waqf" General Public License 2.0](https://github.com/ojuba-org/waqf/tree/master/2.0), at your
-choice (see `LICENSE.txt` in the plugin folder). The GPL option is for WordPress, whose plugins
-must be GPL compatible. The library the plugin loads, and the rest of this project, stay under the
-Waqf General Public License 2.0; the fonts under the SIL Open Font License 1.1.
+choice (see `LICENSE.txt` in the plugin folder). The GPL option is for WordPress.org, whose
+plugins must be GPL compatible. Outside the plugin, this project stays under the Waqf General
+Public License 2.0 only. The fonts are under the SIL Open Font License 1.1, and the Quran text
+is the Tanzil Project's (Creative Commons Attribution 3.0, distributed verbatim).
+
+## Building the plugin
+
+`wordpress/build.sh` copies the library into the plugin's `library/` folder (run `npx grunt`
+first); `wordpress/build.sh --zip quran-madina-html.zip` also writes the zip. CI does this and
+runs WordPress.org's [Plugin Check](https://wordpress.org/plugins/plugin-check/) on the result.

@@ -8,22 +8,21 @@
  * Requires PHP:      7.4
  * Author:            Tarek Eldeeb
  * Author URI:        https://github.com/tarekeldeeb
- * License:           GPLv2 or later, or Waqf General Public License 2.0
+ * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       quran-madina-html
  *
  * Dual licensed: GPL-2.0-or-later, or the "Waqf" General Public License 2.0, at your choice.
- * See LICENSE.txt. The library it loads stays under the Waqf General Public License 2.0.
+ * This covers the copy of the quran-madina-html library in library/; see LICENSE.txt.
  *
  * @package QuranMadinaHtml
  */
 
 defined( 'ABSPATH' ) || exit;
 
-/** This plugin's version, which is also the quran-madina-html library version it loads. */
-define( 'QMH_VERSION', '2.1.3' );
-define( 'QMH_FILE', __FILE__ );
+/** This plugin's version, which is also the version of the quran-madina-html library it carries. */
+define( 'QMHTML_VERSION', '2.1.3' );
+define( 'QMHTML_FILE', __FILE__ );
 
 require_once __DIR__ . '/includes/render.php';
-require_once __DIR__ . '/includes/local-copy.php';
 require_once __DIR__ . '/includes/settings.php';

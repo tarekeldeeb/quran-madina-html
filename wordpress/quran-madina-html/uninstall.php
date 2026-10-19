@@ -1,22 +1,21 @@
 <?php
 /**
- * Remove the plugin's settings and its copy of the library.
+ * Remove the plugin's settings, and the copy of the library that versions before 2.1.4 could
+ * save in the uploads folder.
  *
  * @package QuranMadinaHtml
  */
 
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
-delete_option( 'qmh_settings' );
+delete_option( 'qmhtml_settings' );
+delete_option( 'qmh_settings' ); // the option's name before 2.1.4
 
-$qmh_dir = trailingslashit( wp_upload_dir( null, false )['basedir'] ) . 'quran-madina-html/';
-if ( is_dir( $qmh_dir ) ) {
-	$qmh_items = new RecursiveIteratorIterator(
-		new RecursiveDirectoryIterator( $qmh_dir, FilesystemIterator::SKIP_DOTS ),
-		RecursiveIteratorIterator::CHILD_FIRST
-	);
-	foreach ( $qmh_items as $qmh_item ) {
-		$qmh_item->isDir() ? rmdir( $qmh_item->getPathname() ) : unlink( $qmh_item->getPathname() ); // phpcs:ignore WordPress.WP.AlternativeFunctions
+$qmhtml_dir = trailingslashit( wp_upload_dir( null, false )['basedir'] ) . 'quran-madina-html/';
+if ( is_dir( $qmhtml_dir ) ) {
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	if ( WP_Filesystem() ) {
+		global $wp_filesystem;
+		$wp_filesystem->delete( $qmhtml_dir, true );
 	}
-	rmdir( $qmh_dir ); // phpcs:ignore WordPress.WP.AlternativeFunctions
 }

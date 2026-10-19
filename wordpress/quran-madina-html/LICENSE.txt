@@ -11,10 +11,24 @@ modify and distribute it under either of these licenses, at your choice:
      quran-madina-html project:
      https://github.com/ojuba-org/waqf/tree/master/2.0
 
-This dual license covers the plugin's own files only (PHP, block scripts,
-readme). The quran-madina-html library the plugin loads, from unpkg or from a
-copy saved in the site's uploads folder, stays under the "Waqf" General Public
-License 2.0, and its fonts under the SIL Open Font License 1.1.
+This covers everything in this folder, including the copy of the quran-madina-html
+library in library/ (its script, CSS and page data). Outside this plugin, the
+quran-madina-html project stays under the "Waqf" General Public License 2.0 only.
+
+Third-party parts in library/, under their own licenses:
+
+  - Fonts (library/assets/db/v2/*.woff2): modified DigitalKhatt fonts by Amine
+    Anane, SIL Open Font License 1.1, renamed "QMH ...".
+    https://github.com/DigitalKhatt/digitalkhatt.org
+  - Quran text in the page data: Tanzil Quran Text (Uthmani 1.1),
+    Copyright (C) 2007-2025 Tanzil Project, Creative Commons Attribution 3.0.
+    Source: https://tanzil.net. Its terms: "Permission is granted to copy and
+    distribute verbatim copies of this text, but CHANGING IT IS NOT ALLOWED.
+    This Quran text can be used in any website or application, provided that
+    its source (Tanzil Project) is clearly indicated, and a link is made to
+    tanzil.net to enable users to keep track of changes."
+  - 1441H line breaks: King Fahd Glorious Quran Printing Complex page data, as
+    published in the quran-qcf4 package (MIT); only the line boundaries are used.
 
 This program is distributed in the hope that it will be useful, but WITHOUT
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
