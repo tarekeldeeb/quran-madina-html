@@ -7,6 +7,7 @@ Pick the way you build your app:
 |---|---|---|
 | Plain HTML, or any web framework | the script and the tag | [HTML](html.md) |
 | React (web, or iOS/Android through Capacitor) | `@tarekeldeeb/quran-madina-react` | [React](react.md) |
+| React Native (iOS, Android, Expo) | `@tarekeldeeb/quran-madina-react-native` | [React Native](react-native.md) |
 | Flutter (Android, iOS, macOS, web) | `quran_madina_flutter` | [Flutter](flutter.md) |
 | Vue, Angular, Svelte, Astro | the script and the tag, with a line of setup | [Frameworks](../frameworks/index.md) |
 | WordPress (no code) | the Quran Madina Html plugin: a block and a shortcode | [WordPress](wordpress.md) |

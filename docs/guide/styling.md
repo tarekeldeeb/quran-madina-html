@@ -16,14 +16,21 @@ The text takes the colour of the surrounding page, like any text. To change it:
     <QuranMadinaHtml sura={2} aya="255" style={{ color: "#3b2f2f" }} />
     ```
 
+=== "React Native"
+
+    ```jsx
+    <QuranMadinaNative sura={2} aya="255" textColor="#3b2f2f" backgroundColor="#fdf8ee" />
+    ```
+
 === "Flutter"
 
     ```dart
     QuranMadinaFlutter(sura: 2, aya: '255', textColor: '#3b2f2f', backgroundColor: '#fdf8ee')
     ```
 
-The CSS below applies to HTML and React pages. A Flutter widget's text sits in its own page:
-set `textColor` and `backgroundColor` instead; highlight, error and letter colours adapt to them.
+The CSS below applies to HTML and React pages. A React Native component's or Flutter widget's
+text sits in its own page: set `textColor` and `backgroundColor` instead; highlight, error and
+letter colours adapt to them.
 
 ## Colours you can change
 

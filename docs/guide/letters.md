@@ -26,6 +26,18 @@ pointing at a mistake. Nothing moves or changes size.
     />
     ```
 
+=== "React Native"
+
+    ```jsx
+    <QuranMadinaNative
+      sura={1}
+      aya="2-4"
+      highlight="1"
+      error="4"
+      letters="1:3, 4:3+5 lapis blink, 6:4 emerald"
+    />
+    ```
+
 === "Flutter"
 
     ```dart

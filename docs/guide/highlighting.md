@@ -19,6 +19,12 @@ They take the same range format as [`words`](words.md).
     <QuranMadinaHtml sura={2} aya="255" highlight="5-8" error="1" />
     ```
 
+=== "React Native"
+
+    ```jsx
+    <QuranMadinaNative sura={2} aya="255" highlight="5-8" error="1" />
+    ```
+
 === "Flutter"
 
     ```dart
@@ -47,6 +53,13 @@ They work in every kind of render:
     ```jsx
     <QuranMadinaHtml sura={1} aya="7" words="1-14" highlight="10-13" error="1-2" />
     <QuranMadinaHtml page={2} error="1-4" />
+    ```
+
+=== "React Native"
+
+    ```jsx
+    <QuranMadinaNative sura={1} aya="7" words="1-14" highlight="10-13" error="1-2" />
+    <QuranMadinaNative page={2} error="1-4" />
     ```
 
 === "Flutter"

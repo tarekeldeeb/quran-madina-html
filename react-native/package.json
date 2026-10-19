@@ -1,0 +1,52 @@
+{
+  "name": "@tarekeldeeb/quran-madina-react-native",
+  "version": "2.1.2",
+  "description": "React Native component for quran-madina-html: Quran pages that look like the printed Madina Mushaf, as real text, in a WebView on iOS and Android. Works offline.",
+  "type": "module",
+  "main": "src/index.js",
+  "react-native": "src/index.js",
+  "types": "src/index.d.ts",
+  "files": [
+    "src",
+    "bin",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "bin": {
+    "quran-madina-native-bundle": "bin/bundle.mjs"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-native": ">=0.72",
+    "react-native-webview": ">=13"
+  },
+  "devDependencies": {
+    "react": "^18.3.1",
+    "react-test-renderer": "^18.3.1",
+    "vitest": "^4.1.9"
+  },
+  "keywords": [
+    "quran",
+    "madina",
+    "mushaf",
+    "arabic",
+    "react-native",
+    "webview",
+    "quran-madina-html"
+  ],
+  "author": "Tarek Eldeeb",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tarekeldeeb/quran-madina-html.git",
+    "directory": "react-native"
+  },
+  "bugs": {
+    "url": "https://github.com/tarekeldeeb/quran-madina-html/issues"
+  },
+  "homepage": "https://tarekeldeeb.github.io/quran-madina-html/docs/frameworks/react-native/"
+}

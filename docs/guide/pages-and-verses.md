@@ -20,6 +20,12 @@
     <QuranMadinaHtml page={1} />
     ```
 
+=== "React Native"
+
+    ```jsx
+    <QuranMadinaNative page={1} />
+    ```
+
 === "Flutter"
 
     ```dart
@@ -45,6 +51,12 @@ laid out exactly as they sit on the page:
 
     ```jsx
     <QuranMadinaHtml sura={2} aya="8-10" />
+    ```
+
+=== "React Native"
+
+    ```jsx
+    <QuranMadinaNative sura={2} aya="8-10" />
     ```
 
 === "Flutter"
@@ -77,6 +89,12 @@ the translation on quran.com. `headless="true"` keeps only the Quran text:
     <QuranMadinaHtml sura={5} aya="1-2" headless />
     ```
 
+=== "React Native"
+
+    ```jsx
+    <QuranMadinaNative sura={5} aya="1-2" headless />
+    ```
+
 === "Flutter"
 
     ```dart
@@ -106,6 +124,13 @@ marks: <quran-madina-html sura="1" aya="2"></quran-madina-html>.
     ```jsx
     <QuranMadinaHtml sura={1} aya="2" quotes="no" />
     <QuranMadinaHtml sura={1} aya="2" inline="no" />
+    ```
+
+=== "React Native"
+
+    ```jsx
+    <QuranMadinaNative sura={1} aya="2" quotes="no" />
+    <QuranMadinaNative sura={1} aya="2" inline="no" />
     ```
 
 === "Flutter"

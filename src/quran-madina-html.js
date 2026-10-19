@@ -78,6 +78,13 @@
   // otherwise each fire their own fetch before the first one lands (loadedJuz only flips to true
   // once a fetch *completes*); queuing waiters here coalesces them into a single request.
   var pendingRequests = {};
+  // A file:// (or app-bundle) URL, as in a React Native or Cordova WebView loading bundled files,
+  // answers with status 0 rather than 200: the body is the file.
+  function localFileLoaded(xhr, path){
+    if(xhr.status !== 0 || !xhr.responseText) return false;
+    try { return !/^https?:$/.test(new URL(path, document.baseURI).protocol); }
+    catch(e) { return false; }
+  }
   function loadJSON(path, success, error, forceFresh){
     // forceFresh (used for manifest.json only): skip the cache read and always hit the network.
     // The manifest is small, so this costs nothing, and it's what lets bootFromManifest notice a
@@ -95,7 +102,7 @@
         if (xhr.readyState === XMLHttpRequest.DONE) {
             var waiters = pendingRequests[path];
             delete pendingRequests[path];
-            if (xhr.status === 200) {
+            if (xhr.status === 200 || localFileLoaded(xhr, path)) {
                 var data = JSON.parse(xhr.responseText);
                 writeJSONCache(path, data, xhr.responseText);
                 waiters.forEach(function(w){ if(w.success) w.success(data); });

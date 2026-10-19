@@ -1,4 +1,4 @@
-// Lockstep versioning: set the React, Flutter and WordPress wrappers' versions equal to the core library's new version.
+// Lockstep versioning: set the React, React Native, Flutter and WordPress wrappers' versions equal to the core library's new version.
 // Run from the repo root during release (release-it `after:bump`), before the release commit, so
 // react/package.json + lockfile are committed together with the core bump.
 import { readFileSync, writeFileSync } from "node:fs";
@@ -9,7 +9,8 @@ if (!version) {
   process.exit(1);
 }
 
-for (const file of ["react/package.json", "react/package-lock.json"]) {
+for (const file of ["react/package.json", "react/package-lock.json",
+                    "react-native/package.json", "react-native/package-lock.json"]) {
   try {
     const json = JSON.parse(readFileSync(file, "utf8"));
     json.version = version;

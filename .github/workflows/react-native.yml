@@ -1,0 +1,28 @@
+# The React Native component (react-native/): unit tests (page helpers, the component with
+# React Native and the WebView mocked, the bundler) and a pack check.
+name: React Native
+
+on:
+  push:
+    paths: ["react-native/**", "react/bin/lib.mjs", ".github/workflows/react-native.yml"]
+  pull_request:
+    paths: ["react-native/**", "react/bin/lib.mjs", ".github/workflows/react-native.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react-native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - name: Package contents
+        run: npm pack --dry-run

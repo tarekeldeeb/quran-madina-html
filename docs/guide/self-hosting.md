@@ -45,6 +45,15 @@ Each print takes about 4 MB. Serve only the ones you use.
     <QuranMadinaHtml page={1} bundled />
     ```
 
+=== "React Native"
+
+    ```jsx
+    {/* from your own server */}
+    <QuranMadinaNative page={1} src="https://example.com/qmh/dist/quran-madina-html.min.js" cdn="https://example.com/qmh/" />
+    {/* or offline, from the app's own copy (npx quran-madina-native-bundle; see React Native: Offline) */}
+    <QuranMadinaNative page={1} bundled />
+    ```
+
 === "Flutter"
 
     ```dart
@@ -72,5 +81,7 @@ and Flutter wrappers do it for you.
 
 - **React** (web, or iOS and Android with Capacitor): one command copies the files into
   `public/`. See [React](../frameworks/react.md#offline).
+- **React Native:** one command copies the files into the Android and iOS projects. See
+  [React Native](../frameworks/react-native.md#offline).
 - **Flutter:** one command copies the files into the app's assets. See
   [Flutter](../frameworks/flutter.md#online-or-offline).

@@ -19,6 +19,12 @@ and copyable, with no images. One HTML tag renders a page, a verse range or a fe
     <QuranMadinaHtml sura={2} aya="255" />
     ```
 
+=== "React Native"
+
+    ```jsx
+    <QuranMadinaNative sura={2} aya="255" />
+    ```
+
 === "Flutter"
 
     ```dart

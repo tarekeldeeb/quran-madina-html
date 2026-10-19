@@ -257,6 +257,18 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   helpers in `bin/lib.mjs`, same rules as `flutter/lib/src/bundle.dart`) copies the library from
   npm (or `--from` a checkout) into `public/quran-madina/`; the `bundled` prop (`bundleUrls()`)
   sets src/cdn to `/quran-madina/` or a given base.
+- `react-native/` — `@tarekeldeeb/quran-madina-react-native` (npm, published with the React one by
+  `publish-wrapper.mjs`; no build, plain JS with React.createElement). `QuranMadinaNative` wraps
+  react-native-webview like the Flutter widget: `src/page.js` (pure, tested) builds one host
+  page; online it's an HTML string with the config inlined (baseUrl = cdn), bundled it's the
+  same page written as `index.html` by `bin/bundle.mjs` (`npx quran-madina-native-bundle`) into
+  `android/app/src/main/assets/quran-madina/` and `ios/quran-madina/` (iOS: Xcode folder
+  reference), loaded as `file:///android_asset/quran-madina/index.html` or the bundle-relative
+  `quran-madina/index.html`, its config via `injectedJavaScriptBeforeContentLoaded` (+ onLoadEnd
+  fallback). The library accepts status-0 XHR for non-http URLs (`localFileLoaded`) for this.
+  Messages via `window.ReactNativeWebView.postMessage` (height, open, error). `bin/lib.mjs` is
+  a copy of react/bin/lib.mjs (a test keeps them equal). Dev installs need `legacy-peer-deps`
+  (`react-native/.npmrc`). Not run on a device in CI: tests mock React Native and the WebView.
 - `flutter/` — `quran_madina_flutter` (pub.dev; Dart forbids hyphens in package names).
   `QuranMadinaFlutter` (`lib/src/widget.dart`) picks its State by conditional import:
   `view_io.dart` (Android/iOS/macOS: a `WebViewWidget` loading `buildPage()` from

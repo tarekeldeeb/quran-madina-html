@@ -23,6 +23,13 @@ The script tag's `data-layout` picks the print. It applies to every tag on the p
     <QuranMadinaHtml layout="IndoPak" sura={2} aya="255" />
     ```
 
+=== "React Native"
+
+    ```jsx
+    {/* layout and fontSize: per component */}
+    <QuranMadinaNative layout="IndoPak" sura={2} aya="255" />
+    ```
+
 === "Flutter"
 
     ```dart
@@ -67,6 +74,13 @@ allowed). The whole page scales with it, line width included:
     ```jsx
     {/* layout and fontSize apply to the whole page: set them on the first component */}
     <QuranMadinaHtml fontSize={24} sura={2} aya="255" />
+    ```
+
+=== "React Native"
+
+    ```jsx
+    {/* layout and fontSize: per component */}
+    <QuranMadinaNative fontSize={24} sura={2} aya="255" />
     ```
 
 === "Flutter"

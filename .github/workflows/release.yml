@@ -1,7 +1,7 @@
 # Release from anywhere (a phone included): GitHub -> Actions -> Release -> Run workflow.
 #
 # Runs the same `npm run release` (release-it) as a local release: builds dist with grunt, bumps the
-# version (the React wrapper follows in lockstep), commits + tags on main, creates the GitHub
+# version (the wrappers follow in lockstep), commits + tags on main, creates the GitHub
 # release, publishes quran-madina-html and then @tarekeldeeb/quran-madina-react to npm.
 #
 # Needs one repository secret, NPM_TOKEN: an npm access token allowed to publish both packages
@@ -26,7 +26,7 @@ on:
         type: boolean
         default: true
       wrapper_only:
-        description: "Only publish the React wrapper at the current version (no bump), e.g. after approving a staged core publish"
+        description: "Only publish the npm wrappers (React, React Native) at the current version, no bump: e.g. after a staged core publish or a failed wrapper"
         type: boolean
         default: false
 
@@ -75,7 +75,7 @@ jobs:
           WRAPPER_PUBLISH_RETRIES: ${{ inputs.dry_run && '1' || '60' }}
           WRAPPER_PUBLISH_DELAY_MS: "10000"
 
-      - name: Publish the React wrapper only
+      - name: Publish the npm wrappers only
         if: ${{ inputs.wrapper_only && !inputs.dry_run }}
         run: node scripts/publish-wrapper.mjs "$(node -p "require('./package.json').version")"
         env:

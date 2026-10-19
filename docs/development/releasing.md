@@ -6,6 +6,7 @@ One run of the **Release** workflow publishes everything, under one version numb
 |---|---|
 | `quran-madina-html` | npm |
 | `@tarekeldeeb/quran-madina-react` | npm |
+| `@tarekeldeeb/quran-madina-react-native` | npm |
 | `quran_madina_flutter` | pub.dev |
 | WordPress plugin | a zip attached to the GitHub release |
 

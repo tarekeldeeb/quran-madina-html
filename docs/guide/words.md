@@ -19,6 +19,12 @@ stays in place but invisible, so the line keeps exactly the shape it has in the 
     <QuranMadinaHtml sura={1} aya="1" words="1:2" />
     ```
 
+=== "React Native"
+
+    ```jsx
+    <QuranMadinaNative sura={1} aya="1" words="1:2" />
+    ```
+
 === "Flutter"
 
     ```dart
@@ -60,6 +66,13 @@ suras. After An-Nas it wraps around to Al-Fatiha.
     <QuranMadinaHtml sura={1} aya="7" words="1-14" />
     ```
 
+=== "React Native"
+
+    ```jsx
+    {/* Al-Fatiha's last verse (9 words), Al-Baqara's basmala (4 words), then الٓمٓ */}
+    <QuranMadinaNative sura={1} aya="7" words="1-14" />
+    ```
+
 === "Flutter"
 
     ```dart
@@ -95,6 +108,12 @@ empty, and the basmala still shows:
 
     ```jsx
     <QuranMadinaHtml sura={1} aya="7" words="1-14" notitle />
+    ```
+
+=== "React Native"
+
+    ```jsx
+    <QuranMadinaNative sura={1} aya="7" words="1-14" notitle />
     ```
 
 === "Flutter"

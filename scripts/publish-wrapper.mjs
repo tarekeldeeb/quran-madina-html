@@ -1,4 +1,5 @@
-// Publish the React wrapper as part of the core release (release-it `after:release`).
+// Publish the npm wrappers (React, React Native) as part of the core release (release-it
+// `after:release`). Each is skipped if that version is already on npm, so re-running is safe.
 // Guarded against dry-runs: only publishes if the core version actually landed on npm, so
 // `release-it --dry-run` (whose hooks still execute) cannot accidentally publish the wrapper.
 //
@@ -59,5 +60,30 @@ if (!existsSync("react/node_modules/esbuild")) {
   execSync("npm install --no-audit --no-fund", { cwd: "react", stdio: "inherit" });
 }
 
-console.log(`publishing @tarekeldeeb/quran-madina-react@${version} …`);
-execSync("npm publish --access public", { cwd: "react", stdio: "inherit" });
+function published(name) {
+  try {
+    return execSync(`npm view ${name}@${version} version`, { stdio: ["ignore", "pipe", "ignore"] })
+      .toString().trim() === version;
+  } catch {
+    return false;
+  }
+}
+
+let failed = false;
+for (const [name, dir] of [
+  ["@tarekeldeeb/quran-madina-react", "react"],
+  ["@tarekeldeeb/quran-madina-react-native", "react-native"],
+]) {
+  if (published(name)) {
+    console.log(`${name}@${version} is already on npm`);
+    continue;
+  }
+  console.log(`publishing ${name}@${version} …`);
+  try {
+    execSync("npm publish --access public", { cwd: dir, stdio: "inherit" });
+  } catch {
+    failed = true; // try the other wrapper too, then fail
+    console.error(`publishing ${name}@${version} failed`);
+  }
+}
+process.exit(failed ? 1 : 0);

@@ -1,11 +1,13 @@
 # Frameworks
 
 `<quran-madina-html>` is a standard web component, so it works in any framework that renders
-HTML. Two frameworks get a dedicated package, because they can't use the tag directly or gain a
+HTML. Three frameworks get a dedicated package, because they can't use the tag directly or gain a
 lot from one:
 
 - [React](react.md): `@tarekeldeeb/quran-madina-react`, a component that loads the library for
   you, for React on the web and, through Capacitor, on iOS and Android.
+- [React Native](react-native.md): `@tarekeldeeb/quran-madina-react-native`, a component that
+  shows the tag in a WebView on iOS and Android, sized to the text, online or offline.
 - [Flutter](flutter.md): `quran_madina_flutter`, a widget for Android, iOS, macOS and the web.
 
 The others use the tag as it is, with a line or two of setup:
