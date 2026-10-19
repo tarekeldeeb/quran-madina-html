@@ -1,4 +1,4 @@
-// Lockstep versioning: set the React and Flutter wrappers' versions equal to the core library's new version.
+// Lockstep versioning: set the React, Flutter and WordPress wrappers' versions equal to the core library's new version.
 // Run from the repo root during release (release-it `after:bump`), before the release commit, so
 // react/package.json + lockfile are committed together with the core bump.
 import { readFileSync, writeFileSync } from "node:fs";
@@ -40,4 +40,22 @@ try {
   }
 } catch (err) {
   console.warn(`skip flutter: ${err.message}`);
+}
+
+// WordPress plugin: header Version, QMH_VERSION (the library version it loads), readme.txt's
+// Stable tag, and a changelog entry.
+try {
+  const main = "wordpress/quran-madina-html/quran-madina-html.php";
+  writeFileSync(main, readFileSync(main, "utf8")
+    .replace(/^( \* Version:\s+).*$/m, `$1${version}`)
+    .replace(/define\( 'QMH_VERSION', '[^']*' \);/, `define( 'QMH_VERSION', '${version}' );`));
+  const readme = "wordpress/quran-madina-html/readme.txt";
+  let text = readFileSync(readme, "utf8").replace(/^Stable tag: .*$/m, `Stable tag: ${version}`);
+  if (!text.includes(`= ${version} =`)) {
+    text = text.replace("== Changelog ==\n\n", `== Changelog ==\n\n= ${version} =\n* Follows quran-madina-html ${version}.\n\n`);
+  }
+  writeFileSync(readme, text);
+  console.log(`synced wordpress plugin -> ${version}`);
+} catch (err) {
+  console.warn(`skip wordpress: ${err.message}`);
 }

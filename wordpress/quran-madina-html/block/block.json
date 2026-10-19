@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "quran-madina-html/quran",
+	"title": "Quran",
+	"category": "text",
+	"icon": "book-alt",
+	"description": "Quran text that looks like the printed Madina Mushaf: a page, verses or words, with highlights and emphasised letters.",
+	"keywords": [ "quran", "ayah", "verse", "mushaf", "قرآن", "آية" ],
+	"textdomain": "quran-madina-html",
+	"attributes": {
+		"page": { "type": "string", "default": "" },
+		"sura": { "type": "string", "default": "1" },
+		"aya": { "type": "string", "default": "1-7" },
+		"words": { "type": "string", "default": "" },
+		"highlight": { "type": "string", "default": "" },
+		"error": { "type": "string", "default": "" },
+		"letters": { "type": "string", "default": "" },
+		"headless": { "type": "boolean", "default": false },
+		"notitle": { "type": "boolean", "default": false },
+		"quotes": { "type": "string", "default": "" },
+		"inline": { "type": "string", "default": "" }
+	},
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ],
+		"spacing": { "margin": true, "padding": true }
+	},
+	"editorScript": "file:./editor.js"
+}

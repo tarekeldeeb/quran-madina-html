@@ -272,8 +272,19 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   the app's asset URL. CI (`.github/workflows/flutter.yml`): publish dry run, analyze, test,
   the bundler for real, a web build and an Android build of `example/` (made with
   `flutter create .`). No local SDK is assumed.
-- `scripts/sync-wrapper-version.mjs` (release-it `after:bump`) keeps both at the core version,
-  including `flutter/pubspec.yaml`, `kLibraryVersion` (`lib/src/version.dart`, the bundler's
+- `wordpress/quran-madina-html/` — WordPress plugin (Quran block + `[quran]`/`[quran_madina]`
+  shortcode, Settings → Quran Madina). `includes/render.php`: `qmh_tag()` builds the tag
+  (attributes whitelisted; `qmh_clean_value()` validates each: ranges, quotes/inline words,
+  letters chars; page wins over sura/aya), enqueues the library in the footer only where used,
+  `script_loader_tag` adds data-cdn/layout/font-size. Library pinned to `QMH_VERSION` on unpkg,
+  or a copy in uploads (`includes/local-copy.php`: npm tgz via PharData, every layout's shards +
+  fonts, ~11 MB). `block/editor.js` is plain JS (no build); the editor loads the library through
+  `enqueue_block_assets` for the live preview. `tests/run.sh` runs it in real WordPress
+  (GitHub clone + SQLite drop-in + `php -S`) and checks the HTML; `QMH_CA_BUNDLE` for proxied
+  sandboxes. CI: `.github/workflows/wordpress.yml`; on a release tag it attaches
+  `quran-madina-html-wordpress.zip` to the GitHub release (stable "latest/download" link).
+- `scripts/sync-wrapper-version.mjs` (release-it `after:bump`) keeps all of them at the core version,
+  including the WordPress plugin header, QMH_VERSION and readme Stable tag, `flutter/pubspec.yaml`, `kLibraryVersion` (`lib/src/version.dart`, the bundler's
   default) and a `flutter/CHANGELOG.md` entry. pub.dev: the release tag (e.g. `2.1.1`) starts
   `.github/workflows/flutter-publish.yml` (OIDC, no stored secret; pub.dev Admin -> Automated
   publishing, tag pattern `{{version}}`). Tags pushed with GITHUB_TOKEN start no workflows, so

@@ -1,0 +1,56 @@
+# The WordPress plugin (wordpress/quran-madina-html): runs it in a real WordPress (SQLite, PHP's
+# built-in server) and checks the shortcode, the block, the settings and the library copy. On a
+# release tag, attaches the plugin zip to the GitHub release:
+#   https://github.com/tarekeldeeb/quran-madina-html/releases/latest/download/quran-madina-html-wordpress.zip
+name: WordPress
+
+on:
+  push:
+    branches: [main]
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
+    paths: ["wordpress/**", ".github/workflows/wordpress.yml"]
+  pull_request:
+    paths: ["wordpress/**", ".github/workflows/wordpress.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # upload the zip to the release
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_sqlite, sqlite3, phar, zlib, mbstring, curl
+
+      - name: Lint
+        run: for f in $(find wordpress -name '*.php'); do php -l "$f" >/dev/null || exit 1; done
+
+      - name: Run in WordPress
+        run: wordpress/quran-madina-html/tests/run.sh "$RUNNER_TEMP/wp"
+
+  package:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Zip the plugin
+        working-directory: wordpress
+        run: zip -qr "$RUNNER_TEMP/quran-madina-html-wordpress.zip" quran-madina-html -x 'quran-madina-html/tests/*'
+
+      # The release workflow creates the GitHub release just after pushing the tag.
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 30); do
+            gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 && break
+            sleep 10
+          done
+          gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/quran-madina-html-wordpress.zip" --clobber

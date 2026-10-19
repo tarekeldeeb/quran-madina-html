@@ -66,6 +66,7 @@ nav:
       - HTML: getting-started/html.md
       - React: getting-started/react.md
       - Flutter: getting-started/flutter.md
+      - WordPress: getting-started/wordpress.md
   - Guide:
       - guide/index.md
       - Pages and verses: guide/pages-and-verses.md

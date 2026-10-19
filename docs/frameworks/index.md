@@ -19,6 +19,7 @@ The others use the tag as it is, with a line or two of setup:
 | SolidJS, Preact, Lit, Alpine, plain JavaScript | none: write the tag, or create it with `document.createElement` | [HTML](../getting-started/html.md) |
 
 Next.js is React: use the [React](react.md) component in a client component (`"use client"`).
+WordPress sites use the [plugin](../getting-started/wordpress.md), with a block and a shortcode.
 
 ## Setting values from code
 

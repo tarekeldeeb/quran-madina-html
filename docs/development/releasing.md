@@ -7,6 +7,7 @@ One run of the **Release** workflow publishes everything, under one version numb
 | `quran-madina-html` | npm |
 | `@tarekeldeeb/quran-madina-react` | npm |
 | `quran_madina_flutter` | pub.dev |
+| WordPress plugin | a zip attached to the GitHub release |
 
 ## Run a release
 
@@ -18,7 +19,8 @@ One run of the **Release** workflow publishes everything, under one version numb
 
 The release builds `dist/`, bumps the version (the wrappers follow), commits, tags (e.g.
 `2.1.1`), creates the GitHub release, and publishes both npm packages. The tag then starts
-**Publish Flutter package**, which publishes to pub.dev.
+**Publish Flutter package**, which publishes to pub.dev, and **WordPress**, which tests the
+plugin in WordPress and attaches its zip to the release.
 
 **wrapper only** republishes just the React wrapper at the current version, for when the core
 package published but the wrapper didn't.
