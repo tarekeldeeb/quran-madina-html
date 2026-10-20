@@ -3,7 +3,7 @@
  * Plugin Name:       Quran Madina Html
  * Plugin URI:        https://tarekeldeeb.github.io/quran-madina-html/docs/getting-started/wordpress/
  * Description:       Quran pages that look like the printed Madina Mushaf, as real text: a [quran] shortcode and a Quran block for pages, verses, highlighted words and emphasised letters.
- * Version:           2.1.4
+ * Version:           2.2.0
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            Tarek Eldeeb
@@ -21,7 +21,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /** This plugin's version, which is also the version of the quran-madina-html library it carries. */
-define( 'QMHTML_VERSION', '2.1.4' );
+define( 'QMHTML_VERSION', '2.2.0' );
 define( 'QMHTML_FILE', __FILE__ );
 
 require_once __DIR__ . '/includes/render.php';

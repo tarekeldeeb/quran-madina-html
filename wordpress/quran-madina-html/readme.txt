@@ -4,7 +4,7 @@ Tags: quran, islam, arabic, mushaf, shortcode
 Requires at least: 6.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.1.4
+Stable tag: 2.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No: the print and the size are set once for the whole site, under Settings → Q
 2. Verses with highlighted words and emphasised letters on a post.
 
 == Changelog ==
+
+= 2.2.0 =
+* Follows quran-madina-html 2.2.0.
 
 = 2.1.4 =
 * The library now comes with the plugin, so nothing loads from unpkg.com. The "Copy to this site" setting is gone; uninstalling removes a copy an earlier version saved in the uploads folder.
