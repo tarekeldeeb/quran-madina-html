@@ -1,6 +1,6 @@
 # Release from anywhere (a phone included): GitHub -> Actions -> Release -> Run workflow.
 #
-# Runs the same `npm run release` (release-it) as a local release: builds dist with grunt, bumps the
+# Runs the same `npm run release` (release-it) as a local release: builds dist (scripts/build.mjs), bumps the
 # version (the wrappers follow in lockstep), commits + tags on main, creates the GitHub
 # release, publishes quran-madina-html and then @tarekeldeeb/quran-madina-react to npm.
 #
@@ -48,7 +48,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22        # release-it 21 needs Node 22.22.2+
           registry-url: https://registry.npmjs.org
 
       - name: Install

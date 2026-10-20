@@ -32,7 +32,7 @@ jobs:
       - name: Build the library (dist/)
         run: |
           npm ci
-          npx grunt
+          npm run build
 
       - uses: subosito/flutter-action@v2
         with:

@@ -2,13 +2,15 @@
 
 ## Supported Versions
 
-Security fixes are applied to the latest `0.6.x` line and published to npm
-(`quran-madina-html` and `@tarekeldeeb/quran-madina-react`).
+Security fixes are applied to the latest `2.x` release and published with it: npm
+(`quran-madina-html`, `@tarekeldeeb/quran-madina-react`,
+`@tarekeldeeb/quran-madina-react-native`), pub.dev (`quran_madina_flutter`) and the WordPress
+plugin zip on the GitHub release.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.6.x   | :white_check_mark: |
-| < 0.6   | :x:                |
+| 2.x     | :white_check_mark: |
+| < 2.0   | :x:                |
 
 Always upgrade to the most recent release before reporting an issue.
 
@@ -23,10 +25,17 @@ What ships to consumers is intentionally small, which limits the attack surface:
   not execute remote code or evaluate user input as code.
 - **React wrapper (`@tarekeldeeb/quran-madina-react`)** — published as a thin
   built wrapper with **no runtime dependencies** (React is a peer dependency).
+- **React Native wrapper (`@tarekeldeeb/quran-madina-react-native`)** — plain
+  JavaScript with **no runtime dependencies** (React, React Native and
+  react-native-webview are peer dependencies).
+- **Flutter package (`quran_madina_flutter`)** — depends only on the Flutter SDK,
+  `webview_flutter` and `web`.
+- **WordPress plugin** — PHP with no third-party code besides its copy of the
+  library above.
 
-Advisories against **build/test tooling** (e.g. grunt, vite, esbuild, vitest)
-are dev-only `devDependencies` and are **not** part of either published package,
-so they do not affect consumers. We still keep them patched.
+Advisories against **build/test tooling** (e.g. release-it, jshint, http-server,
+vite, esbuild, vitest) are dev-only `devDependencies` and are **not** part of any
+published package, so they do not affect consumers. We still keep them patched.
 
 ## Reporting a Vulnerability
 
@@ -43,6 +52,6 @@ When reporting, include the affected version, a description, and a minimal
 reproduction if possible.
 
 We aim to acknowledge reports within a few days and, for accepted issues, to
-release a patch on the supported `0.6.x` line and credit the reporter (unless
+release a patch on the supported `2.x` line and credit the reporter (unless
 anonymity is requested). Reports that are out of scope (e.g. dev-only tooling
 advisories) will be explained and closed.

@@ -90,6 +90,6 @@ is the Tanzil Project's (Creative Commons Attribution 3.0, distributed verbatim)
 
 ## Building the plugin
 
-`wordpress/build.sh` copies the library into the plugin's `library/` folder (run `npx grunt`
+`wordpress/build.sh` copies the library into the plugin's `library/` folder (run `npm run build`
 first); `wordpress/build.sh --zip quran-madina-html.zip` also writes the zip. CI does this and
 runs WordPress.org's [Plugin Check](https://wordpress.org/plugins/plugin-check/) on the result.

@@ -15,7 +15,7 @@ pip install -r requirements.txt
 ## Build and run
 
 ```bash
-npm run build     # grunt: lint, then build dist/ (minified script and CSS)
+npm run build     # scripts/build.mjs: jshint, then dist/ (readable script and CSS with the license banner)
 npm run start     # serve the repository on http://localhost:8000
 ```
 

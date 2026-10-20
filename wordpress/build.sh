@@ -3,14 +3,14 @@
 # fonts) into wordpress/quran-madina-html/library/, and with --zip also writes the plugin zip.
 #   wordpress/build.sh [--zip out.zip]
 # WordPress.org plugins may not load scripts from a CDN, so the plugin carries its own copy.
-# Run `npx grunt` first (dist/ is generated).
+# Run `npm run build` first (dist/ is generated).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGIN="$ROOT/wordpress/quran-madina-html"
 LIB="$PLUGIN/library"
 
 for f in dist/quran-madina-html.js dist/quran-madina-html.css; do
-  [ -f "$ROOT/$f" ] || { echo "$f is missing: run npx grunt first" >&2; exit 1; }
+  [ -f "$ROOT/$f" ] || { echo "$f is missing: run npm run build first" >&2; exit 1; }
 done
 rm -rf "$LIB"
 mkdir -p "$LIB/dist" "$LIB/assets/db/v2"

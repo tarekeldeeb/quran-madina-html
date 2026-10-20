@@ -31,7 +31,7 @@ jobs:
       - name: Build the plugin
         run: |
           npm ci
-          npx grunt
+          npm run build
           wordpress/build.sh --zip "$RUNNER_TEMP/quran-madina-html-wordpress.zip"
 
       - uses: shivammathur/setup-php@v2
@@ -59,7 +59,7 @@ jobs:
       - name: Build the plugin
         run: |
           npm ci
-          npx grunt
+          npm run build
           wordpress/build.sh --zip "$RUNNER_TEMP/quran-madina-html-wordpress.zip"
 
       - name: Unzip
@@ -84,7 +84,7 @@ jobs:
       - name: Build the plugin
         run: |
           npm ci
-          npx grunt
+          npm run build
           wordpress/build.sh --zip "$RUNNER_TEMP/quran-madina-html-wordpress.zip"
 
       # The release workflow creates the GitHub release just after pushing the tag.
