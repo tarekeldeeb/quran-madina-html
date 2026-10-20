@@ -1,0 +1,365 @@
+<!doctype html>
+<!-- The reader: a two-page Mushaf viewer built on <quran-madina-html page="N">.
+     ?layout=1441H|1405H|IndoPak picks the print (the library reads it once, so changing it
+     reloads), #N is the page. Published to gh-pages/reader/ by .github/workflows/docs.yml; on
+     localhost it uses this checkout's dist/ and assets/ (npm run start, then /reader/). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quran Reader · quran-madina-html</title>
+<meta name="description" content="Read the Quran page by page, laid out like the printed Madina Mushaf, as real text.">
+<link rel="icon" href="../favicon.ico">
+<style>
+  :root {
+    --bg: #ece7dc; --bar: #fbf8f1; --ink: #2b2a26; --muted: #6f6a5f; --line: #d9d1bf;
+    --accent: #0f6b5c; --accent-soft: #dcefe9; --hover: #f1ecdf; --shadow: rgba(60, 50, 30, .18);
+    --page-bg: #fffdf7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a; --bar: #222326; --ink: #e9e6de; --muted: #a29d92; --line: #3a3b3f;
+      --accent: #5cc2ad; --accent-soft: #23403a; --hover: #2c2d31; --shadow: rgba(0, 0, 0, .5);
+      --page-bg: #1d1e21;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: 1fr auto;
+    grid-template-areas: "top top" "main side" "bottom side";
+    background: var(--bg); color: var(--ink);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  button, select, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  header {
+    grid-area: top; display: flex; align-items: center; gap: 12px; padding: 8px 16px;
+    background: var(--bar); border-bottom: 1px solid var(--line);
+  }
+  header .brand { font-weight: 650; text-decoration: none; color: var(--ink); white-space: nowrap; }
+  header .brand small { font-weight: 400; color: var(--muted); }
+  header .spacer { flex: 1; }
+  header label { color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  select, .pageno {
+    background: var(--page-bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px;
+  }
+  .iconbtn {
+    background: none; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px;
+  }
+  .iconbtn:hover, .nav:hover:not(:disabled) { background: var(--hover); }
+  #toggle-index { display: none; }
+
+  main {
+    grid-area: main; position: relative; overflow: hidden; display: flex;
+    align-items: center; justify-content: center; touch-action: pan-y;
+  }
+  /* The spread is laid out at the library's size, then scaled to fit (fit()). */
+  #spread {
+    display: flex; flex-direction: row-reverse; gap: 0; transform-origin: center center;
+    filter: drop-shadow(0 8px 22px var(--shadow));
+  }
+  #spread quran-madina-html { display: block; }
+  #spread .slot { background: var(--page-bg); }
+  #spread.single .slot.left { display: none; }
+  .folio { text-align: center; color: var(--muted); font-size: 15px; padding: 4px 0 8px;
+           font-variant-numeric: tabular-nums; }
+  #ref { position: absolute; visibility: hidden; pointer-events: none; left: -9999px; top: 0; }
+  #spread .slot { display: flex; flex-direction: column; }
+  #spread .slot quran-madina-html { flex: 1; }
+  #status { position: absolute; inset: auto 0 12px; text-align: center; color: var(--muted); }
+
+  aside {
+    grid-area: side; width: 280px; display: flex; flex-direction: column; min-height: 0;
+    background: var(--bar); border-left: 1px solid var(--line);
+  }
+  aside .search { padding: 10px; border-bottom: 1px solid var(--line); }
+  aside input {
+    width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--page-bg);
+  }
+  #suras { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; flex: 1; }
+  #suras button {
+    width: 100%; display: grid; grid-template-columns: 2.2em 1fr auto; align-items: center;
+    gap: 8px; padding: 6px 12px; border: 0; background: none; text-align: left;
+  }
+  #suras button:hover { background: var(--hover); }
+  #suras button.current { background: var(--accent-soft); }
+  #suras .num { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+  #suras .en { display: block; }
+  #suras .meta { display: block; color: var(--muted); font-size: 12px; }
+  #suras .ar { font-size: 18px; direction: rtl; font-family: "Amiri", "Noto Naskh Arabic", "Geeza Pro", "Traditional Arabic", serif; }
+
+  footer {
+    grid-area: bottom; display: flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 8px 16px; background: var(--bar); border-top: 1px solid var(--line);
+  }
+  .nav {
+    background: none; border: 1px solid var(--line); border-radius: 6px; padding: 6px 14px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nav:disabled { opacity: .4; cursor: default; }
+  .pageno { width: 5.2em; text-align: center; }
+  #slider { flex: 0 1 360px; direction: rtl; accent-color: var(--accent); }
+  #where { color: var(--muted); min-width: 9em; text-align: center; white-space: nowrap; }
+
+  @media (max-width: 900px) {
+    body { grid-template-columns: 1fr; grid-template-areas: "top" "main" "bottom"; }
+    #toggle-index { display: inline-block; }
+    aside {
+      position: fixed; z-index: 10; top: 0; right: 0; bottom: 0; width: min(320px, 88vw);
+      transform: translateX(100%); transition: transform .2s ease; box-shadow: -8px 0 24px var(--shadow);
+    }
+    body.index-open aside { transform: none; }
+    header .brand small, header label span { display: none; }
+    #slider { display: none; }
+    #where { min-width: 0; }
+  }
+  @media (max-width: 480px) {
+    header { gap: 8px; padding: 8px 10px; }
+    footer { gap: 8px; padding: 8px 10px; }
+    .nav .label { display: none; }
+    #where { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="../">Quran Reader <small>· quran-madina-html</small></a>
+  <span class="spacer"></span>
+  <label><span>Print</span>
+    <select id="layout" aria-label="Print">
+      <option value="1441H">Madina 1441H</option>
+      <option value="1405H">Madina 1405H</option>
+      <option value="IndoPak">IndoPak, 15 lines</option>
+    </select>
+  </label>
+  <button class="iconbtn" id="toggle-index" aria-controls="index" aria-expanded="false">Suras</button>
+</header>
+
+<main id="main">
+  <div id="spread">
+    <div class="slot right"><quran-madina-html id="page-right"></quran-madina-html><div class="folio" id="folio-right"></div></div>
+    <div class="slot left"><quran-madina-html id="page-left"></quran-madina-html><div class="folio" id="folio-left"></div></div>
+  </div>
+  <div id="status">Loading…</div>
+  <!-- A regular full page, measured so short pages (1, 2) keep the same size. -->
+  <div id="ref" aria-hidden="true"><quran-madina-html id="page-ref" page="3" headless="true"></quran-madina-html></div>
+</main>
+
+<aside id="index" aria-label="Suras">
+  <div class="search"><input id="filter" type="search" placeholder="Find a sura (name or number)" aria-label="Find a sura"></div>
+  <ul id="suras"></ul>
+</aside>
+
+<footer>
+  <button class="nav" id="next" title="Next page (←)"><span aria-hidden="true">‹</span><span class="label">Next</span></button>
+  <input id="slider" type="range" min="1" max="604" value="1" aria-label="Page">
+  <label><input class="pageno" id="pageno" type="number" min="1" max="604" value="1" aria-label="Page number"></label>
+  <span id="where"></span>
+  <button class="nav" id="prev" title="Previous page (→)"><span class="label">Previous</span><span aria-hidden="true">›</span></button>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var LAYOUTS = { "1441H": "Madina-1441H", "1405H": "Madina-1405H", "IndoPak": "IndoPak-15" };
+  // Sura names in English, for the index and its search (the Arabic ones come from the data).
+  var EN = ["Al-Fatihah","Al-Baqarah","Al-Imran","An-Nisa","Al-Ma'idah","Al-An'am","Al-A'raf",
+    "Al-Anfal","At-Tawbah","Yunus","Hud","Yusuf","Ar-Ra'd","Ibrahim","Al-Hijr","An-Nahl",
+    "Al-Isra","Al-Kahf","Maryam","Ta-Ha","Al-Anbiya","Al-Hajj","Al-Mu'minun","An-Nur",
+    "Al-Furqan","Ash-Shu'ara","An-Naml","Al-Qasas","Al-'Ankabut","Ar-Rum","Luqman","As-Sajdah",
+    "Al-Ahzab","Saba","Fatir","Ya-Sin","As-Saffat","Sad","Az-Zumar","Ghafir","Fussilat",
+    "Ash-Shura","Az-Zukhruf","Ad-Dukhan","Al-Jathiyah","Al-Ahqaf","Muhammad","Al-Fath",
+    "Al-Hujurat","Qaf","Adh-Dhariyat","At-Tur","An-Najm","Al-Qamar","Ar-Rahman","Al-Waqi'ah",
+    "Al-Hadid","Al-Mujadilah","Al-Hashr","Al-Mumtahanah","As-Saff","Al-Jumu'ah",
+    "Al-Munafiqun","At-Taghabun","At-Talaq","At-Tahrim","Al-Mulk","Al-Qalam","Al-Haqqah",
+    "Al-Ma'arij","Nuh","Al-Jinn","Al-Muzzammil","Al-Muddaththir","Al-Qiyamah","Al-Insan",
+    "Al-Mursalat","An-Naba","An-Nazi'at","'Abasa","At-Takwir","Al-Infitar","Al-Mutaffifin",
+    "Al-Inshiqaq","Al-Buruj","At-Tariq","Al-A'la","Al-Ghashiyah","Al-Fajr","Al-Balad",
+    "Ash-Shams","Al-Layl","Ad-Duha","Ash-Sharh","At-Tin","Al-'Alaq","Al-Qadr","Al-Bayyinah",
+    "Az-Zalzalah","Al-'Adiyat","Al-Qari'ah","At-Takathur","Al-'Asr","Al-Humazah","Al-Fil",
+    "Quraysh","Al-Ma'un","Al-Kawthar","Al-Kafirun","An-Nasr","Al-Masad","Al-Ikhlas","Al-Falaq",
+    "An-Nas"];
+
+  var params = new URLSearchParams(location.search);
+  var layout = params.get("layout");
+  if (!LAYOUTS[layout]) {
+    var lower = String(layout || "").toLowerCase();
+    layout = Object.keys(LAYOUTS).filter(function (k) { return k.toLowerCase() === lower; })[0] || "1441H";
+  }
+  var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  // On localhost: this checkout (npm run start). Elsewhere: the published library.
+  var base = local ? new URL("../", location.href).href : "https://unpkg.com/quran-madina-html@2/";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var spread = $("spread"), main = $("main"), right = $("page-right"), left = $("page-left");
+  var nPages = 604, pages = [], juz = [], suraStart = [], current = 1, single = false;
+
+  $("layout").value = layout;
+  $("layout").addEventListener("change", function () {
+    var p = new URLSearchParams(location.search);
+    p.set("layout", this.value);
+    location.href = location.pathname + "?" + p + location.hash;   // the library reads it once
+  });
+
+  function store(key, value) { try { localStorage.setItem(key, value); } catch (e) { /* private mode */ } }
+  function recall(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+
+  // The library: one script tag per page load, configured by its data attributes.
+  var script = document.createElement("script");
+  script.src = base + "dist/quran-madina-html.js";
+  script.setAttribute("data-cdn", base);
+  script.setAttribute("data-layout", layout);
+  script.setAttribute("data-font-size", "20");
+  script.onerror = function () { $("status").textContent = "The library could not be loaded."; };
+  document.head.appendChild(script);
+
+  fetch(base + "assets/db/v2/" + LAYOUTS[layout] + "/manifest.json")
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(init)
+    .catch(function () { $("status").textContent = "The page index could not be loaded."; });
+
+  function init(m) {
+    nPages = m.n_pages; pages = m.pages; juz = m.juz;
+    // pages[p] = [first sura, first aya slot, last sura, last aya slot]; a sura starts on the
+    // first page that reaches it.
+    for (var s = 0, p = 0; s < 114; s++) {
+      while (p < nPages - 1 && pages[p][2] < s) p++;
+      suraStart[s] = p + 1;
+    }
+    ["slider", "pageno"].forEach(function (id) { $(id).max = nPages; });
+    buildIndex(m.suras);
+    var fromHash = parseInt(location.hash.slice(1), 10);
+    var saved = parseInt(recall("qmh-reader-" + layout), 10);
+    show(fromHash || saved || 1);
+  }
+
+  function arabicName(name) {
+    return name.replace(/͏/g, "").replace(/^سُورَةُ\s*/, "");
+  }
+
+  function buildIndex(suras) {
+    var list = $("suras"), html = "";
+    suras.forEach(function (s, i) {
+      html += '<li><button data-sura="' + i + '">' +
+        '<span class="num">' + (i + 1) + '</span>' +
+        '<span><span class="en">' + EN[i] + '</span><span class="meta">' + s[1] +
+        ' ayat · page ' + suraStart[i] + '</span></span>' +
+        '<span class="ar">' + arabicName(s[0]) + '</span></button></li>';
+    });
+    list.innerHTML = html;
+    list.addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-sura]");
+      if (!b) return;
+      show(suraStart[+b.dataset.sura]);
+      document.body.classList.remove("index-open");
+    });
+    $("filter").addEventListener("input", function () {
+      var q = this.value.trim().toLowerCase().replace(/[-'’ ]/g, "");
+      Array.prototype.forEach.call(list.children, function (li, i) {
+        var hay = (i + 1) + " " + EN[i].toLowerCase().replace(/[-'’ ]/g, "") + " " +
+          li.querySelector(".ar").textContent.replace(/[ً-ْٰ]/g, "");
+        li.hidden = q !== "" && hay.indexOf(q) < 0 && String(i + 1) !== q;
+      });
+    });
+  }
+
+  function arabicDigits(n) { return String(n).replace(/[0-9]/g, function (d) { return "٠١٢٣٤٥٦٧٨٩"[d]; }); }
+  function suraOf(page) { return pages[page - 1] ? pages[page - 1][0] : 0; }
+  function juzOf(page) {
+    var j = 1;
+    for (var i = 0; i < juz.length; i++) if (juz[i][2] <= page) j = i + 1;
+    return j;
+  }
+
+  // The spread showing page p: odd pages on the right, as in the print.
+  function spreadOf(p) { return single ? [p] : (p % 2 ? [p, p + 1] : [p - 1, p]); }
+
+  function show(p) {
+    p = Math.max(1, Math.min(nPages, p | 0 || 1));
+    current = p;
+    var pair = spreadOf(p);
+    right.setAttribute("page", pair[0]); $("folio-right").textContent = arabicDigits(pair[0]);
+    if (single) {   // hidden, but give it a page so the library has something valid to render
+      if (!left.getAttribute("page")) left.setAttribute("page", Math.min(p + 1, nPages));
+    } else {
+      if (pair[1] <= nPages) { left.setAttribute("page", pair[1]); $("folio-left").textContent = arabicDigits(pair[1]); left.parentNode.style.visibility = ""; }
+      else left.parentNode.style.visibility = "hidden";
+    }
+    $("pageno").value = p; $("slider").value = p;
+    $("prev").disabled = pair[0] <= 1;
+    $("next").disabled = pair[pair.length - 1] >= nPages;
+    var s = suraOf(p);
+    $("where").textContent = "Juz' " + juzOf(p) + " · " + EN[s];
+    Array.prototype.forEach.call(document.querySelectorAll("#suras button.current"), function (b) {
+      b.classList.remove("current");
+    });
+    var cur = document.querySelector('#suras button[data-sura="' + s + '"]');
+    if (cur) { cur.classList.add("current"); cur.scrollIntoView({ block: "nearest" }); }
+    if (location.hash !== "#" + p) history.replaceState(null, "", "#" + p);
+    store("qmh-reader-" + layout, p);
+    $("status").textContent = "";
+    document.title = "Page " + p + " · Quran Reader";
+  }
+
+  function step(dir) {
+    var pair = spreadOf(current);
+    show(dir > 0 ? pair[pair.length - 1] + 1 : pair[0] - 1);
+  }
+  $("next").addEventListener("click", function () { step(1); });
+  $("prev").addEventListener("click", function () { step(-1); });
+  $("pageno").addEventListener("change", function () { show(+this.value); });
+  $("slider").addEventListener("input", function () { $("pageno").value = this.value; });
+  $("slider").addEventListener("change", function () { show(+this.value); });
+  $("toggle-index").addEventListener("click", function () {
+    var open = document.body.classList.toggle("index-open");
+    this.setAttribute("aria-expanded", open);
+  });
+  window.addEventListener("hashchange", function () {
+    var p = parseInt(location.hash.slice(1), 10);
+    if (p && p !== current) show(p);
+  });
+
+  // Keys and swipes go the way an Arabic book turns: left is forward.
+  document.addEventListener("keydown", function (e) {
+    if (e.target.matches("input, select")) return;
+    if (e.key === "ArrowLeft" || e.key === "PageDown") { step(1); e.preventDefault(); }
+    if (e.key === "ArrowRight" || e.key === "PageUp") { step(-1); e.preventDefault(); }
+    if (e.key === "Home") show(1);
+    if (e.key === "End") show(nPages);
+  });
+  var touchX = null;
+  main.addEventListener("touchstart", function (e) { touchX = e.touches[0].clientX; }, { passive: true });
+  main.addEventListener("touchend", function (e) {
+    if (touchX === null) return;
+    var dx = e.changedTouches[0].clientX - touchX;
+    touchX = null;
+    if (Math.abs(dx) > 50) step(dx > 0 ? 1 : -1);   // swipe right reveals the next (left) page
+  });
+
+  // One page in portrait, two (a spread) in landscape; then scale it to fit.
+  function fit() {
+    var wasSingle = single;
+    single = window.innerWidth < window.innerHeight;
+    spread.classList.toggle("single", single);
+    if (single !== wasSingle && pages.length) show(current);
+    spread.style.transform = "none";
+    // Every page as tall as a regular one (the reference page plus a header and the folio).
+    var refH = $("page-ref").offsetHeight;
+    if (refH) {
+      [right, left].forEach(function (t) { t.style.minHeight = (refH + 40) + "px"; });
+    }
+    var w = spread.offsetWidth, h = spread.offsetHeight;
+    if (!w || !h) return;
+    var k = Math.min((main.clientWidth - 24) / w, (main.clientHeight - 24) / h);
+    spread.style.transform = "scale(" + Math.max(0.2, Math.min(k, 2.5)) + ")";
+  }
+  window.addEventListener("resize", fit);
+  if (window.ResizeObserver) { var ro = new ResizeObserver(fit); ro.observe(right); ro.observe($("page-ref")); }
+  fit();
+})();
+</script>
+</body>
+</html>
