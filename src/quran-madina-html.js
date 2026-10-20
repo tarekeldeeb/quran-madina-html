@@ -124,6 +124,18 @@
     var v = String(val).trim().toLowerCase();
     return v === "" || v === "true" || v === "1" || v === "yes";
   }
+  function safeBaseUrl(value){
+    // data-cdn is the base the CSS, databases and fonts load from: resolve it against the page,
+    // with a trailing slash, and refuse schemes that run code instead of fetching a file.
+    // Everything else stays allowed (http(s), file: in app bundles, app schemes such as
+    // capacitor: or tauri:), so self-hosted and offline setups keep working.
+    var url;
+    try { url = new URL(String(value), document.baseURI); }
+    catch(e){ return null; }
+    if(/^(javascript|data|vbscript):$/i.test(url.protocol)) return null;
+    url.search = ""; url.hash = "";
+    return url.href.replace(/\/?$/, "/");
+  }
   function resolveUrl(url){
     // Resolve an asset URL from the DB against `cdn`. Absolute (http(s):// or //) URLs are used
     // as-is for backward compatibility with older DBs; relative paths (e.g. "assets/fonts/X.woff2")
@@ -1182,9 +1194,13 @@
     }
   }
   var doc_cdn     = this_script.getAttribute('data-cdn');
-  if (doc_cdn) cdn = doc_cdn.replace(/\/?$/, "/"); // honor explicit base, ensure trailing slash
+  if (doc_cdn){
+    var safe_cdn = safeBaseUrl(doc_cdn);
+    if (safe_cdn) cdn = safe_cdn;
+    else console.warn(`${name}> data-cdn "${doc_cdn}" is not a URL the library can load from; using ${cdn}`);
+  }
   print(`layout: ${doc_layout} size: ${doc_font_sz}`);
-  const name_css = cdn+"dist/"+name+".css?v=1.1";
+  const name_css = new URL("dist/" + name + ".css?v=1.1", new URL(cdn, document.baseURI)).href;
   if (!document.getElementById(name))
   {
       var head  = document.getElementsByTagName('head')[0];
