@@ -36,15 +36,23 @@ quran-madina-html[data-qmh-text-scheme="dark"] {
   --qmh-highlight-text: #ffffff;
   --qmh-error-text: #ffffff;
 }
+/* The sura name at the start (right), the icons at the end (left), all centred vertically. */
 quran-madina-html-header {
   background-color: color-mix(in srgb, var(--qmh-header) 20%, transparent);
-  font-size: smaller;
-  display: block;
-  padding: 5px 5px 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  height: 2.1em;
+  padding: 0 0.5em 0 0.3em;
   margin-bottom: 5px;
   color: color-mix(in srgb, currentColor 60%, transparent);
-  height: 25px;
-  line-height: 25px;
+  line-height: 1;
+}
+.quran-madina-html-sura-name {
+  font-size: 0.72em;
+  margin-inline-end: auto;
+  white-space: nowrap;
 }
 quran-madina-html-line {
   text-align: right;
@@ -161,11 +169,17 @@ quran-madina-html-line:has(.quran-madina-html-sura-start)::before{
   mask-mode: alpha;
   pointer-events: none;
 }
+/* Same visible glyph height for both: the copy glyph fills about 3/4 of its 24-unit box, the
+   translate glyph all of its box. */
 svg.quran-madina-html-icon {
-  float:left; 
-  padding:4px 4px 0 7px;
+  flex: none;
+  box-sizing: content-box;
+  padding: 3px;
   border-radius: 5px;
+  cursor: pointer;
 }
+svg.quran-madina-html-icon-copy { width: 20px; height: 20px; }
+svg.quran-madina-html-icon-translate { width: 24px; height: 18px; padding: 4px 2px; }
 svg.quran-madina-html-icon:hover {
   background-color: color-mix(in srgb, var(--qmh-header) 50%, transparent);;
 }
