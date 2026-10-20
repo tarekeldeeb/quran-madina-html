@@ -205,10 +205,28 @@ quran-madina-html-aya-popup {
 quran-madina-html-aya-popup.quran-madina-html-open {
   display: flex;
 }
-quran-madina-html-aya-popup svg.quran-madina-html-icon {
-  float: none;
-  padding: 4px;
+/* One <button> per registered verse action. Icons: the built-ins' own sizes, and 20px for an
+   action's own SVG or image; currentColor in an action's SVG follows the popup's colour. */
+quran-madina-html-aya-popup button.quran-madina-html-action {
+  display: flex; align-items: center; justify-content: center;
+  margin: 0; padding: 2px; border: 0; border-radius: 5px;
+  background: none; color: var(--qmh-background); font: inherit; cursor: pointer;
 }
+quran-madina-html-aya-popup button.quran-madina-html-action:hover,
+quran-madina-html-aya-popup button.quran-madina-html-action:focus-visible {
+  background-color: color-mix(in srgb, var(--qmh-background) 22%, transparent);
+  outline: none;
+}
+quran-madina-html-aya-popup button > svg:not(.quran-madina-html-icon),
+quran-madina-html-aya-popup button > img {
+  width: 20px; height: 20px; padding: 3px; box-sizing: content-box;
+}
+quran-madina-html-aya-popup svg.quran-madina-html-icon:hover { background: none; }
 quran-madina-html-aya-popup svg.quran-madina-html-icon path {
   fill: var(--qmh-background);
+}
+/* actions="none": no verse actions, and no header icons either. */
+quran-madina-html[actions="none" i] quran-madina-html-header svg,
+quran-madina-html[actions=""] quran-madina-html-header svg {
+  display: none;
 }
