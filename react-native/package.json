@@ -1,6 +1,6 @@
 {
   "name": "@tarekeldeeb/quran-madina-react-native",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "React Native component for quran-madina-html: Quran pages that look like the printed Madina Mushaf, as real text, in a WebView on iOS and Android. Works offline.",
   "type": "module",
   "main": "src/index.js",
