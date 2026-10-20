@@ -736,6 +736,8 @@
       
         
       
+        
+      
     
     
     
@@ -917,6 +919,34 @@
     
   
     Emphasising letters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/actions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Verse actions
   
 
     
@@ -1403,6 +1433,8 @@
       
         
       
+        
+      
     
     
     
@@ -1528,6 +1560,34 @@
     
   
     CSS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/javascript/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JavaScript API
   
 
     
@@ -2133,6 +2193,21 @@ works in Expo Go online; offline needs a development build (see <a href="#offlin
 <td><code>inline</code></td>
 <td>string</td>
 <td><code>"no"</code> forces the multiline layout.</td>
+</tr>
+<tr>
+<td><code>actions</code></td>
+<td>string[] | string</td>
+<td>The <a href="../../guide/actions/">verse actions</a> a tap offers, by id: <code>["copy"]</code>; <code>[]</code> for none.</td>
+</tr>
+<tr>
+<td><code>ayaActions</code></td>
+<td><code>{id, title, icon, order}[]</code></td>
+<td>Your own verse actions, as buttons in the popup.</td>
+</tr>
+<tr>
+<td><code>onAyaAction</code></td>
+<td><code>(selection) =&gt; void</code></td>
+<td>Called when one of <code>ayaActions</code> is chosen: <code>{id, sura, aya, page, text, suraName, layout}</code>.</td>
 </tr>
 <tr>
 <td><code>layout</code></td>

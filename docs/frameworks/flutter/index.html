@@ -736,6 +736,8 @@
       
         
       
+        
+      
     
     
     
@@ -917,6 +919,34 @@
     
   
     Emphasising letters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/actions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Verse actions
   
 
     
@@ -1403,6 +1433,8 @@
       
         
       
+        
+      
     
     
     
@@ -1528,6 +1560,34 @@
     
   
     CSS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/javascript/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JavaScript API
   
 
     
@@ -2207,6 +2267,21 @@ to <code>macos/Runner/DebugProfile.entitlements</code> and <code>Release.entitle
 <td><code>notitle</code></td>
 <td><code>bool</code></td>
 <td>With <code>words</code> crossing into a new sura: hide its name, keep the frame.</td>
+</tr>
+<tr>
+<td><code>actions</code></td>
+<td><code>List&lt;String&gt;</code></td>
+<td>The <a href="../../guide/actions/">verse actions</a> a tap offers, by id: <code>['copy']</code>; <code>[]</code> for none.</td>
+</tr>
+<tr>
+<td><code>ayaActions</code></td>
+<td><code>List&lt;QuranAyaAction&gt;</code></td>
+<td>Your own verse actions (<code>id</code>, <code>title</code>, <code>icon</code>, <code>order</code>), as buttons in the popup.</td>
+</tr>
+<tr>
+<td><code>onAyaAction</code></td>
+<td><code>void Function(QuranAyaSelection)</code></td>
+<td>Called when one of <code>ayaActions</code> is chosen, with the action's <code>id</code> and the verse.</td>
 </tr>
 <tr>
 <td><code>layout</code></td>
