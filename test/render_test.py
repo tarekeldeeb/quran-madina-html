@@ -337,7 +337,7 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
             "window.__copied=null;window.alert=function(){};"
             "navigator.clipboard.writeText=function(t){window.__copied=t;return Promise.resolve();};")
         self.web_driver.execute_script(
-            "document.querySelector('quran-madina-html-header svg')."
+            "document.querySelector('quran-madina-html-header svg.quran-madina-html-icon-copy')."
             "dispatchEvent(new MouseEvent('click',{bubbles:true}));")
         copied = self.web_driver.execute_script("return window.__copied;")
         shown = collect_words(self.db["suras"], 0, 2, 3)

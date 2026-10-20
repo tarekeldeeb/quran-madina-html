@@ -19,6 +19,8 @@ Set on `quran-madina-html`. See [Styling and dark mode](../guide/styling.md) for
 | Element or class | What it is |
 |---|---|
 | `quran-madina-html-header` | the header bar (sura name, copy, translate) |
+| `.quran-madina-html-sura-name` | the sura name in the header |
+| `.quran-madina-html-icon-copy`, `.quran-madina-html-icon-translate` | the header's copy and translate icons |
 | `quran-madina-html-line` | one line of text |
 | `quran-madina-html-aya-popup` | the copy/translate menu opened by clicking a verse |
 | `.quran-madina-html-NNN-NNN` | the parts of one verse (sura and verse, three digits each), e.g. `.quran-madina-html-002-255` |

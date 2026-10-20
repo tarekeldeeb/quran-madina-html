@@ -309,7 +309,7 @@
     return classes;
   }
   function getCopyIcon(){
-    let htmlString = '<svg viewBox="0 0 24 24" class="quran-madina-html-icon" width="20px">'+
+    let htmlString = '<svg viewBox="0 0 24 24" class="quran-madina-html-icon quran-madina-html-icon-copy">'+
       '<path d="M16.02 20.96H3.78c-.41 0-.75-.34-.75-.75V7.74c0-.41.34-.75.75-.75h7.87c.21 0 '+
       '.39.08.53.22l4.37 4.37c.14.14.22.32.22.53v8.11c0 .4-.34.74-.75.74ZM4.53 19.47h10.75v-6'+
       '.61h-3.62c-.41 0-.75-.34-.75-.75V8.48H4.53v10.99Z"></path><path d="m20.74 7.63-4.37-4.'+
@@ -321,7 +321,7 @@
       return div.firstChild;
   }
   function getTranslateIcon(){
-    let htmlString = '<svg class="quran-madina-html-icon" viewBox="0 0 820 615" style="height:20px"><path d="M70 '+
+    let htmlString = '<svg class="quran-madina-html-icon quran-madina-html-icon-translate" viewBox="0 0 820 615"><path d="M70 '+
     '1.9C37.6 8.8 12.6 33.4 3.4 67.5c-1.8 6.6-1.9 11.9-1.9 98v91l2.3 8c5.1 17.8 17 36.4 29.9 46.7 '+
     '10.8 8.6 25.4 15.4 38.1 17.8 3.1.6 15.2 1 26.8 1 17.7 0 21.3.2 21.7 1.4.4.9.6 17.1.7 36.1 0 '+
     '32.4.2 34.9 2 38.5 6.4 12.5 21.4 17.4 33.3 10.8 2.3-1.3 7.5-6.4 12.1-11.9l63-74.1c.6-.4 16.3-.8 '+
@@ -372,12 +372,16 @@
   }
   function buildHeader(sura_name){
     // The multiline chrome: sura name + copy + translate icons, shared by both render paths.
+    // The icons stay direct children: copyToClipboard reaches the host via parentElement twice.
     var header = document.createElement("quran-madina-html-header");
-    header.innerHTML = sura_name;
+    var title = document.createElement("span");
+    title.className = `${name}-sura-name`;
+    title.innerHTML = sura_name;
+    header.appendChild(title);
     var copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
     var translation = getTranslateIcon(); translation.addEventListener("click", openTranslate);
+    header.appendChild(translation);   // right to left: name, translate, copy at the far left
     header.appendChild(copy);
-    header.appendChild(translation);
     return header;
   }
   // ==========================================================================
