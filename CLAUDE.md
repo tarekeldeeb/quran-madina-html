@@ -332,6 +332,13 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   redeploying the demo by hand, keep `flutter/` and `docs/`. The branch's `.gitignore` excludes
   `dist`, so anything that ships a `dist/` folder must be added with `git add -f`.
 - The 1.x docs are `docs/v1.md` (was README_v1.md).
+- `reader/index.html` is the Quran reader (gh-pages `reader/`, copied by `docs.yml`): one page in
+  portrait, a two-page spread in landscape (odd page on the right), scaled to fit; layout
+  selector (`?layout=`, reloads: the library reads it once), sura index from the layout's
+  `manifest.json` (`pages[p] = [first sura, slot, last sura, slot]` gives each sura's start
+  page), page box/slider, prev/next, arrow keys and swipes (left = forward), `#N` in the URL,
+  last page per layout in localStorage. A hidden `page="3"` reference tag sets every page's
+  height so pages 1-2 don't scale up. On localhost it uses this checkout; elsewhere unpkg `@2`.
 
 ## Conventions
 

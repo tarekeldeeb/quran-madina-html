@@ -60,4 +60,6 @@ Page 106 of the printed 1405H Madina Mushaf, and the same page rendered with
 - [Getting started](getting-started/index.md): add it to a web page, a React app or a Flutter app.
 - [Guide](guide/index.md): pages and verses, layouts, words, highlighting, letters, styling.
 - [Reference](reference/index.md): every attribute and option in one place.
+- [Quran reader](https://tarekeldeeb.github.io/quran-madina-html/reader/): the whole Mushaf, two
+  pages at a time, in any of the three prints.
 - [Live demo](https://tarekeldeeb.github.io/quran-madina-html/demo/index.html) with a playground.

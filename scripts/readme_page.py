@@ -74,6 +74,7 @@ footer {{ margin-top: 3em; color: var(--muted); font-size: 0.9em; }}
 <nav class="top">
   <a class="brand" href="{site}">quran-madina-html</a>
   <a href="{site}docs/">Docs</a>
+  <a href="{site}reader/">Quran reader</a>
   <a href="{site}demo/index.html">Live demo</a>
   <a href="{repo}">GitHub</a>
 </nav>

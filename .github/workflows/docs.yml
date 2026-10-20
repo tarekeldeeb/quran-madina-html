@@ -2,17 +2,19 @@
 # scripts/readme_page.py) and publishes them to GitHub Pages:
 #   https://tarekeldeeb.github.io/quran-madina-html/        the README
 #   https://tarekeldeeb.github.io/quran-madina-html/docs/   the docs
-# Only index.html at the root and the docs/ folder change; the demo and the Flutter example stay.
+#   https://tarekeldeeb.github.io/quran-madina-html/reader/ the reader (reader/, as is)
+# Only index.html at the root and the docs/ and reader/ folders change; the demo and the Flutter
+# example stay.
 name: Docs
 
 on:
   push:
     branches: [main]
     paths: ["docs/**", "mkdocs.yml", "overrides/**", "README.md", "scripts/readme_page.py",
-            ".github/workflows/docs.yml"]
+            "reader/**", ".github/workflows/docs.yml"]
   pull_request:
     paths: ["docs/**", "mkdocs.yml", "overrides/**", "README.md", "scripts/readme_page.py",
-            ".github/workflows/docs.yml"]
+            "reader/**", ".github/workflows/docs.yml"]
   workflow_dispatch:
 
 permissions:
@@ -49,10 +51,11 @@ jobs:
         if: github.event_name != 'pull_request'
         working-directory: gh-pages
         run: |
-          rm -rf docs
+          rm -rf docs reader
           cp -r ../site docs
+          cp -r ../reader reader
           cp ../site-root/index.html index.html
-          git add -A -f docs index.html
+          git add -A -f docs reader index.html
           if git diff --cached --quiet; then echo "no changes"; exit 0; fi
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
