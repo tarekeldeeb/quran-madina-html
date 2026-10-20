@@ -21,7 +21,7 @@ if ( is_wp_error( $qmhtml_result ) ) {
 delete_option( 'qmhtml_settings' );
 delete_option( 'qmh_settings' );
 $qmhtml_posts = array(
-	'shortcodes' => "<p>Inline: [quran sura=\"112\" aya=\"1\"] in a sentence.</p>\n[quran sura=\"2\" aya=\"255\" highlight=\"5-8\" error=\"1\"]\n[quran sura=\"1\" aya=\"2-4\" headless=\"true\" letters=\"1:3 blink, 4:3+5 lapis\"]\n[quran sura=\"1\" aya=\"1\" onclick=\"alert(1)\" words=\"1:2<script>alert(2)</script>\"]",
+	'shortcodes' => "<p>Inline: [quran sura=\"112\" aya=\"1\"] in a sentence.</p>\n[quran sura=\"2\" aya=\"255\" highlight=\"5-8\" error=\"1\"]\n[quran sura=\"1\" aya=\"2-4\" headless=\"true\" letters=\"1:3 blink, 4:3+5 lapis\"]\n[quran sura=\"1\" aya=\"1\" onclick=\"alert(1)\" words=\"1:2<script>alert(2)</script>\"]\n[quran sura=\"1\" aya=\"2\" actions=\"copy, bookmark;!\"]\n[quran sura=\"1\" aya=\"3\" actions=\"none\"]",
 	'block'      => '<!-- wp:quran-madina-html/quran {"sura":"2","aya":"1-5","highlight":"3"} /-->' . "\n" . '<!-- wp:quran-madina-html/quran {"page":"50","headless":true} /-->',
 	'plain'      => 'No Quran here.',
 );

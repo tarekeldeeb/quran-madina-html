@@ -25,6 +25,16 @@ export interface QuranMadinaNativeProps {
   quotes?: string;
   /** "no" forces the multiline layout. */
   inline?: string;
+  /**
+   * Which verse actions this tag offers when a verse is tapped: ids such as
+   * `["copy", "bookmark"]` (or "copy bookmark"); `[]` or "none" for none (the verses are then
+   * plain text, and the header icons go too). Default: all of them.
+   */
+  actions?: string[] | string;
+  /** Your own verse actions, as buttons in the popup a tap on a verse opens. */
+  ayaActions?: QuranAyaAction[];
+  /** Called when one of `ayaActions` is chosen. */
+  onAyaAction?: (selection: QuranAyaSelection) => void;
   /** Print: "1441H" (default), "1405H" or "IndoPak". */
   layout?: "1441H" | "1405H" | "IndoPak" | string;
   /** Font size in points (default 16). Any size works. */
@@ -50,6 +60,32 @@ export interface QuranMadinaNativeProps {
   style?: StyleProp<ViewStyle>;
   /** Extra props for the WebView. */
   webViewProps?: Partial<WebViewProps>;
+}
+
+/** A verse action: a button in the popup a tap on a verse opens. */
+export interface QuranAyaAction {
+  /** Unique id; "copy" and "translate" are the built-in ones. */
+  id: string;
+  /** Tooltip and accessible name. */
+  title?: string;
+  /** SVG markup (`currentColor` follows the popup) or an image URL. */
+  icon?: string;
+  /** Position in the popup: copy is 10, translate 20; default 100. */
+  order?: number;
+}
+
+/** The verse an action was chosen on. */
+export interface QuranAyaSelection {
+  /** The action's id. */
+  id: string;
+  sura: number;
+  aya: number;
+  /** The Mushaf page of the verse in the current print. */
+  page: number | null;
+  /** The verse text. */
+  text: string;
+  suraName: string;
+  layout: string;
 }
 
 declare const QuranMadinaNative: React.FC<QuranMadinaNativeProps>;

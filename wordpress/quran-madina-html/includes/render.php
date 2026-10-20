@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /** Attributes the <quran-madina-html> tag takes, in the order they are written. */
-const QMHTML_ATTRIBUTES = array( 'page', 'sura', 'aya', 'words', 'highlight', 'error', 'letters', 'headless', 'notitle', 'quotes', 'inline' );
+const QMHTML_ATTRIBUTES = array( 'page', 'sura', 'aya', 'words', 'highlight', 'error', 'letters', 'headless', 'notitle', 'quotes', 'inline', 'actions' );
 
 /** Attributes that are on or off. */
 const QMHTML_FLAGS = array( 'headless', 'notitle' );
@@ -110,6 +110,9 @@ function qmhtml_clean_value( $name, $value ) {
 	}
 	if ( 'letters' === $name ) {
 		return preg_replace( '/[^0-9A-Za-z\s:,+\-#.()%]/', '', $value );
+	}
+	if ( 'actions' === $name ) { // action ids, e.g. "copy bookmark", or "none"
+		return trim( preg_replace( '/[\s,]+/', ' ', preg_replace( '/[^A-Za-z0-9_\-\s,]/', '', $value ) ) );
 	}
 	return $value; // flags: read by the caller
 }

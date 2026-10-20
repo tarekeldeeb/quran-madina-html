@@ -1,6 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
-import QuranMadinaHtml, { loadQuranMadinaHtml } from "../src/index.js";
+import { act } from "react";
+import QuranMadinaHtml, {
+  loadQuranMadinaHtml, registerAction, unregisterAction, clearActions, resetActions, useAyaAction,
+} from "../src/index.js";
 
 const tag = (container) => container.querySelector("quran-madina-html");
 
@@ -138,4 +141,57 @@ describe("<QuranMadinaHtml>", () => {
     expect(el.getAttribute("class")).toBe("my-quran");
     expect(el.style.color).toBe("rgb(255, 0, 0)");
   });
+
+  it("sets actions: an array is joined, an empty one means none", () => {
+    const { container, rerender } = render(<QuranMadinaHtml sura={2} aya={255} actions={["copy", "bookmark"]} />);
+    const el = tag(container);
+    expect(el.getAttribute("actions")).toBe("copy bookmark");
+    rerender(<QuranMadinaHtml sura={2} aya={255} actions={[]} />);
+    expect(el.getAttribute("actions")).toBe("none");
+    rerender(<QuranMadinaHtml sura={2} aya={255} />);
+    expect(el.hasAttribute("actions")).toBe(false);
+  });
 });
+
+describe("verse actions", () => {
+  // jsdom can't run the library: a stand-in element class records what the helpers call.
+  const calls = [];
+  class FakeTag extends HTMLElement {
+    static registerAction(spec) { calls.push(["register", spec.id, spec]); return spec.id; }
+    static unregisterAction(id) { calls.push(["unregister", id]); return true; }
+    static clearActions() { calls.push(["clear"]); }
+    static resetActions() { calls.push(["reset"]); }
+  }
+  beforeAll(() => {
+    if (!customElements.get("quran-madina-html")) customElements.define("quran-madina-html", FakeTag);
+  });
+
+  it("the helpers call the element's registry once it is defined", async () => {
+    calls.length = 0;
+    const onSelect = () => {};
+    expect(await registerAction({ id: "bookmark", onSelect })).toBe("bookmark");
+    expect(await unregisterAction("bookmark")).toBe(true);
+    await clearActions();
+    await resetActions();
+    expect(calls.map((c) => c.slice(0, 2))).toEqual([["register", "bookmark"], ["unregister", "bookmark"], ["clear"], ["reset"]]);
+  });
+
+  it("useAyaAction registers while mounted, calls the latest onSelect, and unregisters", async () => {
+    calls.length = 0;
+    const seen = [];
+    function Reader({ label }) {
+      useAyaAction({ id: "bookmark", title: "Bookmark", onSelect: (aya) => seen.push(`${label}:${aya.aya}`) });
+      return null;
+    }
+    let view;
+    await act(async () => { view = render(<Reader label="a" />); });
+    await act(async () => { view.rerender(<Reader label="b" />); });
+    const registered = calls.filter((c) => c[0] === "register");
+    expect(registered).toHaveLength(1);
+    registered[0][2].onSelect({ aya: 255 });
+    expect(seen).toEqual(["b:255"]);
+    await act(async () => { view.unmount(); });
+    expect(calls.at(-1)).toEqual(["unregister", "bookmark"]);
+  });
+});
+

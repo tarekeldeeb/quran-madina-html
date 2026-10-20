@@ -75,6 +75,7 @@ nav:
       - Selecting words: guide/words.md
       - Highlighting words: guide/highlighting.md
       - Emphasising letters: guide/letters.md
+      - Verse actions: guide/actions.md
       - Styling and dark mode: guide/styling.md
       - Self-hosting and offline: guide/self-hosting.md
   - Frameworks:
@@ -91,6 +92,7 @@ nav:
       - Tag attributes: reference/attributes.md
       - Script options: reference/script.md
       - CSS: reference/css.md
+      - JavaScript API: reference/javascript.md
   - Development:
       - development/index.md
       - Setup and tests: development/setup.md

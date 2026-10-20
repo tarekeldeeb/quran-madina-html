@@ -287,6 +287,13 @@
                                               : document.getElementsByClassName(class_name);
     Array.from(elms).forEach(function(elm) {
       elm.onmouseover = function() {
+        // Only verses with something to do on click are highlighted (see ayaActionsFor).
+        if(!elm._qmhAya || !ayaActionsFor(elm._qmhAya.tag, ayaContext(elm)).length){
+          elm.style.cursor = "";
+          Array.from(elms).forEach(function(element){ element.style.backgroundColor = color_out; });
+          return;
+        }
+        elm.style.cursor = "pointer";
         var bg = color_bg || hoverShade(elm);
         Array.from(elms).forEach(function(element) {
           element.style.backgroundColor = bg;
@@ -411,8 +418,7 @@
     var popup = document.querySelector(`body > ${name}-aya-popup`);
     if(!popup){
       popup = document.createElement(`${name}-aya-popup`);
-      popup.appendChild(getCopyIcon());
-      popup.appendChild(getTranslateIcon());
+      popup.setAttribute("role", "toolbar");
       document.body.appendChild(popup);
     }
     // The --qmh-* theme vars are scoped to the quran-madina-html tag; copy the host tag's
@@ -440,23 +446,110 @@
     var estHeight = 34;
     popup.style.top = (rect.top - estHeight - 6 > 0 ? rect.top - estHeight - 6 : rect.bottom + 6) + "px";
   }
-  function showAyaPopup(tag, elm, class_name, sura, aya){
+  // ==========================================================================
+  // Verse actions: the buttons of the popup a click on a verse opens. A page-wide registry
+  // (registerAction & co., static methods on the element class), with copy and translate as
+  // ordinary built-in entries. A tag's `actions` attribute picks a subset ("copy bookmark") or
+  // none ("none", also hides the header icons via CSS). A verse with no action left (after the
+  // attribute and each action's `when`) is plain text: no hover, no pointer, no click.
+  // ==========================================================================
+
+  var DEFAULT_ACTIONS = [
+    {id: "copy", title: "Copy", order: 10, icon: function(){ return getCopyIcon(); },
+      onSelect: function(aya){
+        var text = "“" + aya.text + "”" + "\n\n" + aya.suraName;
+        navigator.clipboard.writeText(text);
+        alert("⎘ تم نسخ:\n\n" + text);
+      }},
+    {id: "translate", title: "Translation", order: 20, icon: function(){ return getTranslateIcon(); },
+      onSelect: function(aya){ window.open(`https://quran.com/${aya.sura}/${aya.aya}`, '_blank'); }}
+  ];
+  var ayaActions = DEFAULT_ACTIONS.slice();
+
+  function checkAction(spec){
+    if(!spec || typeof spec !== "object") throw new TypeError(`${name}: an action is an object`);
+    if(typeof spec.id !== "string" || !spec.id.trim()) throw new TypeError(`${name}: an action needs an id`);
+    if(typeof spec.onSelect !== "function") throw new TypeError(`${name}: action "${spec.id}" needs onSelect`);
+    if(spec.when != null && typeof spec.when !== "function") throw new TypeError(`${name}: action "${spec.id}": when must be a function`);
+    return {
+      id: spec.id.trim(), title: spec.title || spec.id.trim(), icon: spec.icon,
+      order: Number.isFinite(spec.order) ? spec.order : 100, when: spec.when || null, onSelect: spec.onSelect
+    };
+  }
+  function actionsChanged(){
+    ayaActions.sort(function(x, y){ return x.order - y.order; });
+    closeAyaPopup();
+    Array.from(document.getElementsByTagName(name)).forEach(updateInteractive);
+  }
+  function tagActionIds(tag){
+    // null: every registered action. []: none. Otherwise the listed ids.
+    var attr = tag.getAttribute("actions");
+    if(attr == null) return null;
+    var ids = attr.split(/[\s,]+/).filter(Boolean);
+    return (ids.length === 1 && ids[0].toLowerCase() === "none") ? [] : ids;
+  }
+  function ayaActionsFor(tag, ctx){
+    var ids = tagActionIds(tag);
+    return ayaActions.filter(function(action){
+      if(ids !== null && ids.indexOf(action.id) < 0) return false;
+      if(!action.when || !ctx) return true;
+      try { return !!action.when(ctx); }
+      catch(e){ console.error(`${name}: action "${action.id}" when() failed`, e); return false; }
+    });
+  }
+  function updateInteractive(tag){
+    // A class for styling: the tag has at least one action (before per-verse `when` filters).
+    tag.classList.toggle(`${name}-interactive`, ayaActionsFor(tag, null).length > 0);
+  }
+  function ayaContext(elm){
+    // What an action's when()/onSelect() gets. text is computed on first read only.
+    var info = elm._qmhAya, tag = info.tag;
+    var sura_data = madina_data.suras[info.sura - 1] || {};
+    var aya_data = sura_data.ayas && sura_data.ayas[info.aya + 1];
+    var ctx = {
+      sura: info.sura, aya: info.aya, suraName: sura_data.name, layout: doc_layout,
+      page: aya_data ? aya_data.p : null, tag: tag, element: elm, close: closeAyaPopup
+    };
+    Object.defineProperty(ctx, "text", {enumerable: true, get: function(){
+      return ayaFragmentsText(tag, info.class_name);
+    }});
+    return ctx;
+  }
+  function actionIcon(action){
+    var icon = action.icon;
+    if(typeof icon === "function") icon = icon();
+    if(icon instanceof Element) return icon.isConnected ? icon.cloneNode(true) : icon;
+    if(typeof icon === "string" && icon.trim().charAt(0) === "<"){
+      var holder = document.createElement("span");
+      holder.innerHTML = icon.trim();   // the page's own markup (developer-supplied, not visitor input)
+      return holder.firstElementChild || document.createTextNode(action.title);
+    }
+    if(typeof icon === "string" && icon){
+      var img = document.createElement("img");
+      img.src = icon; img.alt = "";
+      return img;
+    }
+    return document.createTextNode(action.title);
+  }
+  function showAyaPopup(tag, elm, ctx, actions){
     closeAyaPopup(); // only one popup open at a time
     var popup = getOrCreateAyaPopup(tag);
-    var copyBtn = popup.children[0], translateBtn = popup.children[1];
-    copyBtn.onclick = function(e){
-      e.stopPropagation();
-      var text = "\u201C" + ayaFragmentsText(tag, class_name) + "\u201D" + "\n\n" +
-        madina_data.suras[sura - 1].name;
-      navigator.clipboard.writeText(text);
-      alert("\u2398 تم نسخ:\n\n" + text);
-      closeAyaPopup();
-    };
-    translateBtn.onclick = function(e){
-      e.stopPropagation();
-      window.open(`https://quran.com/${sura}/${aya}`, '_blank');
-      closeAyaPopup();
-    };
+    popup.textContent = "";
+    actions.forEach(function(action){
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = `${name}-action ${name}-action-${action.id.replace(/[^\w-]/g, "_")}`;
+      button.title = action.title;
+      button.setAttribute("aria-label", action.title);
+      button.appendChild(actionIcon(action));
+      button.onclick = function(e){
+        e.stopPropagation();
+        closeAyaPopup();
+        try { action.onSelect(ctx); }
+        catch(err){ console.error(`${name}: action "${action.id}" failed`, err); }
+      };
+      popup.appendChild(button);
+    });
     positionAyaPopup(popup, elm);
     popup.classList.add(`${name}-open`);
     var outsideClick = function(e){ if(!popup.contains(e.target)) closeAyaPopup(); };
@@ -474,12 +567,15 @@
     // Scoped to `tag`, not document-wide: the same aya/class can exist in another
     // <quran-madina-html> tag on the page, whose elements must not be rebound to *this* tag/popup.
     Array.from(tag.getElementsByClassName(class_name)).forEach(function(elm){
-      elm.style.cursor = "pointer";
+      elm._qmhAya = {tag: tag, class_name: class_name, sura: sura, aya: aya};
       // Overwrite (not addEventListener) so re-registering this aya's other line fragments doesn't
       // stack duplicate handlers - mirrors hoverByType's onmouseover/onmouseout assignment above.
       elm.onclick = function(e){
+        var ctx = ayaContext(elm);
+        var actions = ayaActionsFor(tag, ctx);
+        if(!actions.length) return;   // plain text: let the click through
         e.stopPropagation();
-        showAyaPopup(tag, elm, class_name, sura, aya);
+        showAyaPopup(tag, elm, ctx, actions);
       };
     });
   }
@@ -1205,8 +1301,28 @@
       static get observedAttributes() {
         return [
           "page", "page_param", "aya", "sura", "words", "highlight", "error", "headless", "quotes",
-          "inline", "notitle", "letters"
+          "inline", "notitle", "letters", "actions"
         ];
+      }
+
+      // Verse actions (see the "Verse actions" section): page-wide, for every tag.
+      static registerAction(spec) {
+        var action = checkAction(spec);
+        ayaActions = ayaActions.filter(function(a){ return a.id !== action.id; });
+        ayaActions.push(action);
+        actionsChanged();
+        return action.id;
+      }
+      static unregisterAction(id) {
+        var before = ayaActions.length;
+        ayaActions = ayaActions.filter(function(a){ return a.id !== id; });
+        actionsChanged();
+        return ayaActions.length < before;
+      }
+      static clearActions() { ayaActions = []; actionsChanged(); }
+      static resetActions() { ayaActions = DEFAULT_ACTIONS.slice(); actionsChanged(); }
+      static get actions() {
+        return ayaActions.map(function(a){ return {id: a.id, title: a.title, order: a.order}; });
       }
 
       constructor() {
@@ -1261,6 +1377,11 @@
       get notitle() { return this.getAttribute("notitle"); }
       set notitle(value) { reflectAttribute(this, "notitle", value); }
 
+      get actions() { return this.getAttribute("actions"); }
+      set actions(value) {
+        reflectAttribute(this, "actions", Array.isArray(value) ? (value.length ? value.join(" ") : "none") : value);
+      }
+
       render(tag = this) {
         // Re-entrancy guard. Kept from the pre-native-Custom-Elements version, where the platform
         // watched every attribute mutation (including the `style`/class churn this build performs
@@ -1281,6 +1402,7 @@
             tag._qmhLetters = letters;
             self.doRender(tag);
             applyLetters(tag, letters, tag._qmhLetterShift);
+            updateInteractive(tag);
           } finally {
             self._data.rendering = false;
           }

@@ -19,7 +19,8 @@
 		"headless": { "type": "boolean", "default": false },
 		"notitle": { "type": "boolean", "default": false },
 		"quotes": { "type": "string", "default": "" },
-		"inline": { "type": "string", "default": "" }
+		"inline": { "type": "string", "default": "" },
+		"actions": { "type": "string", "default": "" }
 	},
 	"supports": {
 		"html": false,

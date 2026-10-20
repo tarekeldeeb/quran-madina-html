@@ -6,6 +6,8 @@ library;
 export 'src/page.dart'
     show
         QuranLoader,
+        QuranAyaAction,
+        QuranAyaSelection,
         kBundleDir,
         kBundledCdn,
         kBundledSrc,

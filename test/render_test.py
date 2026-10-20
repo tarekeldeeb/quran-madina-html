@@ -153,7 +153,7 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
             soup = BeautifulSoup(template.read(), 'html.parser')
         tag = soup.find("quran-madina-html")
         for key in ("page", "sura", "aya", "words", "highlight", "error", "headless", "notitle",
-                    "quotes", "inline", "letters"):
+                    "quotes", "inline", "letters", "actions"):
             if key in tag.attrs:  # type: ignore
                 del tag[key]  # type: ignore
         for key, value in attrs.items():
@@ -754,6 +754,133 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
         self.assertEqual(attrs, ["3", "", False, False, "3"])
         WebDriverWait(self.web_driver, 10).until(
             lambda d: self.visible_words() == aya_word_list(self.db["suras"][0]["ayas"][4]))
+
+    # Verse actions: a click on a verse opens a popup with one button per registered action.
+    ACTIONS_JS = """
+        window.__qmh = {
+          Q: customElements.get('quran-madina-html'),
+          click: function(cls){
+            var e = document.querySelector('quran-madina-html .' + cls);
+            e.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+            var p = document.querySelector('quran-madina-html-aya-popup.quran-madina-html-open');
+            return p ? Array.from(p.querySelectorAll('button')).map(function(b){ return b.title; }) : null;
+          },
+          close: function(){ document.body.dispatchEvent(new MouseEvent('click', {bubbles: true})); }
+        };"""
+
+    def actions_setup(self, **attrs):
+        """Render the given verse and install the test helpers"""
+        self.set_attrs(**attrs)
+        self.web_driver.execute_script(self.ACTIONS_JS)
+
+    def test_45_default_verse_actions(self):
+        """A click on a verse offers copy and translate; the tag is marked interactive"""
+        self.actions_setup(sura=2, aya=255)
+        buttons = self.web_driver.execute_script("return __qmh.click('quran-madina-html-002-255');")
+        self.assertEqual(buttons, ["Copy", "Translation"])
+        self.assertEqual(self.web_driver.execute_script("return __qmh.Q.actions.map(a => a.id);"),
+                         ["copy", "translate"])
+        self.assertTrue(self.web_driver.execute_script(
+            "return document.querySelector('quran-madina-html')"
+            ".classList.contains('quran-madina-html-interactive');"))
+
+    def test_46_register_replace_and_select(self):
+        """registerAction adds a button in order, the same id replaces it, and onSelect gets the
+        verse: sura, aya, page, text, sura name and layout"""
+        self.actions_setup(sura=2, aya=255)
+        result = self.web_driver.execute_script("""
+            var Q = __qmh.Q, got = null;
+            Q.registerAction({id: 'bookmark', title: 'Bookmark', order: 15,
+                              icon: '<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
+                              onSelect: function(){}});
+            var first = __qmh.click('quran-madina-html-002-255'); __qmh.close();
+            Q.registerAction({id: 'bookmark', title: 'Save', order: 30,
+                              onSelect: function(a){ got = {sura: a.sura, aya: a.aya, page: a.page,
+                                text: a.text, name: a.suraName, layout: a.layout}; }});
+            var second = __qmh.click('quran-madina-html-002-255');
+            document.querySelector('quran-madina-html-aya-popup button[title=Save]').click();
+            var removed = Q.unregisterAction('bookmark'), again = Q.unregisterAction('bookmark');
+            return {first: first, second: second, got: got, ids: Q.actions.map(a => a.id),
+                    removed: removed, again: again,
+                    open: !!document.querySelector('quran-madina-html-aya-popup.quran-madina-html-open')};""")
+        self.assertEqual(result["first"], ["Copy", "Bookmark", "Translation"])
+        self.assertEqual(result["second"], ["Copy", "Translation", "Save"])
+        got = result["got"]
+        self.assertEqual((got["sura"], got["aya"], got["layout"]), (2, 255, "1441H"))
+        self.assertEqual(got["page"], self.db["suras"][1]["ayas"][256]["p"])
+        self.assertEqual(got["name"], self.db["suras"][1]["name"])
+        self.assertTrue(got["text"].startswith(aya_word_list(self.db["suras"][1]["ayas"][256])[0]))
+        self.assertFalse(result["open"], "the popup closes after an action")
+        self.assertEqual((result["ids"], result["removed"], result["again"]),
+                         (["copy", "translate"], True, False))
+
+    def test_47_no_actions_means_plain_text(self):
+        """With every action removed a verse is plain text: no popup, no hover, no pointer; the
+        tags already on the page follow at once, and resetActions brings the defaults back"""
+        self.actions_setup(sura=2, aya=255)
+        result = self.web_driver.execute_script("""
+            var Q = __qmh.Q, tag = document.querySelector('quran-madina-html');
+            var e = tag.querySelector('.quran-madina-html-002-255');
+            Q.clearActions();
+            e.dispatchEvent(new MouseEvent('mouseover'));
+            var cleared = {popup: __qmh.click('quran-madina-html-002-255'), cursor: e.style.cursor,
+                           shade: e.style.backgroundColor,
+                           interactive: tag.classList.contains('quran-madina-html-interactive')};
+            e.dispatchEvent(new MouseEvent('mouseout'));
+            Q.resetActions();
+            e.dispatchEvent(new MouseEvent('mouseover'));
+            return {cleared: cleared, cursor: e.style.cursor,
+                    popup: __qmh.click('quran-madina-html-002-255'),
+                    interactive: tag.classList.contains('quran-madina-html-interactive')};""")
+        cleared = result["cleared"]
+        self.assertIsNone(cleared["popup"], "no popup without actions")
+        self.assertEqual(cleared["cursor"], "")
+        self.assertIn(cleared["shade"], ("", "transparent"))
+        self.assertFalse(cleared["interactive"])
+        self.assertEqual((result["cursor"], result["popup"], result["interactive"]),
+                         ("pointer", ["Copy", "Translation"], True))
+
+    def test_48_actions_attribute(self):
+        """actions="translate" keeps only that action on this tag; actions="none" (or an empty
+        list as a property) makes it plain text and hides the header icons"""
+        self.actions_setup(sura=2, aya=255, actions="translate")
+        self.assertEqual(self.web_driver.execute_script(
+            "return __qmh.click('quran-madina-html-002-255');"), ["Translation"])
+        self.actions_setup(sura=2, aya=255, actions="none")
+        self.assertIsNone(self.web_driver.execute_script(
+            "return __qmh.click('quran-madina-html-002-255');"))
+        hidden = self.web_driver.execute_script(
+            "return Array.from(document.querySelectorAll('quran-madina-html-header svg'))"
+            ".map(s => getComputedStyle(s).display);")
+        self.assertTrue(hidden and all(d == "none" for d in hidden), hidden)
+        self.assertEqual(self.web_driver.execute_script("""
+            var t = document.querySelector('quran-madina-html');
+            t.actions = ['copy']; var one = t.getAttribute('actions');
+            t.actions = []; return [one, t.getAttribute('actions')];"""), ["copy", "none"])
+
+    def test_49_when_filters_per_verse(self):
+        """An action's when() decides per verse; a verse left with no action is not clickable"""
+        self.actions_setup(sura=1, aya="2-3")
+        result = self.web_driver.execute_script("""
+            __qmh.Q.clearActions();
+            __qmh.Q.registerAction({id: 'odd', title: 'Odd', onSelect: function(){},
+                                    when: function(a){ return a.aya % 2 === 1; }});
+            var two = __qmh.click('quran-madina-html-001-002'); __qmh.close();
+            return [two, __qmh.click('quran-madina-html-001-003')];""")
+        self.assertEqual(result, [None, ["Odd"]])
+
+    def test_50_invalid_action_throws(self):
+        """A malformed action is rejected with a TypeError and changes nothing"""
+        self.actions_setup(sura=1, aya=1)
+        result = self.web_driver.execute_script("""
+            var out = [];
+            [{title: 'no id', onSelect: function(){}}, {id: 'x'},
+             {id: 'y', onSelect: function(){}, when: 3}].forEach(function(spec){
+              try { __qmh.Q.registerAction(spec); out.push('accepted'); }
+              catch(e){ out.push(e instanceof TypeError ? 'TypeError' : String(e)); }
+            });
+            return [out, __qmh.Q.actions.map(a => a.id)];""")
+        self.assertEqual(result, [["TypeError"] * 3, ["copy", "translate"]])
 
 
 class FontSizeTest(unittest.TestCase):

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:quran_madina_flutter/quran_madina_flutter.dart';
-import 'package:quran_madina_flutter/src/page.dart' show isLibraryScript, updateScript;
+import 'package:quran_madina_flutter/src/page.dart' show actionsScript, isLibraryScript, updateScript;
 
 void main() {
   group('tagAttributes', () {
@@ -74,6 +74,40 @@ void main() {
     test('text colour reaches the page (dark mode)', () {
       final html = buildPage(const QuranLoader(textColor: '#ece6d6'), tagAttributes(page: 1));
       expect(html, contains('color: #ece6d6'));
+    });
+  });
+
+  group('verse actions', () {
+    test('actions attribute: joined, an empty list means none', () {
+      expect(tagAttributes(sura: 2, aya: '255', actions: ['copy', 'bookmark'])['actions'],
+          'copy bookmark');
+      expect(tagAttributes(sura: 2, aya: '255', actions: [])['actions'], 'none');
+      expect(tagAttributes(sura: 2, aya: '255').containsKey('actions'), isFalse);
+    });
+
+    test('the page registers the actions and posts a choice back', () {
+      final html = buildPage(const QuranLoader(), tagAttributes(sura: 2, aya: '255'),
+          actions: const [QuranAyaAction(id: 'bookmark', icon: '<svg></svg>')]);
+      expect(html, contains('function qmhActions(list)'));
+      expect(html, contains('qmhPost("action"'));
+      expect(html, contains('qmhActions([{"id":"bookmark","title":"bookmark","icon":"<svg><\\/svg>","order":100}]);'));
+      expect(buildPage(const QuranLoader(), tagAttributes(page: 1)), isNot(contains('qmhActions([')));
+    });
+
+    test('a choice from the page becomes a QuranAyaSelection', () {
+      final s = QuranAyaSelection.fromJson({
+        'id': 'bookmark', 'sura': 2, 'aya': 255, 'page': 42, 'text': 'x', 'suraName': 'n',
+        'layout': '1441H',
+      })!;
+      expect([s.id, s.sura, s.aya, s.page, s.text, s.layout], ['bookmark', 2, 255, 42, 'x', '1441H']);
+      expect(QuranAyaSelection.fromJson({'id': 'x'}), isNull);
+      expect(QuranAyaSelection.fromJson('nope'), isNull);
+    });
+
+    test('actions compare by value, so an unchanged list is not sent again', () {
+      expect(const QuranAyaAction(id: 'a', title: 'A'), const QuranAyaAction(id: 'a', title: 'A'));
+      expect(actionsScript(const [QuranAyaAction(id: 'a')]),
+          'qmhActions([{"id":"a","title":"a","icon":null,"order":100}]);');
     });
   });
 

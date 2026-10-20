@@ -63,6 +63,21 @@ describe("QuranMadinaNative", () => {
     expect(lastWebView.source.html).toContain('"aya":"256"');
   });
 
+  it("verse actions: registered in the page, updated in place, a choice reaches onAyaAction", () => {
+    const onAyaAction = vi.fn();
+    const bookmark = { id: "bookmark", title: "Bookmark", icon: "<svg/>" };
+    const r = render({ sura: 2, aya: "255", actions: ["copy", "bookmark"], ayaActions: [bookmark], onAyaAction });
+    expect(lastWebView.source.html).toContain('"actions":"copy bookmark"');
+    expect(lastWebView.source.html).toContain('"ayaActions":[{"id":"bookmark","title":"Bookmark","icon":"\\u003csvg/>","order":100}]');
+    const first = lastWebView.source;
+    act(() => r.update(React.createElement(QuranMadinaNative,
+      { sura: 2, aya: "255", actions: ["copy", "bookmark"], ayaActions: [{ ...bookmark, title: "Save" }], onAyaAction })));
+    expect(lastWebView.source).toBe(first);
+    expect(injected.at(-1)).toContain('qmhActions([{"id":"bookmark","title":"Save"');
+    message({ kind: "action", value: { id: "bookmark", sura: 2, aya: 255, page: 42, text: "..." } });
+    expect(onAyaAction).toHaveBeenCalledWith({ id: "bookmark", sura: 2, aya: 255, page: 42, text: "..." });
+  });
+
   it("opens links the library opens, or hands them to onOpenUrl", () => {
     render({ sura: 1, aya: 1 });
     message({ kind: "open", value: "https://quran.com/1/1" });

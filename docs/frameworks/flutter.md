@@ -131,6 +131,9 @@ to `macos/Runner/DebugProfile.entitlements` and `Release.entitlements`.
 | `quotes` | `String` | `'no'` drops the quote marks around inline renders. |
 | `inline` | `String` | `'no'` forces the multiline layout. |
 | `notitle` | `bool` | With `words` crossing into a new sura: hide its name, keep the frame. |
+| `actions` | `List<String>` | The [verse actions](../guide/actions.md) a tap offers, by id: `['copy']`; `[]` for none. |
+| `ayaActions` | `List<QuranAyaAction>` | Your own verse actions (`id`, `title`, `icon`, `order`), as buttons in the popup. |
+| `onAyaAction` | `void Function(QuranAyaSelection)` | Called when one of `ayaActions` is chosen, with the action's `id` and the verse. |
 | `layout` | `String` | `'1441H'` (default), `'1405H'` or `'IndoPak'`. |
 | `fontSize` | `num` | Font size in logical pixels (default 16). |
 | `textColor` | `String` | CSS colour of the text, e.g. `'#ece6d6'` for a dark theme. Highlight, error and letter colours adapt to it. |

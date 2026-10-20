@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -13,6 +14,7 @@ State<QuranMadinaFlutter> createQuranState() => _WebViewQuranState();
 class _WebViewQuranState extends State<QuranMadinaFlutter> {
   late final WebViewController _controller;
   late Map<String, String> _shown;
+  late List<QuranAyaAction> _shownActions;
   QuranLoader? _loaded; // the loader with the bundle resolved, once the page is loading
   int _loads = 0;
   double _height = 1;
@@ -21,6 +23,7 @@ class _WebViewQuranState extends State<QuranMadinaFlutter> {
   void initState() {
     super.initState();
     _shown = attributesOf(widget);
+    _shownActions = widget.ayaActions;
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..addJavaScriptChannel(kChannel, onMessageReceived: _onMessage)
@@ -52,7 +55,9 @@ class _WebViewQuranState extends State<QuranMadinaFlutter> {
       loader = loader.resolveBundle(base);
     }
     _loaded = loader;
-    await _controller.loadHtmlString(buildPage(loader, _shown), baseUrl: loader.cdn);
+    _shownActions = widget.ayaActions;
+    await _controller.loadHtmlString(buildPage(loader, _shown, actions: _shownActions),
+        baseUrl: loader.cdn);
   }
 
   void _onMessage(JavaScriptMessage message) {
@@ -68,6 +73,9 @@ class _WebViewQuranState extends State<QuranMadinaFlutter> {
       if (mounted && h > 0 && (h - _height).abs() >= 1) setState(() => _height = h);
     } else if (data['kind'] == 'open' && data['value'] is String) {
       widget.onOpenUrl?.call(data['value'] as String);
+    } else if (data['kind'] == 'action') {
+      final selection = QuranAyaSelection.fromJson(data['value']);
+      if (selection != null) widget.onAyaAction?.call(selection);
     }
   }
 
@@ -84,6 +92,10 @@ class _WebViewQuranState extends State<QuranMadinaFlutter> {
     if (updates.isNotEmpty) {
       _shown = next;
       _controller.runJavaScript(updateScript(updates));
+    }
+    if (!listEquals(_shownActions, widget.ayaActions)) {
+      _shownActions = widget.ayaActions;
+      _controller.runJavaScript(actionsScript(_shownActions));
     }
   }
 

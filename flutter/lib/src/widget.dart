@@ -11,6 +11,11 @@ import 'view_io.dart' if (dart.library.js_interop) 'view_web.dart';
 /// QuranMadinaFlutter(page: 106)
 /// QuranMadinaFlutter(sura: 2, aya: '255', highlight: '5-8', error: '1')
 /// QuranMadinaFlutter(sura: 1, aya: '2-4', letters: '1:3, 4:3-5 emerald blink')
+/// QuranMadinaFlutter(
+///   sura: 2, aya: '255',
+///   ayaActions: [QuranAyaAction(id: 'bookmark', title: 'Bookmark', icon: bookmarkSvg)],
+///   onAyaAction: (s) => saveBookmark(s.sura, s.aya),
+/// )
 /// ```
 ///
 /// `page` and `sura`/`aya` are mutually exclusive (`page` wins if both are given). Changing a
@@ -32,6 +37,9 @@ class QuranMadinaFlutter extends StatefulWidget {
     this.quotes,
     this.inline,
     this.notitle,
+    this.actions,
+    this.ayaActions = const [],
+    this.onAyaAction,
     this.layout,
     this.fontSize,
     this.src = kDefaultSrc,
@@ -77,6 +85,19 @@ class QuranMadinaFlutter extends StatefulWidget {
   /// With [words] crossing into a new sura: hide its name, keep the decorated line.
   final bool? notitle;
 
+  /// Which verse actions a tap on a verse offers, by id: e.g. `['copy', 'bookmark']`. An empty
+  /// list offers none: the verses are then plain text, and the header icons go too. Null (the
+  /// default) offers all: the built-in 'copy' and 'translate' and every [ayaActions] entry.
+  final List<String>? actions;
+
+  /// Your own verse actions, as buttons in the popup a tap on a verse opens; choosing one calls
+  /// [onAyaAction]. On the web they are registered for the whole page (the ids are shared by
+  /// every widget there); [actions] still picks per widget.
+  final List<QuranAyaAction> ayaActions;
+
+  /// Called with the verse when one of [ayaActions] is chosen.
+  final void Function(QuranAyaSelection selection)? onAyaAction;
+
   /// Layout: '1441H' (default), '1405H' or 'IndoPak'.
   final String? layout;
 
@@ -120,6 +141,7 @@ class QuranMadinaFlutter extends StatefulWidget {
         quotes: quotes,
         inline: inline,
         notitle: notitle,
+        actions: actions,
       );
 
   QuranLoader get _loader => QuranLoader(

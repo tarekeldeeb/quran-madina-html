@@ -82,6 +82,90 @@ class QuranLoader {
   int get hashCode => Object.hash(src, cdn, layout, fontSize, textColor, backgroundColor);
 }
 
+/// A verse action: a button in the popup a tap on a verse opens. Choosing it calls the widget's
+/// `onAyaAction` with the verse.
+class QuranAyaAction {
+  const QuranAyaAction({required this.id, String? title, this.icon, this.order = 100})
+      : title = title ?? id;
+
+  /// Unique id. "copy" and "translate" are the built-in actions (see the widget's `actions`).
+  final String id;
+
+  /// Tooltip and accessible name.
+  final String title;
+
+  /// SVG markup (`currentColor` follows the popup's colour) or an image URL.
+  final String? icon;
+
+  /// Position in the popup: copy is 10, translate 20.
+  final num order;
+
+  Map<String, Object?> toJson() => {'id': id, 'title': title, 'icon': icon, 'order': order};
+
+  @override
+  bool operator ==(Object other) =>
+      other is QuranAyaAction &&
+      other.id == id &&
+      other.title == title &&
+      other.icon == icon &&
+      other.order == order;
+
+  @override
+  int get hashCode => Object.hash(id, title, icon, order);
+}
+
+/// The verse a [QuranAyaAction] was chosen on.
+class QuranAyaSelection {
+  const QuranAyaSelection({
+    required this.id,
+    required this.sura,
+    required this.aya,
+    this.page,
+    this.text = '',
+    this.suraName = '',
+    this.layout = '',
+  });
+
+  /// From the page's message; null if it isn't one.
+  static QuranAyaSelection? fromJson(Object? data) {
+    if (data is! Map || data['id'] is! String || data['sura'] is! num || data['aya'] is! num) {
+      return null;
+    }
+    return QuranAyaSelection(
+      id: data['id'] as String,
+      sura: (data['sura'] as num).toInt(),
+      aya: (data['aya'] as num).toInt(),
+      page: data['page'] is num ? (data['page'] as num).toInt() : null,
+      text: data['text'] is String ? data['text'] as String : '',
+      suraName: data['suraName'] is String ? data['suraName'] as String : '',
+      layout: data['layout'] is String ? data['layout'] as String : '',
+    );
+  }
+
+  /// The action's id.
+  final String id;
+  final int sura;
+  final int aya;
+
+  /// The Mushaf page of the verse in the current print.
+  final int? page;
+
+  /// The verse text.
+  final String text;
+  final String suraName;
+
+  /// "1441H", "1405H" or "IndoPak".
+  final String layout;
+}
+
+/// The `actions` attribute for a list of action ids: joined, and an empty list means "none".
+String? actionsAttribute(List<String>? ids) =>
+    ids == null ? null : (ids.isEmpty ? 'none' : ids.join(' '));
+
+/// The JavaScript call that sets the page's verse actions to [actions].
+String actionsScript(List<QuranAyaAction> actions) =>
+    'qmhActions(${jsonEncode(actions.map((a) => a.toJson()).toList())});';
+
 /// The `<quran-madina-html>` attributes for the given options, exactly as the React wrapper sets
 /// them: `page` wins over `sura`/`aya`, booleans become empty attributes, and a null, false or
 /// empty value is left out. Values are the attribute strings; absent keys mean "no attribute".
@@ -97,6 +181,7 @@ Map<String, String> tagAttributes({
   String? quotes,
   String? inline,
   bool? notitle,
+  List<String>? actions,
 }) {
   final out = <String, String>{};
   void set(String key, Object? value) {
@@ -118,6 +203,7 @@ Map<String, String> tagAttributes({
   set('quotes', quotes);
   set('inline', inline);
   set('notitle', notitle);
+  set('actions', actionsAttribute(actions));
   return out;
 }
 
@@ -148,9 +234,10 @@ bool isLibraryScript(String src) {
 String _escape(String s) => const HtmlEscape(HtmlEscapeMode.attribute).convert(s);
 
 /// The page the WebView loads: the library script and one `<quran-madina-html>` tag. The page
-/// reports its height (so the widget can size itself) and any link the library opens (the
-/// translate buttons) on the [kChannel] JavaScript channel.
-String buildPage(QuranLoader loader, Map<String, String> attributes) {
+/// reports its height (so the widget can size itself), any link the library opens (the
+/// translate buttons) and the verse [actions] chosen, on the [kChannel] JavaScript channel.
+String buildPage(QuranLoader loader, Map<String, String> attributes,
+    {List<QuranAyaAction> actions = const []}) {
   final script = StringBuffer('<script src="${_escape(loader.src)}" data-cdn="${_escape(loader.cdn)}"');
   if (loader.layout != null) script.write(' data-layout="${_escape(loader.layout!)}"');
   if (loader.fontSize != null) script.write(' data-font-size="${loader.fontSize}"');
@@ -185,8 +272,25 @@ $script
     qmhPost("height", Math.ceil(document.body.getBoundingClientRect().height));
   }
   window.open = function (url) { qmhPost("open", String(url)); return null; };
+  // Verse actions from the app: registered with the library, a choice is posted back.
+  var qmhActionIds = [];
+  function qmhActions(list) {
+    customElements.whenDefined("quran-madina-html").then(function (Q) {
+      var ids = list.map(function (a) { return a.id; });
+      qmhActionIds.forEach(function (id) { if (ids.indexOf(id) < 0) Q.unregisterAction(id); });
+      qmhActionIds = ids;
+      list.forEach(function (a) {
+        Q.registerAction({id: a.id, title: a.title, icon: a.icon, order: a.order,
+          onSelect: function (v) {
+            qmhPost("action", {id: a.id, sura: v.sura, aya: v.aya, page: v.page, text: v.text,
+                               suraName: v.suraName, layout: v.layout});
+          }});
+      });
+    });
+  }
   new ResizeObserver(qmhReport).observe(document.body);
   window.addEventListener("load", qmhReport);
+  ${actions.isEmpty ? '' : actionsScript(actions).replaceAll('</', r'<\/')}
 </script>
 </body></html>''';
 }

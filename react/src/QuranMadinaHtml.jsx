@@ -86,6 +86,8 @@ export function loadQuranMadinaHtml(opts = {}) {
  * Force the multiline layout:   <QuranMadinaHtml sura={1} aya={3} inline="no" />
  * Blank crossed-into sura names
  * (keeps the decorated line):   <QuranMadinaHtml sura={1} aya={7} words="1-14" notitle />
+ * Only some verse actions:      <QuranMadinaHtml sura={2} aya="255" actions={["copy", "bookmark"]} />
+ * No verse actions (plain text): <QuranMadinaHtml sura={2} aya="255" actions={[]} />
  *
  * `page` and `sura`/`aya` are mutually exclusive (page wins if both are passed).
  */
@@ -101,6 +103,7 @@ export default function QuranMadinaHtml({
   quotes,
   inline,
   notitle,
+  actions,
   // loader config (only honored on first mount, see loadQuranMadinaHtml)
   src,
   cdn,
@@ -160,9 +163,52 @@ export default function QuranMadinaHtml({
     set("quotes", quotes);
     set("inline", inline);
     set("notitle", notitle);
-  }, [ready, page, sura, aya, words, highlight, error, letters, headless, quotes, inline, notitle]);
+    set("actions", Array.isArray(actions) ? (actions.length ? actions.join(" ") : "none") : actions);
+  }, [ready, page, sura, aya, words, highlight, error, letters, headless, quotes, inline, notitle,
+      Array.isArray(actions) ? actions.join(" ") + "|" + actions.length : actions]);
 
   // Render as `class` rather than `className`: React < 19 does not map className -> class for
   // custom elements, so passing className would silently drop the class on those versions.
   return React.createElement(TAG, { ref, class: className, style, ...rest });
+}
+
+// ----------------------------------------------------------------------------
+// Verse actions: the buttons of the popup a click on a verse opens. Page-wide, for every tag;
+// each call waits until the library is loaded. See the docs' "Verse actions" guide.
+// ----------------------------------------------------------------------------
+
+const whenReady = () =>
+  typeof window === "undefined" || !window.customElements
+    ? new Promise(() => {}) // server rendering: never
+    : window.customElements.whenDefined(TAG);
+
+/** Add an action (or replace the one with the same id): {id, title, icon, order, when, onSelect}. */
+export const registerAction = (spec) => whenReady().then((Q) => Q.registerAction(spec));
+/** Remove an action by id; resolves to whether it was there. */
+export const unregisterAction = (id) => whenReady().then((Q) => Q.unregisterAction(id));
+/** Remove every action, the built-in copy and translate too: verses become plain text. */
+export const clearActions = () => whenReady().then((Q) => Q.clearActions());
+/** Back to the built-in copy and translate. */
+export const resetActions = () => whenReady().then((Q) => Q.resetActions());
+
+/**
+ * Register an action while the calling component is mounted. The latest `spec` is used on
+ * each click, so its onSelect can use the component's current state.
+ */
+export function useAyaAction(spec) {
+  const latest = useRef(spec);
+  latest.current = spec;
+  const { id, title, icon, order } = spec;
+  useEffect(() => {
+    let active = true;
+    registerAction({
+      id, title, icon, order,
+      when: (aya) => (latest.current.when ? latest.current.when(aya) : true),
+      onSelect: (aya) => latest.current.onSelect(aya),
+    }).then(() => { if (!active) unregisterAction(id); });
+    return () => {
+      active = false;
+      unregisterAction(id);
+    };
+  }, [id, title, typeof icon === "string" ? icon : null, order]); // eslint-disable-line react-hooks/exhaustive-deps
 }

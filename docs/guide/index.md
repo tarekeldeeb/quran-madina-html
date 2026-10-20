@@ -7,5 +7,6 @@ How to show what you need, one topic per page:
 - [Selecting words](words.md): show only some words, across verses and suras.
 - [Highlighting words](highlighting.md): mark words in yellow or red.
 - [Emphasising letters](letters.md): colour single letters inside words, optionally blinking.
+- [Verse actions](actions.md): what a click on a verse offers: copy, translate, your own (a bookmark), or nothing.
 - [Styling and dark mode](styling.md): colours, dark pages, printing.
 - [Self-hosting and offline](self-hosting.md): serve the files yourself, or bundle them in an app.

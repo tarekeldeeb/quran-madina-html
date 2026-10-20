@@ -47,7 +47,8 @@ In any post, page or text widget:
 ```
 
 It takes every [tag attribute](../reference/attributes.md): `page`, `sura`, `aya`, `words`,
-`highlight`, `error`, `letters`, `headless`, `notitle`, `quotes`, `inline`. A verse that fits
+`highlight`, `error`, `letters`, `headless`, `notitle`, `quotes`, `inline`, `actions` (what a
+click on a verse offers; `none` for plain text, see [Verse actions](../guide/actions.md)). A verse that fits
 on one line shows inline, inside the sentence:
 
 ![Shortcodes on a post: an inline verse, highlighted words, emphasised letters](../assets/img/wordpress-post.png)

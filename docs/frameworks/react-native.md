@@ -49,6 +49,9 @@ The component takes the height of the rendered text, so it fits in a `ScrollView
 | `notitle` | boolean | Hide the name of a sura a `words` selection crosses into. |
 | `quotes` | string | `"no"` drops the quote marks around inline renders. |
 | `inline` | string | `"no"` forces the multiline layout. |
+| `actions` | string[] \| string | The [verse actions](../guide/actions.md) a tap offers, by id: `["copy"]`; `[]` for none. |
+| `ayaActions` | `{id, title, icon, order}[]` | Your own verse actions, as buttons in the popup. |
+| `onAyaAction` | `(selection) => void` | Called when one of `ayaActions` is chosen: `{id, sura, aya, page, text, suraName, layout}`. |
 | `layout` | string | `"1441H"` (default), `"1405H"` or `"IndoPak"`. Per component. |
 | `fontSize` | number | Size in points, default 16. |
 | `textColor` | string | CSS colour of the text, e.g. `"#ece6d6"` on a dark screen. Mark colours adapt to it. |

@@ -193,6 +193,23 @@ slot 1 is blank (no basmala in the real text). Decoration slots are always cente
   plain JS identifier/property name for a class getter/setter, so hyphenated attributes are read
   via `getAttribute()` directly instead of via a same-named class getter, or avoid the hyphen as
   done here.)
+- Verse actions (2.2): the popup a click on a verse opens is built from a page-wide registry
+  (`ayaActions`; `DEFAULT_ACTIONS` = copy 10, translate 20) behind static methods on the element
+  class: `registerAction({id, title, icon, order, when, onSelect})` (same id replaces; bad spec
+  -> TypeError), `unregisterAction`, `clearActions`, `resetActions`, `actions`; reached with
+  `customElements.whenDefined`. `ayaActionsFor(tag, ctx)` filters by the tag's `actions`
+  attribute (ids, or `none`/empty = none; property also takes an array) and each `when(ctx)`.
+  A verse with no action is plain text: the hover handler (`hoverByType`) and the click
+  handler (`wireAyaClick`, which stores `elm._qmhAya`) both check at event time, so registry
+  changes apply to tags already rendered (`actionsChanged` also toggles the tag's
+  `quran-madina-html-interactive` class). `ayaContext(elm)` is what when/onSelect get (sura,
+  aya, page, lazy `text`, suraName, layout, tag, element, close). Popup buttons are
+  `<button class="quran-madina-html-action quran-madina-html-action-ID">`. `actions="none"`
+  also hides the header icons (CSS). Wrappers: React `actions` prop + `registerAction`...
+  helpers + `useAyaAction` hook; React Native/Flutter `actions`, `ayaActions` (data only) and
+  `onAyaAction` (the host page's `qmhActions()` registers them, a choice is posted as kind
+  "action"; Flutter web registers via JS interop, owner found by `data-qmh-flutter`);
+  WordPress `actions` attribute/block field. Render tests 45-50.
 - Properties reflect to attributes (`reflectAttribute`; since 2.1.2): `tag.aya = 3` sets
   `aya="3"`, true -> empty attribute, null/false -> removed. Vue, Svelte and Angular property
   bindings depend on it (render test 44). `attributeChangedCallback` renders only when the tag is

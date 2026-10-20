@@ -16,6 +16,7 @@ Each is also a property: `tag.aya = 256` sets `aya="256"` (from 2.1.2).
 | `notitle` | `true` | off | With `words`: hide the name of a sura the selection crosses into, keeping its frame. |
 | `quotes` | `no` | quote marks | Drop the quote marks around an inline render. |
 | `inline` | `no` | `auto` | Force the multiline layout even when the selection fits on one line. |
+| `actions` | `copy bookmark` or `none` | all | The [verse actions](../guide/actions.md) a click on a verse offers, by id. `none`: plain text, no header icons. As a property it also takes an array (`[]` = `none`). From 2.2. |
 
 Word ranges are 1-based and include both ends. A malformed `words` value is ignored and the
 verse renders whole; a malformed or out-of-range `highlight`, `error` or `letters` value is

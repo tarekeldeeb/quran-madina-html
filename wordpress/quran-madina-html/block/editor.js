@@ -13,9 +13,10 @@
 		[ 'words', __( 'Only these words', 'quran-madina-html' ), __( 'A word range, e.g. 1-5. Counting starts at the first verse.', 'quran-madina-html' ) ],
 		[ 'highlight', __( 'Highlight (yellow)', 'quran-madina-html' ), __( 'A word range, e.g. 5-8', 'quran-madina-html' ) ],
 		[ 'error', __( 'Mistake (red)', 'quran-madina-html' ), __( 'A word range, e.g. 3', 'quran-madina-html' ) ],
-		[ 'letters', __( 'Letters', 'quran-madina-html' ), __( 'word:letters, colour, blink. E.g. 1:3, 4:3-5 emerald blink', 'quran-madina-html' ) ]
+		[ 'letters', __( 'Letters', 'quran-madina-html' ), __( 'word:letters, colour, blink. E.g. 1:3, 4:3-5 emerald blink', 'quran-madina-html' ) ],
+		[ 'actions', __( 'Verse actions', 'quran-madina-html' ), __( 'What a click on a verse offers: e.g. copy, or none for plain text. Empty: all.', 'quran-madina-html' ) ]
 	];
-	var ATTRIBUTES = [ 'page', 'sura', 'aya', 'words', 'highlight', 'error', 'letters', 'quotes', 'inline' ];
+	var ATTRIBUTES = [ 'page', 'sura', 'aya', 'words', 'highlight', 'error', 'letters', 'quotes', 'inline', 'actions' ];
 
 	/** The tag's attributes for the block's settings. */
 	function tagAttributes( a ) {

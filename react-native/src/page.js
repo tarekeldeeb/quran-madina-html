@@ -10,7 +10,28 @@ export const DEFAULT_CDN = "https://unpkg.com/quran-madina-html@2/";
 /** Attributes of the <quran-madina-html> tag, in the order they are written. */
 export const TAG_ATTRIBUTES = [
   "page", "sura", "aya", "words", "highlight", "error", "letters", "headless", "notitle", "quotes", "inline",
+  "actions",
 ];
+
+/** The `actions` attribute for a prop: an array is joined, an empty one means "none". */
+export function actionsAttribute(value) {
+  if (Array.isArray(value)) return value.length ? value.join(" ") : "none";
+  return value;
+}
+
+/**
+ * The verse actions to register in the page: only the data (id, title, icon, order); a click
+ * comes back as an "action" message. Anything without an id is dropped.
+ */
+export function actionSpecs(list) {
+  return (Array.isArray(list) ? list : [])
+    .filter((a) => a && typeof a.id === "string" && a.id.trim())
+    .map((a) => ({ id: a.id.trim(), title: a.title || a.id.trim(), icon: a.icon || null,
+                   order: Number.isFinite(a.order) ? a.order : 100 }));
+}
+
+/** JavaScript that sets the page's verse actions (for WebView.injectJavaScript). */
+export const actionsScript = (specs) => `window.qmhActions && qmhActions(${JSON.stringify(specs)}); true;`;
 
 /**
  * The tag's attributes for the given props: `page` wins over `sura`/`aya`, `true` becomes an
@@ -25,7 +46,7 @@ export function tagAttributes(props) {
   const hasPage = props.page !== undefined && props.page !== null && props.page !== "";
   for (const key of TAG_ATTRIBUTES) {
     if (hasPage && (key === "sura" || key === "aya")) continue;
-    set(key, props[key]);
+    set(key, key === "actions" ? actionsAttribute(props[key]) : props[key]);
   }
   return out;
 }
@@ -48,7 +69,7 @@ export const startScript = (config) => `window.QMH_CONFIG = ${JSON.stringify(con
  * The page the WebView shows. With `config` it is self-contained (the online mode, loaded as an
  * HTML string); without, it waits for window.QMH_CONFIG (the bundled index.html, whose options
  * arrive through injected JavaScript). config: {src, cdn, layout, fontSize, textColor,
- * backgroundColor, attrs}; src/cdn default to the files next to the page.
+ * backgroundColor, attrs, ayaActions}; src/cdn default to the files next to the page.
  */
 export function hostPage(config) {
   const inline = config ? `window.QMH_CONFIG = ${JSON.stringify(config).replace(/</g, "\\u003c")};` : "";
@@ -78,6 +99,22 @@ export function hostPage(config) {
     qmhPost("height", Math.ceil(document.body.getBoundingClientRect().height));
   }
   window.open = function (url) { qmhPost("open", String(url)); return null; };
+  // Verse actions from the app: registered with the library, a click is posted back.
+  var qmhActionIds = [];
+  function qmhActions(list) {
+    customElements.whenDefined("quran-madina-html").then(function (Q) {
+      var ids = (list || []).map(function (a) { return a.id; });
+      qmhActionIds.forEach(function (id) { if (ids.indexOf(id) < 0) Q.unregisterAction(id); });
+      qmhActionIds = ids;
+      (list || []).forEach(function (a) {
+        Q.registerAction({ id: a.id, title: a.title, icon: a.icon, order: a.order,
+          onSelect: function (v) {
+            qmhPost("action", { id: a.id, sura: v.sura, aya: v.aya, page: v.page, text: v.text,
+                                suraName: v.suraName, layout: v.layout });
+          } });
+      });
+    });
+  }
   var qmhStarted = false;
   function qmhStart() {
     var cfg = window.QMH_CONFIG;
@@ -99,6 +136,7 @@ export function hostPage(config) {
     script.onerror = function () { qmhPost("error", "could not load " + script.src); };
     document.head.appendChild(script);
     new ResizeObserver(qmhReport).observe(document.body);
+    if (cfg.ayaActions && cfg.ayaActions.length) qmhActions(cfg.ayaActions);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", qmhStart);
   else qmhStart();

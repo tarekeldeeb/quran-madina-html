@@ -3,7 +3,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Linking, Platform, View } from "react-native";
 import { WebView } from "react-native-webview";
-import { DEFAULT_CDN, DEFAULT_SRC, attributeUpdates, hostPage, startScript, tagAttributes, updateScript } from "./page.js";
+import {
+  DEFAULT_CDN, DEFAULT_SRC, actionSpecs, actionsScript, attributeUpdates, hostPage, startScript, tagAttributes,
+  updateScript,
+} from "./page.js";
 
 /** Where `npx quran-madina-native-bundle` puts the library inside the app. */
 export const BUNDLE_FOLDER = "quran-madina";
@@ -19,14 +22,18 @@ export function bundleBase(bundled, os = Platform.OS) {
 
 /**
  * Renders Quran text like the printed Madina Mushaf. Same options as the React component:
- * page, sura, aya, words, highlight, error, letters, headless, notitle, quotes, inline, layout,
- * fontSize; plus textColor, backgroundColor, height, bundled and onOpenUrl.
+ * page, sura, aya, words, highlight, error, letters, headless, notitle, quotes, inline, actions,
+ * layout, fontSize; plus textColor, backgroundColor, height, bundled, onOpenUrl, and verse actions:
+ * ayaActions ([{id, title, icon, order}]) with onAyaAction({id, sura, aya, page, text, ...}).
  */
 export default function QuranMadinaNative(props) {
   const {
     layout, fontSize, textColor, backgroundColor, src = DEFAULT_SRC, cdn = DEFAULT_CDN,
-    bundled, height, onOpenUrl, style, webViewProps,
+    bundled, height, onOpenUrl, onAyaAction, ayaActions, style, webViewProps,
   } = props;
+  const specs = actionSpecs(ayaActions);
+  const specsKey = JSON.stringify(specs);
+  const shownSpecs = useRef(specs);
   const attrs = tagAttributes(props);
   const attrsKey = JSON.stringify(attrs);
   const [measured, setMeasured] = useState(1);
@@ -37,7 +44,8 @@ export default function QuranMadinaNative(props) {
   const loaderKey = JSON.stringify([layout, fontSize, textColor, backgroundColor, src, cdn, bundled]);
   const { source, config, base } = useMemo(() => {
     shown.current = attrs;
-    const common = { layout, fontSize, textColor, backgroundColor, attrs };
+    shownSpecs.current = specs;
+    const common = { layout, fontSize, textColor, backgroundColor, attrs, ayaActions: specs };
     if (bundled) {
       const root = bundleBase(bundled);
       return { source: { uri: `${root}index.html` }, config: common, base: root };
@@ -54,6 +62,13 @@ export default function QuranMadinaNative(props) {
     shown.current = attrs;
   }, [attrsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (JSON.stringify(shownSpecs.current) !== specsKey && webView.current) {
+      webView.current.injectJavaScript(actionsScript(specs));
+    }
+    shownSpecs.current = specs;
+  }, [specsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const open = (url) => (onOpenUrl ? onOpenUrl(url) : Linking.openURL(url));
 
   const onMessage = (event) => {
@@ -67,6 +82,8 @@ export default function QuranMadinaNative(props) {
       setMeasured((h) => (Math.abs(h - data.value) >= 1 ? data.value : h));
     } else if (data.kind === "open" && typeof data.value === "string") {
       open(data.value);
+    } else if (data.kind === "action" && data.value && typeof data.value.id === "string") {
+      if (onAyaAction) onAyaAction(data.value);
     } else if (data.kind === "error") {
       console.warn(`[quran-madina-native] ${data.value}` +
         (bundled ? " (run `npx quran-madina-native-bundle` and add the folder to the app)" : ""));
@@ -98,7 +115,8 @@ export default function QuranMadinaNative(props) {
       style: { backgroundColor: "transparent" },
       // the bundled page reads its options before it starts; injected again on load as a fallback
       injectedJavaScriptBeforeContentLoaded: bundled ? `window.QMH_CONFIG = ${JSON.stringify(config)}; true;` : undefined,
-      onLoadEnd: () => webView.current && webView.current.injectJavaScript(startScript({ ...config, attrs: shown.current })),
+      onLoadEnd: () => webView.current && webView.current.injectJavaScript(
+        startScript({ ...config, attrs: shown.current, ayaActions: shownSpecs.current })),
       // bundled files are read from the app (file:// pages fetching file:// data)
       allowFileAccess: !!bundled,
       allowFileAccessFromFileURLs: !!bundled,

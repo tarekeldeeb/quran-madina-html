@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CDN, attributeUpdates, hostPage, startScript, tagAttributes, updateScript } from "../src/page.js";
+import {
+  DEFAULT_CDN, actionSpecs, actionsScript, attributeUpdates, hostPage, startScript, tagAttributes, updateScript,
+} from "../src/page.js";
 
 describe("tagAttributes", () => {
   it("page wins over sura/aya", () => {
@@ -13,6 +15,26 @@ describe("tagAttributes", () => {
   });
   it("ignores props that aren't tag attributes", () => {
     expect(tagAttributes({ sura: 1, aya: 1, layout: "IndoPak", fontSize: 22, style: {} })).toEqual({ sura: "1", aya: "1" });
+  });
+});
+
+describe("verse actions", () => {
+  it("actions: an array is joined, an empty one means none", () => {
+    expect(tagAttributes({ sura: 1, aya: 1, actions: ["copy", "bookmark"] }).actions).toBe("copy bookmark");
+    expect(tagAttributes({ sura: 1, aya: 1, actions: [] }).actions).toBe("none");
+    expect(tagAttributes({ sura: 1, aya: 1, actions: "translate" }).actions).toBe("translate");
+    expect("actions" in tagAttributes({ sura: 1, aya: 1 })).toBe(false);
+  });
+  it("ayaActions keep only the data, with defaults, and drop entries without an id", () => {
+    expect(actionSpecs([{ id: " bookmark ", icon: "<svg/>", onSelect: () => {} }, { title: "no id" }, null]))
+      .toEqual([{ id: "bookmark", title: "bookmark", icon: "<svg/>", order: 100 }]);
+    expect(actionSpecs(undefined)).toEqual([]);
+    expect(actionsScript([{ id: "a" }])).toBe('window.qmhActions && qmhActions([{"id":"a"}]); true;');
+  });
+  it("the page registers them and posts a choice back", () => {
+    const html = hostPage(null);
+    expect(html).toContain("function qmhActions(list)");
+    expect(html).toContain('qmhPost("action"');
   });
 });
 

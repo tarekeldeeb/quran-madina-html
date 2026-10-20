@@ -50,6 +50,7 @@ export default function App() {
 | `notitle` | boolean | Hide the name of a sura a `words` selection crosses into. |
 | `quotes` | string | `"no"` drops the quote marks around inline renders. |
 | `inline` | string | `"no"` forces the multiline layout. |
+| `actions` | string[] \| string | The [verse actions](../guide/actions.md) a click offers, by id: `["copy"]`; `[]` for none. |
 | `layout` | string | `1441H` (default), `1405H` or `IndoPak`. |
 | `fontSize` | number \| string | Size in px, default 16. |
 | `src` | string | Library script URL. Default: unpkg, latest. |

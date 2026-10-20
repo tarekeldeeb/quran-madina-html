@@ -1,4 +1,5 @@
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/widgets.dart';
@@ -13,6 +14,57 @@ State<QuranMadinaFlutter> createQuranState() => _WebQuranState();
 
 QuranLoader? _pageLoader; // the loader the page's script was set up with
 int _views = 0;
+
+// Verse actions on the web: the library's registry is page-wide, so each action id is
+// registered once, and a choice goes to the widget that owns the tapped tag.
+final Map<String, _WebQuranState> _owners = {}; // data-qmh-flutter id -> widget state
+final Map<String, QuranAyaAction> _registered = {};
+
+int? _int(JSObject v, String key) {
+  final value = v.getProperty<JSAny?>(key.toJS);
+  return value.isA<JSNumber>() ? (value as JSNumber).toDartInt : null;
+}
+
+String _string(JSObject v, String key) {
+  final value = v.getProperty<JSAny?>(key.toJS);
+  return value.isA<JSString>() ? (value as JSString).toDart : '';
+}
+
+void _chosen(String id, JSObject v) {
+  final tag = v.getProperty<JSAny?>('tag'.toJS);
+  if (!tag.isA<web.Element>()) return;
+  final owner = _owners[(tag as web.Element).getAttribute('data-qmh-flutter')];
+  final sura = _int(v, 'sura'), aya = _int(v, 'aya');
+  if (owner == null || sura == null || aya == null) return;
+  owner.widget.onAyaAction?.call(QuranAyaSelection(
+    id: id,
+    sura: sura,
+    aya: aya,
+    page: _int(v, 'page'),
+    text: _string(v, 'text'),
+    suraName: _string(v, 'suraName'),
+    layout: _string(v, 'layout'),
+  ));
+}
+
+Future<void> _register(List<QuranAyaAction> actions) async {
+  final todo = actions.where((a) => _registered[a.id] != a).toList();
+  if (todo.isEmpty) return;
+  for (final a in todo) {
+    _registered[a.id] = a;
+  }
+  final registry =
+      (await web.window.customElements.whenDefined('quran-madina-html').toDart) as JSObject;
+  for (final a in todo) {
+    final spec = JSObject()
+      ..setProperty('id'.toJS, a.id.toJS)
+      ..setProperty('title'.toJS, a.title.toJS)
+      ..setProperty('order'.toJS, a.order.toJS)
+      ..setProperty('onSelect'.toJS, ((JSObject v) => _chosen(a.id, v)).toJS);
+    if (a.icon != null) spec.setProperty('icon'.toJS, a.icon!.toJS);
+    registry.callMethod('registerAction'.toJS, spec);
+  }
+}
 
 /// The loader with the bundle served from the app's own assets.
 QuranLoader _resolve(QuranLoader loader) {
@@ -67,6 +119,9 @@ class _WebQuranState extends State<QuranMadinaFlutter> {
     super.initState();
     final loader = _resolve(loaderOf(widget));
     _ensureScript(loader);
+    _tag.setAttribute('data-qmh-flutter', _viewType);
+    _owners[_viewType] = this;
+    _register(widget.ayaActions);
     _shown = attributesOf(widget);
     _shown.forEach((k, v) => _tag.setAttribute(k, v));
     _box
@@ -109,6 +164,7 @@ class _WebQuranState extends State<QuranMadinaFlutter> {
       _ensureScript(loader); // warns if it asks for another layout or size
       _paint(loader);
     }
+    _register(widget.ayaActions);
     final next = attributesOf(widget);
     attributeUpdates(_shown, next).forEach((k, v) {
       if (v == null) {
@@ -122,6 +178,7 @@ class _WebQuranState extends State<QuranMadinaFlutter> {
 
   @override
   void dispose() {
+    _owners.remove(_viewType);
     _observer?.disconnect();
     super.dispose();
   }

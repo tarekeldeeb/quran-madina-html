@@ -67,7 +67,59 @@ export interface QuranMadinaHtmlProps
    * falls back to "auto" with a console warning from the underlying library.
    */
   inline?: "no" | "auto" | "yes" | string;
+  /**
+   * Which verse actions this tag offers on a click: ids such as `["copy", "bookmark"]` (or
+   * "copy bookmark"); `[]` or "none" for none (the verses are then plain text, and the header
+   * icons go too). Default: every registered action.
+   */
+  actions?: string[] | string;
 }
+
+/** The verse an action is offered on or chosen for. */
+export interface QuranAya {
+  sura: number;
+  aya: number;
+  /** The Mushaf page of the verse in the current print. */
+  page: number | null;
+  /** The verse text (computed when read). */
+  readonly text: string;
+  suraName: string;
+  /** "1441H", "1405H" or "IndoPak". */
+  layout: string;
+  /** The <quran-madina-html> element. */
+  tag: HTMLElement;
+  /** The clicked line piece of the verse. */
+  element: HTMLElement;
+  /** Close the popup (it also closes after any action). */
+  close(): void;
+}
+
+/** A verse action: a button in the popup a click on a verse opens. */
+export interface QuranAyaAction {
+  /** Unique id; registering the same id again replaces it. "copy" and "translate" are built in. */
+  id: string;
+  /** Tooltip and accessible name (default: the id). */
+  title?: string;
+  /** SVG markup (`currentColor` follows the popup), an image URL, or an element. */
+  icon?: string | Element | (() => Element);
+  /** Position in the popup: copy is 10, translate 20; default 100. */
+  order?: number;
+  /** Offer the action only on the verses this returns true for. */
+  when?: (aya: QuranAya) => boolean;
+  /** Runs when the button is clicked. */
+  onSelect: (aya: QuranAya) => void;
+}
+
+/** Add an action (or replace the one with the same id), once the library is loaded. */
+export declare function registerAction(spec: QuranAyaAction): Promise<string>;
+/** Remove an action by id; resolves to whether it was there. */
+export declare function unregisterAction(id: string): Promise<boolean>;
+/** Remove every action, the built-ins too: verses become plain text. */
+export declare function clearActions(): Promise<void>;
+/** Back to the built-in copy and translate. */
+export declare function resetActions(): Promise<void>;
+/** Register an action while the calling component is mounted. */
+export declare function useAyaAction(spec: QuranAyaAction): void;
 
 /** Inject the loader script once; resolves when the custom element is registered. */
 export function loadQuranMadinaHtml(
