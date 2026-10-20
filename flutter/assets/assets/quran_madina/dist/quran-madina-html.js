@@ -1,5 +1,5 @@
 /*!
- * quran-madina-html v2.1.4
+ * quran-madina-html v2.2.0
  * A Madina Quran HTML Renderer without images.
  * https://github.com/tarekeldeeb/quran-madina-html#readme
  *
