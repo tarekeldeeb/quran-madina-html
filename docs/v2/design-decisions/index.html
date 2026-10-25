@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -1841,6 +1841,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#joins-on-coretext-222-srcdbv2cursive_fixpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Joins on CoreText (2.2.2, src/db/v2/cursive_fix.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#runtime-phase-4" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2094,6 +2105,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#joins-on-coretext-222-srcdbv2cursive_fixpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Joins on CoreText (2.2.2, src/db/v2/cursive_fix.py)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#runtime-phase-4" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2251,9 +2273,37 @@ since the alternate lists depend on the corpus.</p>
   stretched words came out up to 0.76em off. Fixed by giving the font one on/off feature per
   (position, alternate) pair (<code>q043</code> = <code>jp04</code> value 3); the runtime emits those everywhere.
   Afterwards every stretched word is within a pixel of Chrome. Left: two words with a kashida
-  carrying hamza plus CGJ (<code>لِـٔ͏َادَمَ</code> +0.22em, <code>يَٰٓـٔ͏َادَمُ</code> −0.11em on page 6) still differ.</li>
-<li>Pages 1-2, sura titles, basmala lines.</li>
+  carrying hamza plus CGJ (<code>لِـٔ͏َادَمَ</code> +0.22em, <code>يَٰٓـٔ͏َادَمُ</code> −0.11em on page 6) still differ.
+  Fixed in 2.2.2, see below.</li>
 </ul>
+<h2 id="joins-on-coretext-222-srcdbv2cursive_fixpy">Joins on CoreText (2.2.2, <code>src/db/v2/cursive_fix.py</code>)<a class="headerlink" href="#joins-on-coretext-222-srcdbv2cursive_fixpy" title="Permanent link">&para;</a></h2>
+<p>On iPhone, letters showed small vertical steps at joins (every 2.x release; the DigitalKhatt
+fonts, not the stretch features). Two causes, found with test pages on a device:</p>
+<ul>
+<li><strong>Mixed cursive directions.</strong> The fonts join letters with several <code>curs</code> lookups, one flagged
+  RightToLeft. HarfBuzz reverses attachment chains to reconcile the two directions; CoreText
+  does not, and the heights at those joins come out wrong. With every cursive lookup in one
+  direction the joins are right on iPhone, but each chain then hangs from its first glyph, and
+  about 1,400 words of 1441H sit up to 0.2em off the line in every browser.</li>
+<li><strong>CGJ inside a joint.</strong> The encoding's CGJ between a hamza and its vowel (<code>ـٔ͏َ</code>) is a base
+  glyph; HarfBuzz skips it (default ignorable), CoreText keeps it between the letters it joins.</li>
+</ul>
+<p>The fix, applied by the build (and once to the 2.2.1 DBs):</p>
+<ol>
+<li>Every cursive lookup loses RightToLeft.</li>
+<li>The font gets GPOS position features <code>z&lt;p&gt;&lt;dd&gt;</code>, run before the joining: shift the glyph at
+   buffer position p by dd units. Shifting a chain's first glyph moves the chain. For each word
+   (and each of its stretch settings) the build walks the base glyphs in reading order; a glyph
+   that sits off its HarfBuzz height is a chain root, and gets what it lacks.</li>
+<li>CGJs leave the text except where HarfBuzz needs them to keep mark order (a few contexts:
+   sukun + sakta, dagger alef + hamza, ...); removing the others changes no shaping.</li>
+<li>The DB carries the tags: in <code>f</code> with the stretch features (<code>jp04=3,z1ip</code>), in <code>g</code> for
+   unstretched renders when they differ, in <code>nf</code> for sura names (header).</li>
+</ol>
+<p>Every word form of the three layouts (about 33,000 each) is verified to shape exactly as with
+the original font (glyphs, advances, offsets); the build fails otherwise. 1441H needs 388 shift
+features, 1405H 602, IndoPak 737; the woff2 grows by ~6-12 KB, the DBs by ~15% gzipped.
+- Pages 1-2, sura titles, basmala lines.</p>
 <h2 id="runtime-phase-4">Runtime (Phase 4)<a class="headerlink" href="#runtime-phase-4" title="Permanent link">&para;</a></h2>
 <p><code>&lt;script src=".../quran-madina-html.js" data-layout="1441H"&gt;</code> (default <code>1441H</code>,
 or <code>1405H</code>) loads <code>assets/db/v2/Madina-&lt;layout&gt;.json</code> and its woff2 font. A page
@@ -2495,11 +2545,11 @@ gaps on sample pages.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
   
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   <script>
