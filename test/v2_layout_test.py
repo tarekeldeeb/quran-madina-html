@@ -93,8 +93,8 @@ class PrintLayoutTest(unittest.TestCase):
                 if row["k"] != "text" or (p, l) not in self.lines:
                     continue
                 words = self.lines[(p, l)]
-                profs = [justify.word_profile(font, t, {k: int(v) for k, v in (
-                    kv.split("=") for kv in f.split(","))} if f else {}) for t, f, _ in words]
+                profs = [justify.word_profile(font, t, {k: int(v or 1) for k, _, v in (
+                    kv.partition("=") for kv in f.split(","))} if f else {}) for t, f, _ in words]
                 c = row.get("c", 1)
                 n = len(words)
                 for k, space in enumerate(row["s"]):

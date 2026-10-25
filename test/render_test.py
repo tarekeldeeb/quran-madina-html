@@ -882,6 +882,22 @@ class BasicRenderTest(unittest.TestCase):  # pylint: disable=too-many-public-met
             return [out, __qmh.Q.actions.map(a => a.id)];""")
         self.assertEqual(result, [["TypeError"] * 3, ["copy", "translate"]])
 
+    def test_51_height_corrections_reach_the_dom(self):
+        """z features (cursive_fix.py) are set on header, title and text words, and no CGJ is left
+        where CoreText would trip on it"""
+        self.set_page(2)
+        result = self.web_driver.execute_script("""
+            var tag = document.querySelector('quran-madina-html');
+            var header = [...tag.querySelectorAll('.quran-madina-html-sura-name span')]
+              .map(s => s.style.fontFeatureSettings);
+            var words = [...tag.querySelectorAll('.quran-madina-html-word')];
+            var z = words.filter(w => /"z/.test(w.style.fontFeatureSettings)).length;
+            var cgj = words.filter(w => w.textContent.indexOf('\u034f') >= 0).length;
+            return [header, z, cgj];""")
+        self.assertEqual(result[0], ['"z0i6"', ''])
+        self.assertGreater(result[1], 5)
+        self.assertEqual(result[2], 0)
+
 
 class FontSizeTest(unittest.TestCase):
     """v2 sizes everything in em: any data-font-size gives the same layout, scaled. The tag is

@@ -246,6 +246,17 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   36; `add_boolean_features`), and `v2FeatureSettings` turns the DB's `jp04=3` into `"q043"`.
   The DB keeps the `jp` form (HarfBuzz/build/checks use it). `demo/diag.html` measures every
   word of page 6 on a device against `demo/diag-expected.json` (Chrome's widths).
+- **Joins on CoreText (2.2.2):** `cursive_fix.py` (run by `build_v2.py`, or on a built DB +
+  woff2 in place) clears RightToLeft on every cursive lookup (CoreText can't mix directions:
+  steps at joins on iPhone) and adds GPOS position features `z<p><dd>` (shift glyph p by dd-648
+  units before the joining; a chain root carries its chain) that put every word back at its
+  HarfBuzz heights; verified word by word, the build fails otherwise. The DB carries the tags:
+  bare in `f` (`jp04=3,z1ip`) for justified lines; unstretched words (titles, basmala, inline)
+  take f's z tags unless the part has `g` with a non-null entry; sura names get `nf`
+  (manifest: third element of `suras[i]`; `buildHeader` makes one span per word). CGJs are
+  stripped from DB text except `strip_cgj`'s few contexts (CoreText keeps CGJ as a base glyph
+  inside joints); `v2CleanText` recomposes hamza with or without CGJ. Tests:
+  `test/v2_cursive_test.py`.
 - **Text:** Tanzil (`--tanzil`), converted to the fonts' encoding by `tanzil_encoding.py`
   (1441H takes pause marks from the print; a Tanzil file without marks gets marks + ۞/۩ from the
   layout text). IndoPak uses DigitalKhatt's own IndoPak text (`layout_lines.layout_tokens`),
@@ -258,7 +269,8 @@ insensitive; an unknown value warns and falls back to 1441H). `data-font`/`data-
   `run_simple`, its applySimpleJust), dense lines narrow words (`c`, never aya numbers), the
   whole line is scaled (`x`) only as a last resort. Never use `shr1`/`shrr` (they overlap letters).
 - **DB schema (version 2):** header + `lines[page][line] = {k, w, z, s[], x?, c?}` (em) +
-  `suras` (v1 shape, parts carry `f` = per-word feature strings). Spaces `s` may be negative.
+  `suras` (v1 shape, parts carry `f` = per-word feature strings, optional `g`; suras optional
+  `nf`). Spaces `s` may be negative.
   `shard_db.py` splits v2 DBs too: line rows travel with the juz' shards of their pages.
   Stems: `Madina-1441H`, `Madina-1405H`, `IndoPak-15` (`V2_STEMS` in the runtime).
 - **Runtime:** `isV2()` branches; `v2InitLine` (row geometry), `v2AppendWords` (word spans,

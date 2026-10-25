@@ -389,13 +389,24 @@
     '+QQFEAAJACwAAAAAIAAKAAAEOhCRI2o1I+nNu08TII5A8J0fRZJou6mrmBwuasVF3cLxrKc4Ge3X4a2IH0PQhOwMAoUo'+
     'CZHIaFiuQQQAOw==" alt="Loading .." />';
   }
-  function buildHeader(sura_name){
+  function buildHeader(sura){
     // The multiline chrome: sura name + copy + translate icons, shared by both render paths.
     // The icons stay direct children: copyToClipboard reaches the host via parentElement twice.
+    // v2 names carry per-word height corrections (nf, see cursive_fix.py): one span per word.
     var header = document.createElement("quran-madina-html-header");
     var title = document.createElement("span");
     title.className = `${name}-sura-name`;
-    title.innerHTML = sura_name;
+    if(sura.nf){
+      sura.name.split(" ").forEach(function(word, j){
+        if(j > 0) title.appendChild(document.createTextNode(" "));
+        var span = document.createElement("span");
+        span.textContent = word;
+        if(sura.nf[j]) span.style.fontFeatureSettings = v2FeatureSettings(sura.nf[j]);
+        title.appendChild(span);
+      });
+    } else {
+      title.textContent = sura.name;
+    }
     header.appendChild(title);
     var copy = getCopyIcon(); copy.addEventListener("click", copyToClipboard);
     var translation = getTranslateIcon(); translation.addEventListener("click", openTranslate);
@@ -637,13 +648,22 @@
     if(row.x) line.style.setProperty("transform", `scaleX(${row.x})`, "");
   }
   function v2FeatureSettings(f){
-    // "jp04=3,jp06=1" -> '"q043", "q061"'. The DB keeps HarfBuzz's form (jpKK = alternate v);
-    // the browser gets the font's on/off twin of each pair, q<KK><v in base 36>, because Apple's
-    // CoreText (every iOS browser) ignores feature values there and always takes alternate 1.
-    return f.split(",").map(function(kv){
+    // "jp04=3,jp06=1,z12k" -> '"q043", "q061", "z12k"'. The DB keeps HarfBuzz's form (jpKK =
+    // alternate v); the browser gets the font's on/off twin of each pair, q<KK><v in base 36>,
+    // because Apple's CoreText (every iOS browser) ignores feature values there and always
+    // takes alternate 1. Bare tags (z<p><dd>: a height correction, see cursive_fix.py) pass as is.
+    return f.split(",").filter(Boolean).map(function(kv){
       var p = kv.split("=");
+      if(p[0].slice(0, 2) !== "jp") return `"${p[0]}"`;
       return `"q${p[0].slice(2)}${Number(p[1] || 1).toString(36)}"`;
     }).join(", ");
+  }
+  function v2PlainFeatures(part, j){
+    // An unstretched word (title, basmala, inline quote) takes the height corrections (z tags)
+    // of its stretched form, unless the part lists its own (g[j] non-null; "" = none).
+    if(part.g && part.g[j] !== null && part.g[j] !== undefined) return part.g[j];
+    var f = part.f && part.f[j];
+    return f ? f.split(",").filter(function(t){ return t.charAt(0) === "z"; }).join(",") : "";
   }
   function v2InitPlainLine(line){
     // Inline (single-line quote) renders: natural spacing, no stretching.
@@ -676,7 +696,8 @@
       var span = document.createElement("span");
       span.textContent = token;
       span.classList.add(`${name}-word`);
-      if(justified && part.f && part.f[j]) span.style.fontFeatureSettings = v2FeatureSettings(part.f[j]);
+      var feats = justified ? (part.f && part.f[j]) : v2PlainFeatures(part, j);
+      if(feats) span.style.fontFeatureSettings = v2FeatureSettings(feats);
       if(justified && state.row.c && token.indexOf("\u06DD") < 0){
         // dense line: the words (never the aya numbers) are written narrower, as in print;
         // the box keeps its width, the spaces were computed for that
@@ -695,9 +716,10 @@
   function v2CleanText(text){
     // Copy/paste: undo the font's encoding (CGJ joiners, decomposed hamza, open tanween) so the
     // clipboard gets standard Uthmani text.
+    // Since 2.2.2 the DB drops most CGJs (cursive_fix.py): recompose with or without them.
     return text
-      .replace(/ا͏ٔ͏/g, "أ").replace(/إ͏/g, "إ")
-      .replace(/و͏ٔ͏/g, "ؤ").replace(/ي͏ٔ͏/g, "ئ")
+      .replace(/ا͏?ٔ͏?/g, "أ").replace(/إ͏?/g, "إ")
+      .replace(/و͏?ٔ͏?/g, "ؤ").replace(/ي͏?ٔ͏?/g, "ئ")
       .replace(/͏/g, "")
       .replace(/ࣰ/g, "ً").replace(/ࣱ/g, "ٌ").replace(/ࣲ/g, "ٍ");
   }
@@ -1074,7 +1096,7 @@
       let start_page = parseInt(groups[0].key.split(':')[0], 10); // page of the first visible line
       styleMultilineTag(tag, start_page, headless);
       if(!headless){
-        tag.appendChild(buildHeader(madina_data.suras[groups[0].parts[0].sura].name));
+        tag.appendChild(buildHeader(madina_data.suras[groups[0].parts[0].sura]));
       }
     }
     groups.forEach(function(group, gi){
@@ -1546,7 +1568,7 @@
         if(multiline){
           styleMultilineTag(tag, page, headless);
           if(!headless){
-            tag.appendChild(buildHeader(madina_data.suras[sura_from].name));
+            tag.appendChild(buildHeader(madina_data.suras[sura_from]));
           }
         }
         /** Loop on Ayas, lines, parts */
@@ -1667,7 +1689,7 @@
         madina_data = {
           title: m.title, published: m.published, font_family: m.font_family, font_url: m.font_url,
           font_size: m.font_size, line_width: m.line_width,
-          suras: m.suras.map(function(e){ return {name: e[0], ayas: new Array(e[1])}; }),
+          suras: m.suras.map(function(e){ return {name: e[0], ayas: new Array(e[1]), nf: e[2]}; }),
           juz: m.juz, pages: m.pages
         };
         applySizeOverrides();
@@ -1766,7 +1788,7 @@
         Object.keys(m).forEach(function(k){
           if(k !== "suras" && k !== "n_pages") madina_data[k] = m[k];
         });
-        madina_data.suras = m.suras.map(function(e){ return {name: e[0], ayas: new Array(e[1])}; });
+        madina_data.suras = m.suras.map(function(e){ return {name: e[0], ayas: new Array(e[1]), nf: e[2]}; });
         madina_data.lines = new Array(m.n_pages);
         ready();
       },

@@ -78,6 +78,36 @@ since the alternate lists depend on the corpus.
   (position, alternate) pair (`q043` = `jp04` value 3); the runtime emits those everywhere.
   Afterwards every stretched word is within a pixel of Chrome. Left: two words with a kashida
   carrying hamza plus CGJ (`لِـٔ͏َادَمَ` +0.22em, `يَٰٓـٔ͏َادَمُ` −0.11em on page 6) still differ.
+  Fixed in 2.2.2, see below.
+
+## Joins on CoreText (2.2.2, `src/db/v2/cursive_fix.py`)
+
+On iPhone, letters showed small vertical steps at joins (every 2.x release; the DigitalKhatt
+fonts, not the stretch features). Two causes, found with test pages on a device:
+
+- **Mixed cursive directions.** The fonts join letters with several `curs` lookups, one flagged
+  RightToLeft. HarfBuzz reverses attachment chains to reconcile the two directions; CoreText
+  does not, and the heights at those joins come out wrong. With every cursive lookup in one
+  direction the joins are right on iPhone, but each chain then hangs from its first glyph, and
+  about 1,400 words of 1441H sit up to 0.2em off the line in every browser.
+- **CGJ inside a joint.** The encoding's CGJ between a hamza and its vowel (`ـٔ͏َ`) is a base
+  glyph; HarfBuzz skips it (default ignorable), CoreText keeps it between the letters it joins.
+
+The fix, applied by the build (and once to the 2.2.1 DBs):
+
+1. Every cursive lookup loses RightToLeft.
+2. The font gets GPOS position features `z<p><dd>`, run before the joining: shift the glyph at
+   buffer position p by dd units. Shifting a chain's first glyph moves the chain. For each word
+   (and each of its stretch settings) the build walks the base glyphs in reading order; a glyph
+   that sits off its HarfBuzz height is a chain root, and gets what it lacks.
+3. CGJs leave the text except where HarfBuzz needs them to keep mark order (a few contexts:
+   sukun + sakta, dagger alef + hamza, ...); removing the others changes no shaping.
+4. The DB carries the tags: in `f` with the stretch features (`jp04=3,z1ip`), in `g` for
+   unstretched renders when they differ, in `nf` for sura names (header).
+
+Every word form of the three layouts (about 33,000 each) is verified to shape exactly as with
+the original font (glyphs, advances, offsets); the build fails otherwise. 1441H needs 388 shift
+features, 1405H 602, IndoPak 737; the woff2 grows by ~6-12 KB, the DBs by ~15% gzipped.
 - Pages 1-2, sura titles, basmala lines.
 
 ## Runtime (Phase 4)

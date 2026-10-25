@@ -25,10 +25,12 @@ import tanzil_encoding as enc
 
 
 def css_to_features(css):
-    """'jp04=3,shr1=1' -> {'jp04': 3, 'shr1': 1}."""
-    if not css:
-        return {}
-    return {k: int(v) for k, v in (item.split("=") for item in css.split(","))}
+    """'jp04=3,shr1=1,z12k' -> {'jp04': 3, 'shr1': 1, 'z12k': 1} (bare tag = on)."""
+    out = {}
+    for item in filter(None, (css or "").split(",")):
+        k, _, v = item.partition("=")
+        out[k] = int(v or 1)
+    return out
 
 
 def width(font, text, feats):

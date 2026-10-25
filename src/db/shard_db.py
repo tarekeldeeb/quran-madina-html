@@ -80,7 +80,9 @@ def shard(src, out_root, console=None):  # pylint: disable=too-many-locals,too-m
     # rest of the browser session.
     manifest["content_hash"] = hashlib.sha256(
         json.dumps(db, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:12]
-    manifest["suras"] = [[s["name"], len(s["ayas"])] for s in db["suras"]]
+    # v2: a third entry, the name's per-word height corrections (cursive_fix.py), when it has any
+    manifest["suras"] = [[s["name"], len(s["ayas"])] + ([s["nf"]] if s.get("nf") else [])
+                         for s in db["suras"]]
     manifest["juz"] = [[JUZ_STARTS[j][0], JUZ_STARTS[j][1], juz_start_page[j]] for j in range(30)]
 
     # Page -> [sura_from, aya_from, sura_to, aya_to], replicating the runtime's page scan exactly so
@@ -135,7 +137,8 @@ def shard(src, out_root, console=None):  # pylint: disable=too-many-locals,too-m
         total += dump(data, os.path.join(out, f"juz-{j + 1:02d}.json"))
 
     # ---- lossless round-trip check: reassemble the original suras from manifest + shards ----
-    rebuilt = [{"name": name, "ayas": [None] * n} for name, n in manifest["suras"]]
+    rebuilt = [dict({"name": e[0], "ayas": [None] * e[1]}, **({"nf": e[2]} if len(e) > 2 else {}))
+               for e in manifest["suras"]]
     for j in range(30):
         with open(os.path.join(out, f"juz-{j + 1:02d}.json"), encoding="utf8") as fh:
             data = json.load(fh)

@@ -202,8 +202,8 @@ def db_feature_pairs(db):
                for f in part.get("f") or [] if f)
     pairs = set()
     for f in strings:
-        for k, v in (kv.split("=") for kv in f.split(",") if kv):
-            if k.startswith("jp"):
+        for k, _, v in (kv.partition("=") for kv in f.split(",") if kv):
+            if k.startswith("jp"):        # (bare z tags: height corrections, cursive_fix.py)
                 pairs.add((k, int(v)))
     return pairs
 

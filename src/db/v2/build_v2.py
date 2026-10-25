@@ -47,6 +47,7 @@ import uharfbuzz as hb
 from fontTools.ttLib import TTFont
 
 sys.path.insert(0, os.path.dirname(__file__))
+import cursive_fix
 import font_patch
 import justify
 import layout_lines
@@ -347,12 +348,16 @@ def build(args):
     font_out = os.path.join(args.out, stem + ".otf")
     font_patch.patch_font(font_path, font_out, table, positions, cfg["family"], used_pairs)
     font_name = stem + ".woff2"                     # what the browser loads
-    woff2 = TTFont(font_out)
-    woff2.flavor = "woff2"
-    woff2.save(os.path.join(args.out, font_name))
     db = {"version": 2, "layout": args.layout, "title": cfg["title"], "published": cfg["published"],
           "font_family": cfg["family"], "font_url": f"assets/db/v2/{font_name}",
           "line_width": round(full / 1000, 4), "lines": page_rows, "suras": suras}
+    # joins on Apple's CoreText: uniform cursive chains + per-word height corrections, verified
+    # against the font above word by word (cursive_fix.py)
+    fixed, n_shift, _ = cursive_fix.fix(db, TTFont(font_out))
+    fixed.save(font_out)
+    fixed.flavor = "woff2"
+    fixed.save(os.path.join(args.out, font_name))
+    print(f"cursive: {n_shift} height-correction features")
     db_path = os.path.join(args.out, cfg.get("stem", f"Madina-{args.layout}") + ".json")
     with open(db_path, "w", encoding="utf-8") as fh:
         json.dump(db, fh, ensure_ascii=False, separators=(",", ":"))
